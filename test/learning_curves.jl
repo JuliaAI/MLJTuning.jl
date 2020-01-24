@@ -7,14 +7,14 @@ import ComputationalResources: CPU1, CPUProcesses, CPUThreads
 using Distributed
 @everywhere begin
     using Random
-    Random.seed!(1234*myid()) 
+    Random.seed!(1234*myid())
     using ..Models
 end
 using ..TestUtilities
 
 using ..Models
-import Random.seed!
-seed!(1234)
+# import Random.seed!
+# seed!(1234)
 
 x1 = rand(100);
 x2 = rand(100);
@@ -44,7 +44,10 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.2*rand(100);
     @test length(curve.parameter_values) == length(curve.measurements)
     atom.lambda=0.3
     r_n = range(ensemble, :n, lower=10, upper=100)
-    curves = learning_curve!(mach; range=r_n, n_curves=2, resolution=7)
+    curves = learning_curve!(mach; range=r_n, resolution=7,
+                             acceleration=accel,
+                             rngs = [MersenneTwister(rand(UInt)) for i in 1:2],
+                             rng_name=:rng)
     @test size(curves.measurements) == (length(curves.parameter_values), 2)
     @test length(curves.parameter_values) == 7
 

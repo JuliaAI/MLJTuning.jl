@@ -159,8 +159,8 @@ end
 function MLJBase.clean!(model::EitherTunedModel)
     message = ""
     if model.measure === nothing
-        message *= "No measure specified. Setting measure=$(model.measure). "
         model.measure = default_measure(model)
+        message *= "No measure specified. Setting measure=$(model.measure). "
     end
     if !(model.acceleration isa Union{CPU1, CPUProcesses})
         message *= "Supported `acceleration` types are `CPU1` "*

@@ -70,8 +70,8 @@ function learning_curve!(mach::Machine{<:Supervised};
                          acceleration=default_resource(),
                          acceleration_grid=CPU1(),
                          verbosity=1,
-                         n=1,
-                         n_curves=n,
+                         rng_name=nothing,
+                         rngs=nothing,
                          check_measure=true)
 
     if measure == nothing
@@ -81,6 +81,13 @@ function learning_curve!(mach::Machine{<:Supervised};
     end
 
     range !== nothing || error("No param range specified. Use range=... ")
+
+    if rngs != nothing
+        rng_name == nothing &&
+            error("Having specified `rngs=...`, you must specify "*
+                  "`rng_name=...` also. ")
+        rngs isa Vector || (rngs = [rngs, ])
+    end
 
     tuned_model = TunedModel(model=mach.model, ranges=range,
                              tuning=Grid(resolution=resolution,
@@ -95,13 +102,13 @@ function learning_curve!(mach::Machine{<:Supervised};
 
     tuned = machine(tuned_model, mach.args...)
 
-    results = _tuning_results(acceleration, tuned, n_curves, verbosity)
+    results = _tuning_results(rngs, acceleration, tuned, rng_name, verbosity)
 
     parameter_name=results.parameter_names[1]
     parameter_scale=results.parameter_scales[1]
     parameter_values=[results.parameter_values[:, 1]...]
     measurements = results.measurements
-    measurements = (n_curves == 1) ? [measurements...] : measurements
+    measurements = (rngs == nothing) ? [measurements...] : measurements
 
     return (parameter_name=parameter_name,
             parameter_scale=parameter_scale,
@@ -115,22 +122,49 @@ _collate(plotting1, plotting2) =
                              plotting2.measurements),))
 
 # fallback:
-_tuning_results(acceleration, tuned, verbosity) =
+_tuning_results(rngs, acceleration, kwargs...) =
     error("acceleration=$acceleration unsupported. ")
 
+# single curve:
+_tuning_results(rngs::Nothing, acceleration, tuned, rngs_name, verbosity) =
+    _single_curve(tuned, verbosity)
+
+function _single_curve(tuned, verbosity)
+    fit!(tuned, verbosity=verbosity, force=true)
+    tuned.report.plotting
+end
+
 # CPU1:
-function _tuning_results(::CPU1, tuned, n_curves, verbosity)
-    reduce(_collate,
-           [(fit!(tuned, verbosity=verbosity, force=true);
-             tuned.report.plotting) for j in 1:n_curves])
+function _tuning_results(rngs::AbstractVector, acceleration::CPU1,
+                         tuned, rng_name, verbosity)
+    old_rng = recursive_getproperty(tuned.model.model, rng_name)
+
+    ret = reduce(_collate,
+    [begin
+     recursive_setproperty!(tuned.model.model, rng_name, rng)
+     fit!(tuned, verbosity=verbosity, force=true)
+     tuned.report.plotting
+     end
+     for rng in rngs])
+
+    recursive_setproperty!(tuned.model.model, rng_name, old_rng)
+
+    return ret
 end
 
 # CPUProcesses:
-function _tuning_results(::CPUProcesses, tuned, n_curves, verbosity)
-    @distributed (_collate) for j in 1:n_curves
+function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
+    tuned, rng_name, verbosity)
+
+    old_rng = recursive_getproperty(tuned.model.model, rng_name)
+    ret = @distributed (_collate) for rng in rngs
+        recursive_setproperty!(tuned.model.model, rng_name, rng)
         fit!(tuned, verbosity=-1, force=true)
         tuned.report.plotting
     end
+    recursive_setproperty!(tuned.model.model, rng_name, old_rng)
+
+    return ret
 end
 
 
