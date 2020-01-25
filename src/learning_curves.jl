@@ -10,7 +10,8 @@
                                   range=nothing,
                                   acceleration=default_resource(),
                                   acceleration_grid=CPU1(),
-                                  n_curves=1)
+                                  rngs=nothing,
+                                  rng_name=nothing)
 
 Given a supervised machine `mach`, returns a named tuple of objects
 suitable for generating a plot of performance estimates, as a function
@@ -18,16 +19,16 @@ of the single hyperparameter specified in `range`. The tuple `curve`
 has the following keys: `:parameter_name`, `:parameter_scale`,
 `:parameter_values`, `:measurements`.
 
-For `n_curves > 1`, multiple curves are computed, and the value of
-`curve.measurements` is an array, one column for each run. This is
-useful in the case of models with indeterminate fit-results, such as a
-random forest. The curve computations can be distributed across
-multiple processors using `acceleration=CPUProcesses()` but it is the
-responsibility of the user to seed the relevant random number
-generators separately for each process. Otherwise identical curves
-will result.
+To generate multiple curves for a `model` with a random number
+generator (RNG) as a hyperparameter, specify the name of the (possibly
+nested) RNG field, and a vector `rngs` of RNG's, one for each
+curve. Alternatively, set `rngs` to the number of curves desired, in
+which case RNG's are automatically generated. The individual curve
+computations can be distributed across multiple processes using
+`acceleration=CPUProcesses()`. See the second example below for a
+demonstration.
 
-````julia
+```julia
 X, y = @load_boston;
 atom = @load RidgeRegressor pkg=MultivariateStats
 ensemble = EnsembleModel(atom=atom, n=1000)
@@ -40,7 +41,7 @@ plot(curve.parameter_values,
      xlab=curve.parameter_name,
      xscale=curve.parameter_scale,
      ylab = "CV estimate of RMS error")
-````
+```
 
 If using a `Holdout` `resampling` strategy, and the specified
 hyperparameter is the number of iterations in some iterative model
@@ -48,15 +49,15 @@ hyperparameter is the number of iterations in some iterative model
 method) then training is not restarted from scratch for each increment
 of the parameter, ie the model is trained progressively.
 
-````julia
+```julia
 atom.lambda=200
 r_n = range(ensemble, :n, lower=1, upper=250)
-curves = learning_curve!(mach; range=r_n, verbosity=0, n_curves=5)
-plot(curves.parameter_values,
+curves = learning_curve!(mach; range=r_n, verbosity=0, rng_name=:rng, rngs=3)
+plot!(curves.parameter_values,
      curves.measurements,
      xlab=curves.parameter_name,
      ylab="Holdout estimate of RMS error")
-````
+```
 
 """
 function learning_curve!(mach::Machine{<:Supervised};
@@ -70,8 +71,8 @@ function learning_curve!(mach::Machine{<:Supervised};
                          acceleration=default_resource(),
                          acceleration_grid=CPU1(),
                          verbosity=1,
-                         rng_name=nothing,
                          rngs=nothing,
+                         rng_name=nothing,
                          check_measure=true)
 
     if measure == nothing
@@ -86,7 +87,14 @@ function learning_curve!(mach::Machine{<:Supervised};
         rng_name == nothing &&
             error("Having specified `rngs=...`, you must specify "*
                   "`rng_name=...` also. ")
-        rngs isa Vector || (rngs = [rngs, ])
+        if rngs isa Integer
+            rngs = MersenneTwister.(1:rngs)
+        elseif rngs isa AbstractRNG
+            rngs = [rngs, ]
+        elseif !(rngs isa AbstractVector{<:AbstractRNG})
+            error("`rng` must have type `Integer` , `AbstractRNG` or "*
+                  "`AbstractVector{<:AbstractRNG}`. ")
+        end
     end
 
     tuned_model = TunedModel(model=mach.model, ranges=range,

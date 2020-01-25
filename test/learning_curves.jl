@@ -44,15 +44,25 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.2*rand(100);
     @test length(curve.parameter_values) == length(curve.measurements)
     atom.lambda=0.3
     r_n = range(ensemble, :n, lower=10, upper=100)
+
     curves = learning_curve!(mach; range=r_n, resolution=7,
                              acceleration=accel,
-                             rngs = [MersenneTwister(rand(UInt)) for i in 1:2],
+                             rngs = MersenneTwister.(1:3),
                              rng_name=:rng)
-    @test size(curves.measurements) == (length(curves.parameter_values), 2)
+    @test size(curves.measurements) == (length(curves.parameter_values), 3)
     @test length(curves.parameter_values) == 7
 
     # individual curves are different:
     @test !(curves.measurements[1,1] ≈ curves.measurements[1,2])
+    @test !(curves.measurements[1,1] ≈ curves.measurements[1,3])
+
+    # reproducibility:
+    curves2 = learning_curve!(mach; range=r_n, resolution=7,
+                             acceleration=accel,
+                             rngs = 3,
+                             rng_name=:rng)
+    @test curves2.measurements ≈ curves.measurements
+
 end
 
 end # module
