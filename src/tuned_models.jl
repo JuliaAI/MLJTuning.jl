@@ -156,16 +156,22 @@ function TunedModel(;model=nothing,
 
 end
 
-function MLJBase.clean!(model::EitherTunedModel)
+function MLJBase.clean!(tuned_model::EitherTunedModel)
     message = ""
-    if model.measure === nothing
-        model.measure = default_measure(model)
-        message *= "No measure specified. Setting measure=$(model.measure). "
+    if tuned_model.measure === nothing
+        tuned_model.measure = default_measure(tuned_model.model)
+        if measure === nothing
+            error("Unable to deduce a default measure for specified model. "*
+                  "You must specify `measure=...`. ")
+        else
+            message *= "No measure specified. "*
+            "Setting measure=$(model.measure). "
+        end
     end
-    if !(model.acceleration isa Union{CPU1, CPUProcesses})
+    if !(tuned_model.acceleration isa Union{CPU1, CPUProcesses})
         message *= "Supported `acceleration` types are `CPU1` "*
         "and `CPUProcesses`. Setting `acceleration=CPU1()`. "
-        model.acceleration = CPU1()
+        tuned_model.acceleration = CPU1()
     end
     return message
 end
