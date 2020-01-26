@@ -45,9 +45,9 @@ This repository contains:
 
 - a **tuning wrapper** called `TunedModel` for transforming arbitrary
   MLJ models into "self-tuning" ones - that is, into models which,
-  when fit, automatically optimize a specified subset of the
-  original hyperparameters, using training data resampling, before
-  training the optimal model on all supplied data
+  when fit, automatically optimize a specified subset of the original
+  hyperparameters (using cross-validation or other resampling
+  strategy) before training the optimal model on all supplied data
 
 - an abstract **tuning strategy interface** to allow developers to
   conveniently implement common hyperparameter optimization

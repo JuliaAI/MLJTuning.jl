@@ -97,7 +97,8 @@ function learning_curve!(mach::Machine{<:Supervised};
         end
     end
 
-    tuned_model = TunedModel(model=mach.model, ranges=range,
+    tuned_model = TunedModel(model=mach.model,
+                             range=range,
                              tuning=Grid(resolution=resolution,
                                          shuffle=false),
                              resampling=resampling,
@@ -130,7 +131,7 @@ _collate(plotting1, plotting2) =
                              plotting2.measurements),))
 
 # fallback:
-_tuning_results(rngs, acceleration, kwargs...) =
+_tuning_results(rngs, acceleration, tuned, rngs_name, verbosity) =
     error("acceleration=$acceleration unsupported. ")
 
 # single curve:
@@ -148,12 +149,12 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPU1,
     old_rng = recursive_getproperty(tuned.model.model, rng_name)
 
     ret = reduce(_collate,
-    [begin
-     recursive_setproperty!(tuned.model.model, rng_name, rng)
-     fit!(tuned, verbosity=verbosity, force=true)
-     tuned.report.plotting
-     end
-     for rng in rngs])
+                 [begin
+                  recursive_setproperty!(tuned.model.model, rng_name, rng)
+                  fit!(tuned, verbosity=verbosity, force=true)
+                  tuned.report.plotting
+                  end
+                  for rng in rngs])
 
     recursive_setproperty!(tuned.model.model, rng_name, old_rng)
 
@@ -174,8 +175,6 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
 
     return ret
 end
-
-
 
 
 """

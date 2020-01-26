@@ -1,20 +1,17 @@
 module TestLearningCurves
 
 using Test
-using MLJBase
-using MLJTuning
-import ComputationalResources: CPU1, CPUProcesses, CPUThreads
 using Distributed
 @everywhere begin
-    using Random
-    Random.seed!(1234*myid())
+    using MLJBase
+    using MLJTuning
     using ..Models
+    import ComputationalResources: CPU1, CPUProcesses, CPUThreads
+    using Distributed
 end
+using Random
+Random.seed!(1234*myid())
 using ..TestUtilities
-
-using ..Models
-# import Random.seed!
-# seed!(1234)
 
 x1 = rand(100);
 x2 = rand(100);
@@ -28,11 +25,17 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.2*rand(100);
     mach = machine(ensemble, X, y)
     r_lambda = range(ensemble, :(atom.lambda),
                      lower=0.0001, upper=0.1, scale=:log10)
-    if accel == CPU1()
-        curve = @test_logs((:info, r"No measure"),
-                           (:info, r"Training"),
-                           learning_curve!(mach; range=r_lambda,
-                                           acceleration=accel))
+
+    # Something wrong with @test_logs in julia 1.1.1 and
+    # 1.0.5. Getting "Internal error: encountered unexpected error in
+    # runtime: MethodError(f=typeof(Core.Compiler.fieldindex)(),
+    # args=(MLJTuning.DeterministicTunedModel{T, M, R} where R,
+    # :acceleration, false), world=0x0000000000000eb9)"
+    if accel == CPU1() && VERSION > v"1.2"
+            curve = @test_logs((:info, r"No measure"),
+                               (:info, r"Training"),
+                               learning_curve!(mach; range=r_lambda,
+                                               acceleration=accel))
     else
         curve = learning_curve!(mach; range=r_lambda,
                                 acceleration=accel)
