@@ -1,17 +1,17 @@
 ## LEARNING CURVES
 
 """
-    curve = learning_curve!(mach; resolution=30,
-                                  resampling=Holdout(),
-                                  repeats=1,
-                                  measure=rms,
-                                  weights=nothing,
-                                  operation=predict,
-                                  range=nothing,
-                                  acceleration=default_resource(),
-                                  acceleration_grid=CPU1(),
-                                  rngs=nothing,
-                                  rng_name=nothing)
+    curve = learning_curve(mach; resolution=30,
+                                 resampling=Holdout(),
+                                 repeats=1,
+                                 measure=rms,
+                                 weights=nothing,
+                                 operation=predict,
+                                 range=nothing,
+                                 acceleration=default_resource(),
+                                 acceleration_grid=CPU1(),
+                                 rngs=nothing,
+                                 rng_name=nothing)
 
 Given a supervised machine `mach`, returns a named tuple of objects
 suitable for generating a plot of performance estimates, as a function
@@ -34,7 +34,7 @@ atom = @load RidgeRegressor pkg=MultivariateStats
 ensemble = EnsembleModel(atom=atom, n=1000)
 mach = machine(ensemble, X, y)
 r_lambda = range(ensemble, :(atom.lambda), lower=10, upper=500, scale=:log10)
-curve = learning_curve!(mach; range=r_lambda, resampling=CV(), measure=mav)
+curve = learning_curve(mach; range=r_lambda, resampling=CV(), measure=mav)
 using Plots
 plot(curve.parameter_values,
      curve.measurements,
@@ -52,7 +52,7 @@ of the parameter, ie the model is trained progressively.
 ```julia
 atom.lambda=200
 r_n = range(ensemble, :n, lower=1, upper=250)
-curves = learning_curve!(mach; range=r_n, verbosity=0, rng_name=:rng, rngs=3)
+curves = learning_curve(mach; range=r_n, verbosity=0, rng_name=:rng, rngs=3)
 plot!(curves.parameter_values,
      curves.measurements,
      xlab=curves.parameter_name,
@@ -60,7 +60,7 @@ plot!(curves.parameter_values,
 ```
 
 """
-function learning_curve!(mach::Machine{<:Supervised};
+function learning_curve(mach::Machine{<:Supervised};
                          resolution=30,
                          resampling=Holdout(),
                          weights=nothing,
@@ -176,16 +176,18 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
     return ret
 end
 
+learning_curve!(machine::Machine, args...) =
+    learning_curve(machine, args...)
 
 """
     learning_curve(model::Supervised, args...; kwargs...)
 
 Plot a learning curve (or curves) without first constructing a
-machine. Equivalent to `learing_curve!(machine(model, args...);
+machine. Equivalent to `learing_curve(machine(model, args...);
 kwargs...)
 
-See [learning_curve!](@ref)
+See [learning_curve](@ref)
 
 """
 learning_curve(model::Supervised, args...; kwargs...) =
-    learning_curve!(machine(model, args...); kwargs...)
+    learning_curve(machine(model, args...); kwargs...)
