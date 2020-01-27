@@ -5,7 +5,7 @@ Hyperparameter optimization for
 learning models.
 
 [![Build Status](https://travis-ci.com/alan-turing-institute/MLJTuning.jl.svg?branch=master)](https://travis-ci.com/alan-turing-institute/MLJTuning.jl)
-[![Coverage](http://codecov.io/github/alan-turing-institute/MLJTuning.jl/coverage.svg?branch=master)](http://codecov.io/github/alan-turing-institute/MLJTuning.jl?branch=master)
+[![Coverage](http://coveralls.io/github/alan-turing-institute/MLJTuning.jl/coverage.svg?branch=master)](http://codecov.io/github/alan-turing-institute/MLJTuning.jl?branch=master)
 
 *Note:* This component of the [MLJ
   stack](https://github.com/alan-turing-institute/MLJ.jl#the-mlj-universe)
@@ -16,17 +16,17 @@ learning models.
 
 ## Who is this repo for?
 
-This repository is not intended for the general MLJ user but is:
-
-- a dependency of the
-  [MLJ](https://github.com/alan-turing-institute/MLJ.jl) machine
-  learning platform, allowing MLJ users to perform a variety of
-  hyperparameter optimization tasks
+This repository is not intended to be directly imported by the general
+MLJ user. Rather, MLJTuning is a dependency of the
+[MLJ](https://github.com/alan-turing-institute/MLJ.jl) machine
+learning platform, which allows MLJ users to perform a variety of
+hyperparameter optimization tasks from there.
   
-- a place for developers to integrate hyperparameter optimization
-  algorithms (here called *tuning strategies*) into MLJ, either
-  natively (by adding code to [/src/strategies](/src/strategies)) or
-  by importing and implementing an interface provided by this repo
+MLJTUning is the place for developers to integrate hyperparameter
+optimization algorithms (here called *tuning strategies*) into MLJ,
+either by adding code to [/src/strategies](/src/strategies), or by
+importing MLJTuning into a third-pary package and and implementing
+MLJTuning's interface.
   
 MLJTuning is a component of the [MLJ
   stack](https://github.com/alan-turing-institute/MLJ.jl#the-mlj-universe)
