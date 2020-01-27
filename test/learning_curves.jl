@@ -66,6 +66,14 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.2*rand(100);
                              rng_name=:rng)
     @test curves2.measurements ≈ curves.measurements
 
+    # alternative signature:
+    curves3 = learning_curve(ensemble, X, y; range=r_n, resolution=7,
+                             acceleration=accel,
+                             rngs = 3,
+                             rng_name=:rng)
+
+    @test curves2.measurements ≈ curves3.measurements
+
 end
 
 end # module
