@@ -5,7 +5,7 @@ Hyperparameter optimization for
 learning models.
 
 [![Build Status](https://travis-ci.com/alan-turing-institute/MLJTuning.jl.svg?branch=master)](https://travis-ci.com/alan-turing-institute/MLJTuning.jl)
-[![Coverage](http://coveralls.io/github/alan-turing-institute/MLJTuning.jl/coverage.svg?branch=master)](http://codecov.io/github/alan-turing-institute/MLJTuning.jl?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/alan-turing-institute/MLJTuning.jl/badge.svg?branch=master)](https://coveralls.io/github/alan-turing-institute/MLJTuning.jl?branch=master)
 
 *Note:* This component of the [MLJ
   stack](https://github.com/alan-turing-institute/MLJ.jl#the-mlj-universe)
