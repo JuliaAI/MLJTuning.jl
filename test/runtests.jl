@@ -28,16 +28,9 @@ end
     @test include("strategies/grid.jl")
 end
 
-# see this julia issue: https://github.com/JuliaLang/julia/issues/34513
-# if VERSION < v"1.2"
-#     @testset "learning curves" begin
-#         @test_broken include("learning_curves.jl")
-#     end
-# else
-#     @test "learning curves" begin
-#         @test_broken include("learning_curves.jl")
-#     end
-# end
+@testset "learning curves" begin
+        @test include("learning_curves.jl")
+end
 
 # @testset "julia bug" begin
 #     @test include("julia_bug.jl")

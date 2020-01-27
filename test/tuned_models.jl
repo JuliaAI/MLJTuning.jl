@@ -28,7 +28,7 @@ r = [m(K) for K in 2:13]
                                            range=r, measure=rms)
     @test_throws ErrorException TunedModel(model=42, tuning=Explicit(),
                                            range=r, measure=rms)
-    @test_logs((:info, r"No measure specified"),
+    @test_logs((:info, r"No measure"),
                TunedModel(model=first(r), tuning=Explicit(), range=r))
 end
 

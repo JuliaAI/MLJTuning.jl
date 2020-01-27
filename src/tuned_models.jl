@@ -160,12 +160,12 @@ function MLJBase.clean!(tuned_model::EitherTunedModel)
     message = ""
     if tuned_model.measure === nothing
         tuned_model.measure = default_measure(tuned_model.model)
-        if measure === nothing
+        if tuned_model.measure === nothing
             error("Unable to deduce a default measure for specified model. "*
                   "You must specify `measure=...`. ")
         else
             message *= "No measure specified. "*
-            "Setting measure=$(model.measure). "
+            "Setting measure=$(tuned_model.measure). "
         end
     end
     if !(tuned_model.acceleration isa Union{CPU1, CPUProcesses})
