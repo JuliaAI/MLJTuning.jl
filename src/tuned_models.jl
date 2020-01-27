@@ -1,6 +1,6 @@
 ## TYPES AND CONSTRUCTOR
 
-mutable struct DeterministicTunedModel{T,M<:Deterministic,R} <: MLJBase.Deterministic
+mutable struct DeterministicTunedModel{T,M<:Deterministic,R,A,AR} <: MLJBase.Deterministic
     model::M
     tuning::T  # tuning strategy
     resampling # resampling strategy
@@ -11,12 +11,12 @@ mutable struct DeterministicTunedModel{T,M<:Deterministic,R} <: MLJBase.Determin
     train_best::Bool
     repeats::Int
     n::Union{Int,Nothing}
-    acceleration::AbstractResource
-    acceleration_resampling::AbstractResource
+    acceleration::A
+    acceleration_resampling::AR
     check_measure::Bool
 end
 
-mutable struct ProbabilisticTunedModel{T,M<:Probabilistic,R} <: MLJBase.Probabilistic
+mutable struct ProbabilisticTunedModel{T,M<:Probabilistic,R,A,AR} <: MLJBase.Probabilistic
     model::M
     tuning::T  # tuning strategy
     resampling # resampling strategy
@@ -27,8 +27,8 @@ mutable struct ProbabilisticTunedModel{T,M<:Probabilistic,R} <: MLJBase.Probabil
     train_best::Bool
     repeats::Int
     n::Union{Int,Nothing}
-    acceleration::AbstractResource
-    acceleration_resampling::AbstractResource
+    acceleration::A
+    acceleration_resampling::AR
     check_measure::Bool
 end
 
