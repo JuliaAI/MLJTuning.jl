@@ -57,29 +57,37 @@ plot!(curves.parameter_values,
      curves.measurements,
      xlab=curves.parameter_name,
      ylab="Holdout estimate of RMS error")
+
+
 ```
+    learning_curve(model::Supervised, X, y; kwargs...)
+    learning_curve(model::Supervised, X, y, w; kwargs...)
+
+Plot a learning curve (or curves) directly, without first constructing
+a machine.
 
 """
-function learning_curve(mach::Machine{<:Supervised};
-                         resolution=30,
-                         resampling=Holdout(),
-                         weights=nothing,
-                         measure=nothing,
-                         operation=predict,
-                         range::Union{Nothing,ParamRange}=nothing,
-                         repeats=1,
-                         acceleration=default_resource(),
-                         acceleration_grid=CPU1(),
-                         verbosity=1,
-                         rngs=nothing,
-                         rng_name=nothing,
-                         check_measure=true)
+learning_curve(mach::Machine{<:Supervised}; kwargs...) =
+    learning_curve(mach.model, mach.args...; kwargs...)
 
-    if measure == nothing
-        measure = default_measure(mach.model)
-        verbosity < 1 ||
-            @info "No measure specified. Using measure=$measure. "
-    end
+# for backwards compatibility
+learning_curve!(mach::Machine{<:Supervised}; kwargs...) =
+    learning_curve(mach; kwargs...)
+
+function learning_curve(model::Supervised, args...;
+                        resolution=30,
+                        resampling=Holdout(),
+                        weights=nothing,
+                        measure=nothing,
+                        operation=predict,
+                        range::Union{Nothing,ParamRange}=nothing,
+                        repeats=1,
+                        acceleration=default_resource(),
+                        acceleration_grid=CPU1(),
+                        verbosity=1,
+                        rngs=nothing,
+                        rng_name=nothing,
+                        check_measure=true)
 
     range !== nothing || error("No param range specified. Use range=... ")
 
@@ -97,7 +105,7 @@ function learning_curve(mach::Machine{<:Supervised};
         end
     end
 
-    tuned_model = TunedModel(model=mach.model,
+    tuned_model = TunedModel(model=model,
                              range=range,
                              tuning=Grid(resolution=resolution,
                                          shuffle=false),
@@ -109,7 +117,7 @@ function learning_curve(mach::Machine{<:Supervised};
                              repeats=repeats,
                              acceleration=acceleration_grid)
 
-    tuned = machine(tuned_model, mach.args...)
+    tuned = machine(tuned_model, args...)
 
     results = _tuning_results(rngs, acceleration, tuned, rng_name, verbosity)
 
@@ -176,18 +184,3 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
     return ret
 end
 
-learning_curve!(machine::Machine, args...) =
-    learning_curve(machine, args...)
-
-"""
-    learning_curve(model::Supervised, args...; kwargs...)
-
-Plot a learning curve (or curves) without first constructing a
-machine. Equivalent to `learing_curve(machine(model, args...);
-kwargs...)
-
-See [learning_curve](@ref)
-
-"""
-learning_curve(model::Supervised, args...; kwargs...) =
-    learning_curve(machine(model, args...); kwargs...)
