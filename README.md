@@ -22,11 +22,12 @@ MLJ user. Rather, MLJTuning is a dependency of the
 learning platform, which allows MLJ users to perform a variety of
 hyperparameter optimization tasks from there.
   
-MLJTUning is the place for developers to integrate hyperparameter
+MLJTuning is the place for developers to integrate hyperparameter
 optimization algorithms (here called *tuning strategies*) into MLJ,
 either by adding code to [/src/strategies](/src/strategies), or by
-importing MLJTuning into a third-pary package and and implementing
-MLJTuning's interface.
+importing MLJTuning into a third-pary package and implementing
+MLJTuning's [tuning strategy
+interface](#implementing-a-new-tuning-strategy).
   
 MLJTuning is a component of the [MLJ
   stack](https://github.com/alan-turing-institute/MLJ.jl#the-mlj-universe)
@@ -49,9 +50,10 @@ This repository contains:
   hyperparameters (using cross-validation or other resampling
   strategy) before training the optimal model on all supplied data
 
-- an abstract **tuning strategy interface** to allow developers to
-  conveniently implement common hyperparameter optimization
-  strategies, such as:
+- an abstract **[tuning strategy
+  interface]((#implementing-a-new-tuning-strategy))** to allow
+  developers to conveniently implement common hyperparameter
+  optimization strategies, such as:
 
   - [x] search a list of explicitly specified models `list = [model1,
 	model2, ...]`
@@ -100,7 +102,7 @@ elaboration on those terms given in *italics*.
 
 All tuning in MLJ is conceptualized as an iterative procedure, each
 iteration corresponding to a performance *evaluation* of a single
-*model*. Each such model is a mutation of a fixed *prototype*. In the
+*model*. Each such model is a mutated clone of a fixed prototype. In the
 general case, this prototype is a composite model, i.e., a model with
 other models as hyperparameters, and while the type of the prototype
 mutations is fixed, the types of the sub-models are allowed to vary.
@@ -293,7 +295,7 @@ preferred "central value". These default to `(upper - lower)/2` and
 `(upper + lower)/2`, respectively, in the bounded case (neither `upper
 = Inf` nor `lower = -Inf`). The fields `origin` and `unit` are used in
 generating grids for unbounded ranges (and could be used in other
-strategies for fitting two-parameter probability distributions, for
+strategies - for fitting two-parameter probability distributions, for
 example).
 
 A `ParamRange` object is always associated with the name of a
