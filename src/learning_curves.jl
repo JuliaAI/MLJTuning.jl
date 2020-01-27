@@ -125,7 +125,6 @@ function learning_curve(model::Supervised, args...;
     parameter_scale=results.parameter_scales[1]
     parameter_values=[results.parameter_values[:, 1]...]
     measurements = results.measurements
-    measurements = (rngs == nothing) ? [measurements...] : measurements
 
     return (parameter_name=parameter_name,
             parameter_scale=parameter_scale,
