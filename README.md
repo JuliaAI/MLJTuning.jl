@@ -313,7 +313,7 @@ MLJTuning.result(tuning::MyTuningStrategy, history, e)
 This method is for extracting from an evaluation `e` of some model `m`
 the value of `r` to be recorded in the corresponding tuple `(m, r)` of
 the history. The value of `r` is also allowed to depend on previous
-events in the history.
+events in the history. The fallback is:
 
 ```julia
 MLJTuning.result(tuning, history, e) = (measure=e.measure, measurement=e.measurement)
