@@ -7,6 +7,12 @@ learning models.
 [![Build Status](https://travis-ci.com/alan-turing-institute/MLJTuning.jl.svg?branch=master)](https://travis-ci.com/alan-turing-institute/MLJTuning.jl)
 [![Coverage Status](https://coveralls.io/repos/github/alan-turing-institute/MLJTuning.jl/badge.svg?branch=master)](https://coveralls.io/github/alan-turing-institute/MLJTuning.jl?branch=master)
 
+### Contents
+
+ - [Who is this repo for?](#who-is-this-repo-for?)
+ - [What's provided here?](#what's-provided-here?)
+ - [How do I implement a new tuning strategy?](#How-do-I-implement-a-new-tuning-strategy?)
+
 *Note:* This component of the [MLJ
   stack](https://github.com/alan-turing-institute/MLJ.jl#the-mlj-universe)
   applies to MLJ versions 0.8.0 and higher. Prior to 0.8.0, tuning
@@ -84,7 +90,7 @@ This repository contains:
   these are essentially one-dimensional grid searches
 
 
-## Implementing a New Tuning Strategy
+## How do I implement a new tuning strategy?
 
 This document assumes familiarity with the [Evaluating Model
 Performance](https://alan-turing-institute.github.io/MLJ.jl/dev/evaluating_model_performance/)
