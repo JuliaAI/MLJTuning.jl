@@ -9,9 +9,9 @@ learning models.
 
 ### Contents
 
- - [Who is this repo for?](#who-is-this-repo-for?)
- - [What's provided here?](#what's-provided-here?)
- - [How do I implement a new tuning strategy?](#How-do-I-implement-a-new-tuning-strategy?)
+ - [Who is this repo for?](#who-is-this-repo-for)
+ - [What's provided here?](#what's-provided-here)
+ - [How do I implement a new tuning strategy?](#How-do-I-implement-a-new-tuning-strategy)
 
 *Note:* This component of the [MLJ
   stack](https://github.com/alan-turing-institute/MLJ.jl#the-mlj-universe)
@@ -136,7 +136,7 @@ begin, on the basis of the specific strategy and a user-specified
 - An *evaluation* is the value returned by some call to the
   `evaluate!` method, when passed the resampling strategy (e.g.,
   `CV(nfolds=9)` and performance measures specified by the user when
-  specifying the tuning task (e.g., `cross_entropy`,
+  specifying the tuning task (e.g., `cross_entropy`b,
   `accuracy`). Recall that such a value is a named tuple of vectors
   with keys `measure`, `measurement`, `per_fold`, and
   `per_observation`. See [Evaluating Model
@@ -147,7 +147,7 @@ begin, on the basis of the specific strategy and a user-specified
   value (the `per_observation` entries being recorded as
   `missing`). This and other behavior can be inspected using trait
   functions. Do `info(rms)` to view the trait values for the `rms`
-  loss, and see [Performance
+  loss, for example, and see [Performance
   measures](https://alan-turing-institute.github.io/MLJ.jl/dev/performance_measures/)
   for details.
 
@@ -163,7 +163,7 @@ begin, on the basis of the specific strategy and a user-specified
 - A *tuning strategy* is an instance of some subtype `S <:
   TuningStrategy`, the name `S` (e.g., `Grid`) indicating the tuning
   algorithm to be applied. The fields of the tuning strategy - called
-  *hyperparameters* - are those tuning parameters specific to the
+  *tuning hyperparameters* - are those tuning parameters specific to the
   strategy that **do not refer to specific models or specific model
   hyperparameters**. So, for example, a default resolution to be used
   in a grid search is a hyperparameter of `Grid`, but the resolution
