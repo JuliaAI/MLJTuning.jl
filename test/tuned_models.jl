@@ -81,7 +81,7 @@ end
     @test map(event -> last(event).measurement[1], history) ≈ results[1:4]
 
     tm.n=100
-    @test_logs (:warn, r"Only 12") fit!(mach, verbosity=0)
+    @test_logs (:info, r"Only 12") fit!(mach, verbosity=0)
     history = MLJBase.report(mach).history
     @test map(event -> last(event).measurement[1], history) ≈ results
 end)

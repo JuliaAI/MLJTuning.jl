@@ -43,11 +43,12 @@ plot(curve.parameter_values,
      ylab = "CV estimate of RMS error")
 ```
 
-If using a `Holdout` `resampling` strategy, and the specified
-hyperparameter is the number of iterations in some iterative model
-(and that model has an appropriately overloaded `MLJBase.update`
-method) then training is not restarted from scratch for each increment
-of the parameter, ie the model is trained progressively.
+If using a `Holdout()` `resampling` strategy (with no shuffling) and
+if the specified hyperparameter is the number of iterations in some
+iterative model (and that model has an appropriately overloaded
+`MLJBase.update` method) then training is not restarted from scratch
+for each increment of the parameter, ie the model is trained
+progressively.
 
 ```julia
 atom.lambda=200

@@ -41,8 +41,10 @@ cases all `values` of each specified `NominalRange` are exhausted. If
 resolution is applied to the `NumericRange` objects that maximizes the
 number of grid points, subject to the restriction that this not exceed
 `goal`. Otherwise the default `resolution` and any parameter-specific
-resolutions apply. In all cases the models generated are shuffled
-using `rng`, unless `shuffle=false`.
+resolutions apply.
+
+In all cases the models generated are shuffled using `rng`, unless
+`shuffle=false`.
 
 See also [TunedModel](@ref), [range](@ref).
 
@@ -122,6 +124,8 @@ function default_n(tuning::Grid, user_range)
         process_user_range(user_range, tuning.resolution, -1)
 
     resolutions = adjusted_resolutions(tuning.goal, ranges, resolutions)
+    len(t::Tuple{NumericRange,Integer}) = length(iterator(t[1], t[2]))
+    len(t::Tuple{NominalRange,Integer}) = t[2]
+    return prod(len.(zip(ranges, resolutions)))
 
-    return prod(resolutions)
 end
