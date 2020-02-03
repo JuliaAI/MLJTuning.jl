@@ -249,7 +249,7 @@ function build(history, n, tuning, model::M,
         Δj == 0 && (models_exhausted = true)
         shortfall = n - Δj
         if models_exhausted && shortfall > 0 && verbosity > -1
-            @warn "Only $j of $n models evaluated.\n"*
+            @info "Only $j (of $n) models evaluated.\n"*
             "Model supply exhausted. "
         end
         Δj == 0 && break
@@ -268,8 +268,11 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
     tuning = tuned_model.tuning
     model = tuned_model.model
     range = tuned_model.range
-    n =
-        tuned_model.n === nothing ? default_n(tuning, range) : tuned_model.n
+    n = tuned_model.n === nothing ?
+        default_n(tuning, range) : tuned_model.n
+
+    verbosity < 1 || @info "Attempting to evaluate $n models."
+
     acceleration = tuned_model.acceleration
 
     state = setup(tuning, model, range, verbosity)
@@ -327,6 +330,9 @@ function MLJBase.update(tuned_model::EitherTunedModel, verbosity::Integer,
 
     if MLJBase.is_same_except(tuned_model, old_tuned_model, :n) &&
         n! >= old_n!
+
+        verbosity < 1 || @info "Attempting to add $(n! - old_n!) models "*
+        "to search, bringing total to $n!. "
 
         history = build(history, n!, tuning, model, state,
                         verbosity, acceleration, resampling_machine)
