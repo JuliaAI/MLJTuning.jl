@@ -1,13 +1,13 @@
 ## TYPES AND CONSTRUCTOR
 
-mutable struct DeterministicTunedModel{T,M<:Deterministic,R,A,AR} <: MLJBase.Deterministic
+mutable struct DeterministicTunedModel{T,M<:Deterministic,A,AR} <: MLJBase.Deterministic
     model::M
     tuning::T  # tuning strategy
     resampling # resampling strategy
     measure
     weights::Union{Nothing,Vector{<:Real}}
     operation
-    range::R
+    range
     train_best::Bool
     repeats::Int
     n::Union{Int,Nothing}
@@ -16,14 +16,14 @@ mutable struct DeterministicTunedModel{T,M<:Deterministic,R,A,AR} <: MLJBase.Det
     check_measure::Bool
 end
 
-mutable struct ProbabilisticTunedModel{T,M<:Probabilistic,R,A,AR} <: MLJBase.Probabilistic
+mutable struct ProbabilisticTunedModel{T,M<:Probabilistic,A,AR} <: MLJBase.Probabilistic
     model::M
     tuning::T  # tuning strategy
     resampling # resampling strategy
     measure
     weights::Union{Nothing,AbstractVector{<:Real}}
     operation
-    range::R
+    range
     train_best::Bool
     repeats::Int
     n::Union{Int,Nothing}
@@ -108,7 +108,7 @@ In the case of two-parameter tuning, a Plots.jl plot of performance
 estimates is returned by `plot(mach)` or `heatmap(mach)`.
 
 Once a tuning machine `mach` has bee trained as above, then
-`fitted_params(mach)` has these keys/values: 
+`fitted_params(mach)` has these keys/values:
 
 key                 | value
 --------------------|--------------------------------------------------
@@ -143,8 +143,7 @@ function TunedModel(;model=nothing,
                     acceleration_resampling=CPU1(),
                     check_measure=true)
 
-    range === nothing && error("You need to specify `range=...` unless "*
-                               "`tuning isa Explicit`. ")
+    range === nothing && error("You need to specify `range=...`.")
     model == nothing && error("You need to specify model=... .\n"*
                               "If `tuning=Explicit()`, any model in the "*
                               "range will do. ")
@@ -314,20 +313,20 @@ function MLJBase.update(tuned_model::EitherTunedModel, verbosity::Integer,
     history, old_tuned_model, state, resampling_machine = old_meta_state
     acceleration = tuned_model.acceleration
 
+    tuning = tuned_model.tuning
+    range = tuned_model.range
+    model = tuned_model.model
+
     # exclamation points are for values actually used rather than
     # stored:
     n! = tuned_model.n === nothing ?
         default_n(tuning, range) : tuned_model.n
-    
+
     old_n! = old_tuned_model.n === nothing ?
         default_n(tuning, range) : old_tuned_model.n
-    
+
     if MLJBase.is_same_except(tuned_model, old_tuned_model, :n) &&
         n! >= old_n!
-
-        tuning = tuned_model.tuning
-        range = tuned_model.range
-        model = tuned_model.model
 
         history = build(history, n!, tuning, model, state,
                         verbosity, acceleration, resampling_machine)
@@ -391,4 +390,3 @@ MLJBase.input_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.input_scitype(M)
 MLJBase.target_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.target_scitype(M)
-
