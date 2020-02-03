@@ -105,7 +105,7 @@ estimates is returned by `plot(mach)` or `heatmap(mach)`.
 Once a tuning machine `mach` has bee trained as above, one can access
 the learned parameters of the best model, using
 `fitted_params(mach).best_fitted_params`. Similarly, the report of
-training the best model is accessed via `report(mach).best_report`.
+training the best model is accessed via `report(mach).best_report`. 
 
 """
 function TunedModel(;model=nothing,
@@ -119,7 +119,7 @@ function TunedModel(;model=nothing,
                     range=ranges,
                     train_best=true,
                     repeats=1,
-                    n=default_n(tuning, range),
+                    n=nothing,
                     acceleration=default_resource(),
                     acceleration_resampling=CPU1(),
                     check_measure=true)
@@ -218,7 +218,7 @@ _length(history) = length(history)
 _length(::Nothing) = 0
 
 # builds on an existing `history` until the length is `n` or the model
-# supply is exhausted(method shared by `fit` and `update`). Returns
+# supply is exhausted (method shared by `fit` and `update`). Returns
 # the bigger history:
 function build(history, n, tuning, model::M,
                state, verbosity, acceleration, resampling_machine) where M
@@ -231,7 +231,7 @@ function build(history, n, tuning, model::M,
         Δj == 0 && (models_exhausted = true)
         shortfall = n - Δj
         if models_exhausted && shortfall > 0 && verbosity > -1
-            @warn "Only $j < n = $n`  models evaluated.\n"*
+            @warn "Only $j of $n models evaluated.\n"*
             "Model supply prematurely exhausted. "
         end
         Δj == 0 && break
@@ -248,10 +248,10 @@ end
 function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
                      verbosity::Integer, data...) where {T,M}
     tuning = tuned_model.tuning
-    n = tuned_model.n
     model = tuned_model.model
     range = tuned_model.range
-    n === Nothing && (n = default_n(tuning, range))
+    n =
+        tuned_model.n === nothing ? default_n(tuning, range) : tuned_model.n
     acceleration = tuned_model.acceleration
 
     state = setup(tuning, model, range, verbosity)
@@ -293,28 +293,29 @@ function MLJBase.update(tuned_model::EitherTunedModel, verbosity::Integer,
                         old_fitresult, old_meta_state, data...)
 
     history, old_tuned_model, state, resampling_machine = old_meta_state
-
-    n = tuned_model.n
     acceleration = tuned_model.acceleration
 
     if MLJBase.is_same_except(tuned_model, old_tuned_model, :n)
 
-        tuning=tuned_model.tuning
-        model=tuned_model.model
+        tuning = tuned_model.tuning
+        range = tuned_model.range
+        model = tuned_model.model
 
-        if tuned_model.n > old_tuned_model.n
-            # temporarily mutate tuned_model:
-            tuned_model.n = n - old_tuned_model.n
+        # exclamation points are for values actually used rather than
+        # stored:
+        n! = tuned_model.n === nothing ?
+            default_n(tuning, range) : tuned_model.n
 
-            history = build(history, n, tuning, model, state,
+        old_n! = old_tuned_model.n === nothing ?
+            default_n(tuning, range) : old_tuned_model.n
+
+        if n! >= old_n!
+            history = build(history, n!, tuning, model, state,
                             verbosity, acceleration, resampling_machine)
-
-            # restore tuned_model to original state
-            tuned_model.n = n
+            new_tuned_model = deepcopy(tuned_model)
         else
-            verbosity < 1 || @info "Number of tuning iterations `n` "*
-            "lowered.\nTruncating existing tuning history and "*
-            "retraining new best model."
+            verbosity < 1 || error("Lowering the iteration count is not "*
+            "allowed. History and state untouched. ")
         end
         best_model, best_result = best(tuning, history)
 
@@ -331,7 +332,8 @@ function MLJBase.update(tuned_model::EitherTunedModel, verbosity::Integer,
 
         _report = merge(prereport, tuning_report(tuning, history, state))
 
-        meta_state = (history, deepcopy(tuned_model), state)
+        meta_state = (history, new_tuned_model, state,
+                      resampling_machine)
 
         return fitresult, meta_state, _report
 

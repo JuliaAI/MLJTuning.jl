@@ -4,10 +4,10 @@ module MLJTuning
 ## METHOD EXPORT
 
 # defined in tuned_models.jl:
-export Grid, TunedModel
+export TunedModel
 
 # defined in strategies/:
-export Explicit
+export Explicit, Grid
 
 # defined in learning_curves.jl:
 export learning_curve!, learning_curve
