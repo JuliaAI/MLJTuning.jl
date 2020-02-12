@@ -7,6 +7,8 @@
 module Models
 
 using MLJBase
+import MLJModelInterface: @mlj_model, metadata_model, metadata_pkg
+import MLJModelInterface
 
 include("models/Constant.jl")
 include("models/DecisionTree.jl")

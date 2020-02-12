@@ -5,7 +5,6 @@ export ConstantClassifier, ConstantRegressor,
     ProbabilisticConstantClassifer
 
 import MLJBase
-import MLJBase: metadata_pkg, metadata_model
 import Distributions
 
 """
