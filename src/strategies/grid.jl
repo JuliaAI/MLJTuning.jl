@@ -46,7 +46,7 @@ resolutions apply.
 In all cases the models generated are shuffled using `rng`, unless
 `shuffle=false`.
 
-See also [TunedModel](@ref), [range](@ref).
+See also [`TunedModel`](@ref), [`range`](@ref).
 
 """
 mutable struct Grid <: TuningStrategy
