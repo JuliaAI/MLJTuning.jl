@@ -1,4 +1,4 @@
-mutable struct Explicit <: TuningStrategy end
+mutable struct Explicit <: TuningStrategy end 
 
 # models! returns all available models in the range at once:
 MLJTuning.models!(tuning::Explicit, model, history::Nothing,

@@ -5,6 +5,8 @@ export FeatureSelector,
     UnivariateBoxCoxTransformer,
     OneHotEncoder, UnivariateDiscretizer
 
+import MLJModelInterface: @mlj_model, metadata_model, metadata_pkg
+
 using Statistics
 
 const N_VALUES_THRESH = 16 # for BoxCoxTransformation
@@ -158,15 +160,15 @@ function MLJBase.fit(transformer::UnivariateDiscretizer, verbosity::Int,X)
     return res, cache, report
 end
 
+
 # acts on scalars:
 function transform_to_int(
-    result::UnivariateDiscretizerResult{<:CategoricalElement{R}},
-    r::Real) where R
-
-    k = R(1)
-    for q in result.odd_quantiles
+            result::UnivariateDiscretizerResult{<:CategoricalValue{R}},
+            r::Real) where R
+    k = oneR = R(1)
+    @inbounds for q in result.odd_quantiles
         if r > q
-            k += R(1)
+            k += oneR
         end
     end
     return k

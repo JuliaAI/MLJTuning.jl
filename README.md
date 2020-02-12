@@ -10,7 +10,7 @@ learning models.
 ### Contents
 
  - [Who is this repo for?](#who-is-this-repo-for)
- - [What's provided here?](#what's-provided-here)
+ - [What's provided here?](#what-is-provided-here)
  - [How do I implement a new tuning strategy?](#How-do-I-implement-a-new-tuning-strategy)
 
 *Note:* This component of the [MLJ
@@ -46,7 +46,7 @@ MLJTuning is a component of the [MLJ
   there.
 
 
-## What's provided here?
+## What is provided here?
 
 This repository contains:
 
