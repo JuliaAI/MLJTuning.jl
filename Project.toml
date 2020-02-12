@@ -12,7 +12,7 @@ RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 
 [compat]
 julia = "^1"
-MLJBase = "^0.10.1"
+MLJBase = "^0.11.1"
 ComputationalResources = "^0.3"
 RecipesBase = "^0.7"
 
