@@ -28,7 +28,7 @@ Example 2:
       range(model, :hyper3, values=[:ball, :tree]]
 
 Note: All the `field` values of the `ParamRange` objects (`:hyper1`,
-`:hyper2`, `:hyper3` in the precedng example) must refer to field
+`:hyper2`, `:hyper3` in the preceding example) must refer to field
 names a of single model (the `model` specified during `TunedModel`
 construction).
 
