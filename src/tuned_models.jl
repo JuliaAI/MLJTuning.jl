@@ -66,7 +66,7 @@ Calling `fit!(mach)` on a machine `mach=machine(tuned_model, X, y)` or
 
 - Fit an internal machine, based on the optimal model
   `fitted_params(mach).best_model`, wrapping the optimal `model`
-  object in *all* the provided data `X, y` (or in `task`). Calling
+  object in *all* the provided data `X`, `y`(, `w`). Calling
   `predict(mach, Xnew)` then returns predictions on `Xnew` of this
   internal machine. The final train can be supressed by setting
   `train_best=false`.
@@ -90,9 +90,9 @@ every measure specified will be computed and reported in
 generated report.
 
 Specify `repeats > 1` for repeated resampling per model evaluation. See
-[`evaluate!](@ref) options for details.
+[`evaluate!`](@ref) options for details.
 
-*Important.* If a custom measure `measure` is used, and the measure is
+*Important.* If a custom `measure` is used, and the measure is
 a score, rather than a loss, be sure to check that
 `MLJ.orientation(measure) == :score` to ensure maximization of the
 measure, rather than minimization. Override an incorrect value with
