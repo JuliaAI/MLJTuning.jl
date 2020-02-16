@@ -294,7 +294,7 @@ the range objects supported by `Grid`:
 	where `r1` and `r2` are `NumericRange` objects and `r3` a
 	`NominalRange` object.
 
-Recall that `NominalRange` has a `values` field, while `NominalRange`
+Recall that `NominalRange` has a `values` field, while `NumericRange`
 has the fields `upper`, `lower`, `scale`, `unit` and `origin`. The
 `unit` field specifies a preferred length scale, while `origin` a
 preferred "central value". These default to `(upper - lower)/2` and
