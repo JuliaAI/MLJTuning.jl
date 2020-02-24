@@ -69,6 +69,8 @@ This repository contains:
   - [ ] Latin hypercubes
 
   - [ ] random search
+  
+  - [ ] bandit
 
   - [ ] simulated annealing
 
