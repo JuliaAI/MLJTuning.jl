@@ -20,10 +20,10 @@ has the following keys: `:parameter_name`, `:parameter_scale`,
 `:parameter_values`, `:measurements`.
 
 To generate multiple curves for a `model` with a random number
-generator (RNG) as a hyperparameter, specify the name of the (possibly
-nested) RNG field, and a vector `rngs` of RNG's, one for each
-curve. Alternatively, set `rngs` to the number of curves desired, in
-which case RNG's are automatically generated. The individual curve
+generator (RNG) as a hyperparameter, specify the name, `rng_name`, of
+the (possibly nested) RNG field, and a vector `rngs` of RNG's, one for
+each curve. Alternatively, set `rngs` to the number of curves desired,
+in which case RNG's are automatically generated. The individual curve
 computations can be distributed across multiple processes using
 `acceleration=CPUProcesses()`. See the second example below for a
 demonstration.
@@ -46,7 +46,7 @@ plot(curve.parameter_values,
 If using a `Holdout()` `resampling` strategy (with no shuffling) and
 if the specified hyperparameter is the number of iterations in some
 iterative model (and that model has an appropriately overloaded
-`MLJBase.update` method) then training is not restarted from scratch
+`MLJModelInterface.update` method) then training is not restarted from scratch
 for each increment of the parameter, ie the model is trained
 progressively.
 

@@ -25,10 +25,10 @@ Example 2:
 
     [(range(model, :hyper1, lower=1, upper=10), 15),
       range(model, :hyper2, lower=2, upper=4),
-      range(model, :hyper3, values=[:ball, :tree]]
+      range(model, :hyper3, values=[:ball, :tree])]
 
 Note: All the `field` values of the `ParamRange` objects (`:hyper1`,
-`:hyper2`, `:hyper3` in the precedng example) must refer to field
+`:hyper2`, `:hyper3` in the preceding example) must refer to field
 names a of single model (the `model` specified during `TunedModel`
 construction).
 
@@ -46,7 +46,7 @@ resolutions apply.
 In all cases the models generated are shuffled using `rng`, unless
 `shuffle=false`.
 
-See also [TunedModel](@ref), [range](@ref).
+See also [`TunedModel`](@ref), [`range`](@ref).
 
 """
 mutable struct Grid <: TuningStrategy
