@@ -296,25 +296,24 @@ the range objects supported by `Grid`:
 	where `r1` and `r2` are `NumericRange` objects and `r3` a
 	`NominalRange` object.
 
+Both `NumericRange` and `NominalRange` are constructed with the
+`MLJBase` extension to the `range` function. Use the `iterator` and
+`sampler` methods to convert ranges into one-dimensional grids or for
+random sampling, respectively. See the docstrings for details.
+
 Recall that `NominalRange` has a `values` field, while `NumericRange`
 has the fields `upper`, `lower`, `scale`, `unit` and `origin`. The
 `unit` field specifies a preferred length scale, while `origin` a
 preferred "central value". These default to `(upper - lower)/2` and
 `(upper + lower)/2`, respectively, in the bounded case (neither `upper
 = Inf` nor `lower = -Inf`). The fields `origin` and `unit` are used in
-generating grids for unbounded ranges (and could be used in other
-strategies - for fitting two-parameter probability distributions, for
-example).
+generating grids or fitting probability distributions to unbounded
+ranges.
 
 A `ParamRange` object is always associated with the name of a
 hyperparameter (a field of the prototype in the context of tuning)
 which is recorded in its `field` attribute, but for composite models
 this might be a be a "nested name", such as `:(atom.max_depth)`.
-
-Both `NumericRange` and `NominalRange` are constructed with the
-`MLJBase` extension to the `range` function. Use the `iterator` and
-`sampler` methods to convert ranges into one-dimensional grids or for
-random sampling, respectively. See the docstrings for details.
 
 
 #### The `result` method: For declaring what parts of an evaluation goes into the history
