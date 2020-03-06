@@ -314,8 +314,7 @@ this might be a be a "nested name", such as `:(atom.max_depth)`.
 Both `NumericRange` and `NominalRange` are constructed with the
 `MLJBase` extension to the `range` function. Use the `iterator` and
 `sampler` methods to convert ranges into one-dimensional grids or for
-random sampling, respectively. See the docstrings or `range`,
-`iterator` and `sampler` for details.
+random sampling, respectively. See the docstrings for details.
 
 
 #### The `result` method: For declaring what parts of an evaluation goes into the history
