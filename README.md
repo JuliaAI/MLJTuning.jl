@@ -285,8 +285,8 @@ tuning strategy should like to handle, and the tuning strategy
 functions to be implemented are dispatched on these types. Here are
 the range objects supported by `Grid`:
 
-  - one-dimensional `NumericRange` or `NominalRange` objects (these
-  types are provided by MLJBase)
+  - one-dimensional `NumericRange` or `NominalRange` objects (of
+    abstract type `ParamRange`) provided by MLJBase.
 
   - a tuple `(p, r)` where `p` is one of the above range objects, and
 	`r` a resolution to override the default `resolution` of the
@@ -310,6 +310,12 @@ A `ParamRange` object is always associated with the name of a
 hyperparameter (a field of the prototype in the context of tuning)
 which is recorded in its `field` attribute, but for composite models
 this might be a be a "nested name", such as `:(atom.max_depth)`.
+
+Both `NumericRange` and `NominalRange` are constructed with the
+`MLJBase` extension to the `range` function. Use the `iterator` and
+`sampler` methods to convert ranges into one-dimensional grids or for
+random sampling, respectively. See the docstrings or `range`,
+`iterator` and `sampler` for details.
 
 
 #### The `result` method: For declaring what parts of an evaluation goes into the history
