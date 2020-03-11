@@ -1,6 +1,3 @@
-# TODO: move this next line to MLJBase:
-MLJBase.iterator(r::NominalRange, ::Nothing) = iterator(r)
-
 """
     MLJTuning.grid([rng, ] prototype, ranges, resolutions)
 
