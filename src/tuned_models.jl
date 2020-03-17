@@ -198,12 +198,12 @@ end
 ## FIT AND UPDATE METHODS
 
 # returns a (model, result) pair for the history:
-function event(model, resampling_machine, verbosity, tuning, history)
+function event(model, resampling_machine, verbosity, tuning, history, state)
     resampling_machine.model.model = model
     verb = (verbosity == 2 ? 0 : verbosity - 1)
     fit!(resampling_machine, verbosity=verb)
     e = evaluate(resampling_machine)
-    r = result(tuning, history, e)
+    r = result(tuning, history, state, e)
 
     if verbosity > 2
         println(params(model))
@@ -215,17 +215,27 @@ function event(model, resampling_machine, verbosity, tuning, history)
     return deepcopy(model), r
 end
 
-function assemble_events(models, resampling_machine,
-                         verbosity, tuning, history, acceleration::CPU1)
+function assemble_events(models,
+                         resampling_machine,
+                         verbosity,
+                         tuning,
+                         history,
+                         state,
+                         acceleration::CPU1)
     map(models) do m
-        event(m, resampling_machine, verbosity, tuning, history)
+        event(m, resampling_machine, verbosity, tuning, history, state)
     end
 end
 
-function assemble_events(models, resampling_machine,
-                         verbosity, tuning, history, acceleration::CPUProcesses)
+function assemble_events(models,
+                         resampling_machine,
+                         verbosity,
+                         tuning,
+                         history,
+                         state,
+                         acceleration::CPUProcesses)
     pmap(models) do m
-        event(m, resampling_machine, verbosity, tuning, history)
+        event(m, resampling_machine, verbosity, tuning, history, state)
     end
 end
 
@@ -238,8 +248,14 @@ _length(::Nothing) = 0
 # builds on an existing `history` until the length is `n` or the model
 # supply is exhausted (method shared by `fit` and `update`). Returns
 # the bigger history:
-function build(history, n, tuning, model::M,
-               state, verbosity, acceleration, resampling_machine) where M
+function build(history,
+               n,
+               tuning,
+               model::M,
+               state,
+               verbosity,
+               acceleration,
+               resampling_machine) where M
     j = _length(history)
     models_exhausted = false
     while j < n && !models_exhausted
@@ -256,8 +272,13 @@ function build(history, n, tuning, model::M,
         shortfall < 0 && (models = models[1:n - j])
         j += Δj
 
-        Δhistory = assemble_events(models, resampling_machine,
-                                 verbosity, tuning, history, acceleration)
+        Δhistory = assemble_events(models,
+                                   resampling_machine,
+                                   verbosity,
+                                   tuning,
+                                   history,
+                                   state,
+                                   acceleration)
         history = _vcat(history, Δhistory)
     end
     return history

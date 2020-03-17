@@ -5,7 +5,7 @@ MLJBase.show_as_constructed(::Type{<:TuningStrategy}) = true
 setup(tuning::TuningStrategy, model, range, verbosity) = range
 
 # for building each element of the history:
-result(tuning::TuningStrategy, history, e) =
+result(tuning::TuningStrategy, history, state, e) =
     (measure=e.measure, measurement=e.measurement)
 
 # for generating batches of new models and updating the state (but not
