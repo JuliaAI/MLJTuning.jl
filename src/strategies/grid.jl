@@ -83,7 +83,7 @@ end
 
 function setup(tuning::Grid, model, user_range, verbosity)
     ranges, resolutions =
-        process_user_range(user_range, tuning.resolution, verbosity)
+        process_grid_range(user_range, tuning.resolution, verbosity)
     resolutions = adjusted_resolutions(tuning.goal, ranges, resolutions)
 
     fields = map(r -> r.field, ranges)
@@ -123,7 +123,7 @@ end
 
 function default_n(tuning::Grid, user_range)
     ranges, resolutions =
-        process_user_range(user_range, tuning.resolution, -1)
+        process_grid_range(user_range, tuning.resolution, -1)
 
     resolutions = adjusted_resolutions(tuning.goal, ranges, resolutions)
     len(t::Tuple{NumericRange,Integer}) = length(iterator(t[1], t[2]))

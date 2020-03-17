@@ -20,8 +20,8 @@ end
     @test include("tuned_models.jl")
 end
 
-@testset "ranges" begin
-    @test include("ranges.jl")
+@testset "range_methods" begin
+    @test include("range_methods.jl")
 end
 
 @testset "grid" begin
