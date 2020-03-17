@@ -17,8 +17,11 @@ export learning_curve!, learning_curve
 
 import MLJBase
 using MLJBase
+import MLJBase: Bounded, Unbounded, DoublyUnbounded,
+    LeftUnbounded, RightUnbounded
 using RecipesBase
 using Distributed
+import Distributions
 import ComputationalResources: CPU1, CPUProcesses,
     CPUThreads, AbstractResource
 using Random
@@ -34,7 +37,7 @@ const DEFAULT_N = 10
 include("utilities.jl")
 include("tuning_strategy_interface.jl")
 include("tuned_models.jl")
-include("ranges.jl")
+include("range_methods.jl")
 include("strategies/explicit.jl")
 include("strategies/grid.jl")
 include("plotrecipes.jl")
