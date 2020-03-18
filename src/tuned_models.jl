@@ -198,7 +198,12 @@ end
 ## FIT AND UPDATE METHODS
 
 # returns a (model, result) pair for the history:
-function event(model, resampling_machine, verbosity, tuning, history, state)
+function event(model,
+               resampling_machine,
+               verbosity,
+               tuning,
+               history,
+               state)
     resampling_machine.model.model = model
     verb = (verbosity == 2 ? 0 : verbosity - 1)
     fit!(resampling_machine, verbosity=verb)
@@ -212,7 +217,7 @@ function event(model, resampling_machine, verbosity, tuning, history, state)
         println("$r")
     end
 
-    return deepcopy(model), r
+    return model, r
 end
 
 function assemble_events(models,
