@@ -214,11 +214,13 @@ function event(metamodel,
                tuning,
                history,
                state)
-    resampling_machine.model.model = _first(metamodel)
+    model = _first(metamodel)
+    metadata = _last(metamodel)
+    resampling_machine.model.model = model
     verb = (verbosity == 2 ? 0 : verbosity - 1)
     fit!(resampling_machine, verbosity=verb)
     e = evaluate(resampling_machine)
-    r = result(tuning, history, state, e, _last(model))
+    r = result(tuning, history, state, e, metadata)
 
     if verbosity > 2
         println(params(model))

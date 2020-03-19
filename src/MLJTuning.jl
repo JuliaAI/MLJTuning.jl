@@ -23,6 +23,12 @@ import ComputationalResources: CPU1, CPUProcesses,
     CPUThreads, AbstractResource
 using Random
 
+
+## CONSTANTS
+
+const DEFAULT_N = 10
+
+
 ## INCLUDE FILES
 
 include("utilities.jl")
