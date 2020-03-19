@@ -197,18 +197,28 @@ end
 
 ## FIT AND UPDATE METHODS
 
+# A *metamodel* is either a `Model` instance, `model`, or a tuple
+# `(model, s)`, where `s` is extra data associated with `model` that
+# the tuning strategy implementation wants available to the `result`
+# method for recording in the history.
+
+_first(m::MLJBase.Model) = m
+_last(m::MLJBase.Model) = nothing
+_first(m::Tuple{Model,Any}) = first(m)
+_last(m::Tuple{Model,Any}) = last(m)
+
 # returns a (model, result) pair for the history:
-function event(model,
+function event(metamodel,
                resampling_machine,
                verbosity,
                tuning,
                history,
                state)
-    resampling_machine.model.model = model
+    resampling_machine.model.model = _first(metamodel)
     verb = (verbosity == 2 ? 0 : verbosity - 1)
     fit!(resampling_machine, verbosity=verb)
     e = evaluate(resampling_machine)
-    r = result(tuning, history, state, e)
+    r = result(tuning, history, state, e, _last(model))
 
     if verbosity > 2
         println(params(model))
