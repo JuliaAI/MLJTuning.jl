@@ -230,26 +230,26 @@ function event(metamodel,
     return model, r
 end
 
-function assemble_events(models,
+function assemble_events(metamodels,
                          resampling_machine,
                          verbosity,
                          tuning,
                          history,
                          state,
                          acceleration::CPU1)
-    map(models) do m
+    map(metamodels) do m
         event(m, resampling_machine, verbosity, tuning, history, state)
     end
 end
 
-function assemble_events(models,
+function assemble_events(metamodels,
                          resampling_machine,
                          verbosity,
                          tuning,
                          history,
                          state,
                          acceleration::CPUProcesses)
-    pmap(models) do m
+    pmap(metamodels) do m
         event(m, resampling_machine, verbosity, tuning, history, state)
     end
 end
@@ -266,17 +266,20 @@ _length(::Nothing) = 0
 function build(history,
                n,
                tuning,
-               model::M,
+               model,
                state,
                verbosity,
                acceleration,
-               resampling_machine) where M
+               resampling_machine)
     j = _length(history)
     models_exhausted = false
     while j < n && !models_exhausted
-        _models = models!(tuning, model, history, state, verbosity)
-        models = _models === nothing ? M[] : collect(_models)
-        Δj = length(models)
+        metamodels = models!(tuning, model, history, state, verbosity)
+        if metamodels === nothing
+            Δj = 0
+        else
+            Δj = length(metamodels)
+        end
         Δj == 0 && (models_exhausted = true)
         shortfall = n - Δj
         if models_exhausted && shortfall > 0 && verbosity > -1
@@ -284,10 +287,10 @@ function build(history,
             "Model supply exhausted. "
         end
         Δj == 0 && break
-        shortfall < 0 && (models = models[1:n - j])
+        shortfall < 0 && (metamodels = metamodels[1:n - j])
         j += Δj
 
-        Δhistory = assemble_events(models,
+        Δhistory = assemble_events(metamodels,
                                    resampling_machine,
                                    verbosity,
                                    tuning,
