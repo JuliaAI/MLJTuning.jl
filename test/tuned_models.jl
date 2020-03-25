@@ -1,14 +1,16 @@
-module TestTunedModels
-
 using Distributed
 
 using Test
-using MLJTuning
 using MLJBase
 import ComputationalResources: CPU1, CPUProcesses, CPUThreads
 using Random
 Random.seed!(1234)
-@everywhere using ..Models
+
+@everywhere begin
+    using ..Models
+    using MLJTuning # gets extended in tests
+end
+
 using ..TestUtilities
 
 N = 30
@@ -86,7 +88,39 @@ end
     @test map(event -> last(event).measurement[1], history) ≈ results
 end)
 
+@everywhere begin
+
+    # variation of the Explicit strategy that annotates the models
+    # with metadata
+    mutable struct MockExplicit <: MLJTuning.TuningStrategy end
+
+    annotate(model) = (model, params(model)[1])
+
+    function MLJTuning.models!(tuning::MockExplicit,
+                               model,
+                               history,
+                               state,
+                               verbosity)
+        history === nothing && return annotate.(state)
+        return  annotate.(state)[length(history) + 1:end]
+    end
+
+    MLJTuning.result(tuning::MockExplicit, history, state, e, metadata) =
+        (measure=e.measure, measurement=e.measurement, K=metadata)
 end
 
-true
+@test MockExplicit == MockExplicit
 
+@testset_accelerated("passing of model metadata", accel,
+                     (exclude=[CPUThreads],), begin
+                     tm = TunedModel(model=first(r), tuning=MockExplicit(),
+                                     range=r, resampling=CV(nfolds=2),
+                                     measures=[rms, l1], acceleration=accel)
+                     fitresult, meta_state, report = fit(tm, 0, X, y);
+                     history, _, state = meta_state;
+                     for (m, r) in history
+                         #@test m.K == r.K
+                     end
+end)
+
+true
