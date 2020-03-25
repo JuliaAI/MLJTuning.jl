@@ -179,8 +179,12 @@ begin, on the basis of the specific strategy and a user-specified
   iteration count are given - and is essentially the space of models
   to be searched. This definition is intentionally broad and the
   interface places no restriction on the allowed types of this
-  object. For the range objects supported by the `Grid` strategy, see
-  [below](#range-types).
+  object. It may be generally viewed as the "space" of models being
+  searched *plus* strategy-specific data explaining how models from
+  that space are actually to be generated (e.g.,
+  hyperparameter-specific grid resolutions or probability
+  distributions). For the range objects supported by the `Grid`
+  strategy, see [below](#range-types).
 
 
 ### Interface points for user input
@@ -242,7 +246,7 @@ Several functions are part of the tuning strategy API:
 - `tuning_report`: for selecting what to report to the user apart from
   details on the optimal model
 
-- `default_n`: to specify the number of models to be evaluated when
+- `default_n`: to specify the total number of models to be evaluated when
   `n` is not specified by the user
 
 **Important note on the history.** The initialization and update of the
@@ -363,6 +367,11 @@ history, then it should be written to the history instead of stored in
 state. An example of this might be the `temperature` in simulated
 annealing.
 
+The `setup` function is called once only, when a `TunedModel` machine
+is `fit!` the first time, and not on subsequent calls (unless
+`force=true`). (Specifically, `MLJBase.fit(::TunedModel, ...)` calls
+`setup` but `MLJBase.update(::TunedModel, ...)` does not.)
+
 The `verbosity` is an integer indicating the level of logging: `0`
 means logging should be restricted to warnings, `-1`, means completely
 silent.
@@ -419,8 +428,9 @@ return a single model.
 If the tuning algorithm exhausts it's supply of new models (because,
 for example, there is only a finite supply) then `models!` should
 return an empty vector. Under the hood, there is no fixed "batch-size"
-parameter, and the tuning algorithm is happy to receive any number
-of models.
+parameter, and the tuning algorithm is happy to receive any number of
+models. If `models!` returns a number of models exceeding the number
+needed to complete the history, the trailing excess is simply ignored.
 
 
 #### The `best` method: To define what constitutes the "optimal model"
@@ -483,12 +493,16 @@ MLJTuning.tuning_report(tuning, history, state) = (history=history,)
 MLJTuning.default_n(tuning::MyTuningStrategy, range)
 ```
 
-The `methods!` method (which is allowed to return multiple models) is
-called until a history of length `n` has been built, or `models!`
-returns an empty list or `nothing`. If the user does not specify a
-value for `n` when constructing her `TunedModel` object, then `n` is
-set to `default_n(tuning, range)` at construction, where `range` is
-the user specified range.
+The `models!` method (which is allowed to return multiple models) is
+called until one of the following occurs:
+
+- The length of the history matches the number of iterations specified
+by the user, namely `tuned_model.n` where `tuned_model` is the user's
+`TunedModel` instance. If `tuned_model.n` is `nothing` (because the
+user has not specified a value) then `default_n(tuning, range)` is
+used instead.
+
+- `models!` returns an empty list or `nothing`. 
 
 The fallback is
 
