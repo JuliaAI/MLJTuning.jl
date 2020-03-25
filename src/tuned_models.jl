@@ -197,13 +197,30 @@ end
 
 ## FIT AND UPDATE METHODS
 
+# A *metamodel* is either a `Model` instance, `model`, or a tuple
+# `(model, s)`, where `s` is extra data associated with `model` that
+# the tuning strategy implementation wants available to the `result`
+# method for recording in the history.
+
+_first(m::MLJBase.Model) = m
+_last(m::MLJBase.Model) = nothing
+_first(m::Tuple{Model,Any}) = first(m)
+_last(m::Tuple{Model,Any}) = last(m)
+
 # returns a (model, result) pair for the history:
-function event(model, resampling_machine, verbosity, tuning, history)
+function event(metamodel,
+               resampling_machine,
+               verbosity,
+               tuning,
+               history,
+               state)
+    model = _first(metamodel)
+    metadata = _last(metamodel)
     resampling_machine.model.model = model
     verb = (verbosity == 2 ? 0 : verbosity - 1)
     fit!(resampling_machine, verbosity=verb)
     e = evaluate(resampling_machine)
-    r = result(tuning, history, e)
+    r = result(tuning, history, state, e, metadata)
 
     if verbosity > 2
         println(params(model))
@@ -212,20 +229,30 @@ function event(model, resampling_machine, verbosity, tuning, history)
         println("$r")
     end
 
-    return deepcopy(model), r
+    return model, r
 end
 
-function assemble_events(models, resampling_machine,
-                         verbosity, tuning, history, acceleration::CPU1)
-    map(models) do m
-        event(m, resampling_machine, verbosity, tuning, history)
+function assemble_events(metamodels,
+                         resampling_machine,
+                         verbosity,
+                         tuning,
+                         history,
+                         state,
+                         acceleration::CPU1)
+    map(metamodels) do m
+        event(m, resampling_machine, verbosity, tuning, history, state)
     end
 end
 
-function assemble_events(models, resampling_machine,
-                         verbosity, tuning, history, acceleration::CPUProcesses)
-    pmap(models) do m
-        event(m, resampling_machine, verbosity, tuning, history)
+function assemble_events(metamodels,
+                         resampling_machine,
+                         verbosity,
+                         tuning,
+                         history,
+                         state,
+                         acceleration::CPUProcesses)
+    pmap(metamodels) do m
+        event(m, resampling_machine, verbosity, tuning, history, state)
     end
 end
 
@@ -238,14 +265,19 @@ _length(::Nothing) = 0
 # builds on an existing `history` until the length is `n` or the model
 # supply is exhausted (method shared by `fit` and `update`). Returns
 # the bigger history:
-function build(history, n, tuning, model::M,
-               state, verbosity, acceleration, resampling_machine) where M
+function build(history,
+               n,
+               tuning,
+               model,
+               state,
+               verbosity,
+               acceleration,
+               resampling_machine)
     j = _length(history)
     models_exhausted = false
     while j < n && !models_exhausted
-        _models = models!(tuning, model, history, state, verbosity)
-        models = _models === nothing ? M[] : collect(_models)
-        Δj = length(models)
+        metamodels = models!(tuning, model, history, state, verbosity)
+        Δj = _length(metamodels)
         Δj == 0 && (models_exhausted = true)
         shortfall = n - Δj
         if models_exhausted && shortfall > 0 && verbosity > -1
@@ -253,11 +285,16 @@ function build(history, n, tuning, model::M,
             "Model supply exhausted. "
         end
         Δj == 0 && break
-        shortfall < 0 && (models = models[1:n - j])
+        shortfall < 0 && (metamodels = metamodels[1:n - j])
         j += Δj
 
-        Δhistory = assemble_events(models, resampling_machine,
-                                 verbosity, tuning, history, acceleration)
+        Δhistory = assemble_events(metamodels,
+                                   resampling_machine,
+                                   verbosity,
+                                   tuning,
+                                   history,
+                                   state,
+                                   acceleration)
         history = _vcat(history, Δhistory)
     end
     return history
