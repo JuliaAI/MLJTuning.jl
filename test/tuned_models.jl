@@ -96,13 +96,15 @@ end)
 
     annotate(model) = (model, params(model)[1])
 
+    _length(x) = length(x)
+    _length(::Nothing) = 0
     function MLJTuning.models!(tuning::MockExplicit,
                                model,
                                history,
                                state,
+                               n_remaining,
                                verbosity)
-        history === nothing && return annotate.(state)
-        return  annotate.(state)[length(history) + 1:end]
+        return  annotate.(state)[_length(history) + 1:end]
     end
 
     MLJTuning.result(tuning::MockExplicit, history, state, e, metadata) =

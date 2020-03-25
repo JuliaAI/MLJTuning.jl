@@ -5,8 +5,8 @@ function MLJTuning.models!(tuning::Explicit,
                            model,
                            history,
                            state,
+                           n_remaining,
                            verbosity)
-    history === nothing && return state
-    return state[length(history) + 1:end]
+    return state[_length(history) + 1:end] # _length(nothing) = 0
 end
 

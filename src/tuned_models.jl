@@ -276,7 +276,12 @@ function build(history,
     j = _length(history)
     models_exhausted = false
     while j < n && !models_exhausted
-        metamodels = models!(tuning, model, history, state, verbosity)
+        metamodels = models!(tuning,
+                             model,
+                             history,
+                             state,
+                             n - j,
+                             verbosity)
         Δj = _length(metamodels)
         Δj == 0 && (models_exhausted = true)
         shortfall = n - Δj
