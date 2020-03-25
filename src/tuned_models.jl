@@ -277,11 +277,7 @@ function build(history,
     models_exhausted = false
     while j < n && !models_exhausted
         metamodels = models!(tuning, model, history, state, verbosity)
-        if metamodels === nothing
-            Δj = 0
-        else
-            Δj = length(metamodels)
-        end
+        Δj = _length(metamodels)
         Δj == 0 && (models_exhausted = true)
         shortfall = n - Δj
         if models_exhausted && shortfall > 0 && verbosity > -1
