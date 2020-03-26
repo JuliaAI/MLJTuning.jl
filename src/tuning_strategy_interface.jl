@@ -29,11 +29,6 @@ end
 tuning_report(tuning::TuningStrategy, history, state) = (history=history,)
 
 # for declaring the default number of models to evaluate:
-function default_n(tuning::TuningStrategy, range)
-    try
-        length(range)
-    catch MethodError
-        DEFAULT_N
-    end
-end
+default_n(tuning::TuningStrategy, range) = DEFAULT_N
+
 

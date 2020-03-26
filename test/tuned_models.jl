@@ -109,6 +109,16 @@ end)
 
     MLJTuning.result(tuning::MockExplicit, history, state, e, metadata) =
         (measure=e.measure, measurement=e.measurement, K=metadata)
+
+    function default_n(tuning::Explicit, range)
+        try
+            length(range)
+        catch MethodError
+            DEFAULT_N
+        end
+        
+    end
+    
 end
 
 @test MockExplicit == MockExplicit

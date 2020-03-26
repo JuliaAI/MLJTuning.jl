@@ -514,14 +514,9 @@ used instead.
 The fallback is
 
 ```julia
-function default_n(tuning::TuningStrategy, range)
-    try
-        length(range)
-    catch MethodError
-        DEFAULT_N
-    end
-end
+default_n(tuning::TuningStrategy, range) = DEFAULT_N
 ```
+
 where `DEFAULT_N` is a global constant. Do `using MLJTuning; 
 MLJTuning.DEFAULT_N` to see check the current value. 
 
@@ -550,6 +545,15 @@ MLJTuning.models!(tuning::Explicit, model, history::Nothing,
 				  state, n_remaining, verbosity) = state
 MLJTuning.models!(tuning::Explicit, model, history,
 				  state, n_remaining, verbosity) = state[length(history) + 1:end]
+
+function default_n(tuning::Explicit, range)
+    try
+        length(range)
+    catch MethodError
+        DEFAULT_N
+    end
+end
+
 ```
 
 For slightly less trivial example, see
