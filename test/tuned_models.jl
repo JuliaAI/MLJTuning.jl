@@ -23,6 +23,10 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.4*rand(N);
 m(K) = KNNRegressor(K=K)
 r = [m(K) for K in 2:13]
 
+# TODO: replace the above with the line below and fix post an issue on
+# the failure (a bug in Distributed, I reckon):
+# r = (m(K) for K in 2:13)
+
 @testset "constructor" begin
     @test_throws ErrorException TunedModel(model=first(r), tuning=Explicit(),
                                            measure=rms)
@@ -96,20 +100,30 @@ end)
 
     annotate(model) = (model, params(model)[1])
 
+    _length(x) = length(x)
+    _length(::Nothing) = 0
     function MLJTuning.models!(tuning::MockExplicit,
                                model,
                                history,
                                state,
+                               n_remaining,
                                verbosity)
-        history === nothing && return annotate.(state)
-        return  annotate.(state)[length(history) + 1:end]
+        return  annotate.(state)[_length(history) + 1:end]
     end
 
     MLJTuning.result(tuning::MockExplicit, history, state, e, metadata) =
         (measure=e.measure, measurement=e.measurement, K=metadata)
-end
 
-@test MockExplicit == MockExplicit
+    function default_n(tuning::Explicit, range)
+        try
+            length(range)
+        catch MethodError
+            DEFAULT_N
+        end
+        
+    end
+    
+end
 
 @testset_accelerated("passing of model metadata", accel,
                      (exclude=[CPUThreads],), begin
@@ -119,7 +133,7 @@ end
                      fitresult, meta_state, report = fit(tm, 0, X, y);
                      history, _, state = meta_state;
                      for (m, r) in history
-                         #@test m.K == r.K
+                         @test m.K == r.K
                      end
 end)
 
