@@ -1,3 +1,8 @@
+## SCALE FOR SAMPLERS
+
+TODO:
+
+
 ## BOUNDEDNESS TRAIT
 
 # For random search and perhaps elsewhere, we need a variation on the
@@ -107,14 +112,11 @@ into an n-tuple of `(field, sampler)` pairs.
 
 """
 process_random_range(user_specified_range, args...) =
-    throw(ArgumentError("Unsupported range. "))
+    throw(ArgumentError("Unsupported range #1. "))
 
 const DIST = Distributions.Distribution
-const DD = Union{DIST, Type{<:DIST}}
-const AllowedPairs = Union{Tuple{NumericRange,DD},
-                     Tuple{NominalRange,AbstractVector{<:AbstractFloat}}}
 
-process_random_range(user_specified_range::Union{ParamRange, AllowedPairs},
+process_random_range(user_specified_range::Union{ParamRange, Tuple{Any,Any}},
                      args...) =
     process_random_range([user_specified_range, ], args...)
 
@@ -122,10 +124,8 @@ function process_random_range(user_specified_range::AbstractVector,
                               bounded,
                               positive_unbounded,
                               other)
-    @show 1
-
     # r not paired:
-    stand(r) = throw(ArgumentError("Unsupported range. "))
+    stand(r) = throw(ArgumentError("Unsupported range #2. "))
     stand(r::NumericRange) = stand(r, boundedness(r))
     stand(r::NumericRange, ::Type{<:Bounded}) = (r.field, sampler(r, bounded))
     stand(r::NumericRange, ::Type{<:Other}) = (r.field, sampler(r, other))
@@ -134,7 +134,11 @@ function process_random_range(user_specified_range::AbstractVector,
     stand(r::NominalRange) = (n = length(r.values);
                               (r.field, sampler(r, fill(1/n, n))))
     # (r, d):
-    stand(t::AllowedPairs) = (r = first(t); (r.field, sampler(r, last(t))))
+    stand(t::Tuple{ParamRange,Any}) = stand(t...)
+    stand(r, d) = throw(ArgumentError("Unsupported range #3. "))
+    stand(r::NominalRange, d::AbstractVector{Float64}) =  _stand(r, d)
+    stand(r::NumericRange, d:: Union{DIST, Type{<:DIST}}) = _stand(r, d)
+    _stand(r, d) = (r.field, sampler(r, d))
 
     # (field, s):
     stand(t::Tuple{Union{Symbol,Expr},Any}) = t

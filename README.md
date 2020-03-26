@@ -373,6 +373,11 @@ is `fit!` the first time, and not on subsequent calls (unless
 `force=true`). (Specifically, `MLJBase.fit(::TunedModel, ...)` calls
 `setup` but `MLJBase.update(::TunedModel, ...)` does not.)
 
+The `setup` function is called once only, when a `TunedModel` machine
+is `fit!` the first time, and not on subsequent calls (unless
+`force=true`). (Specifically, `MLJBase.fit(::TunedModel, ...)` calls
+`setup` but `MLJBase.update(::TunedModel, ...)` does not.)
+
 The `verbosity` is an integer indicating the level of logging: `0`
 means logging should be restricted to warnings, `-1`, means completely
 silent.
@@ -439,6 +444,14 @@ return an empty vector or `nothing`. Under the hood, there is no fixed
 any number of models. If `models!` returns a number of models
 exceeding the number needed to complete the history, the list returned
 is simply truncated.
+
+Some simple tuning strategies, such as `RandomSearch`, will want to
+return as many models as possible in one hit. The argument
+`n_remaining` is the difference between the current length of the
+history and the target number of iterations `tuned_model.n` set by the
+user when constructing his `TunedModel` instance, `tuned_model` (or
+`default_n(tuning, range)` if left unspecified).
+
 
 #### The `best` method: To define what constitutes the "optimal model"
 
