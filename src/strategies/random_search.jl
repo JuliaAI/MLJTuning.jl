@@ -3,35 +3,36 @@ const ParameterName=Union{Symbol,Expr}
 """
     RandomSearch(bounded=Distributions.Uniform,
                  positive_unbounded=Distributions.Gamma,
-                 others=Normal,
+                 others=Distributions.Normal,
                  rng=Random.GLOBAL_RNG)
 
-Instantiate a random search tuning strategy for searching over
-Cartesian hyperparemeter domains.
+Instantiate a random search tuning strategy, for searching over
+Cartesian hyperparameter domains, with customizable priors in each
+dimenension.
 
 ### Supported ranges:
 
-- A single one-dimensional range (`ParamRange` object) `r`
+- a single one-dimensional range (`ParamRange` object) `r`
 
-- A pair of the form `(r, d)`, with `r` as above and where `d` is a
+- a pair of the form `(r, d)`, with `r` as above and where `d` is a
   probability vector of the same length as `r.values`, if `r` is a
   `NominalRange`, and is otherwise: (i) any `Distributions.Univariate`
   *instance*; or (ii) one of the *subtypes* of
   `Distributions.Univariate` listed in the table below, for automatic
   fitting using `Distributions.fit(d, r)` (a distribution whose
-  support always lies between `r.lower` and `r.upper`.
+  support always lies between `r.lower` and `r.upper`.)
 
-- Any pair of the form `(field, s)`, where `field` is the, possibly
-  nested, name of a field the model to be tuned, and `s` an arbitrary
-  sampler object for that field. (This only means `rand(rng, s)` is defined and
-  returns valid values for the field.)
+- any pair of the form `(field, s)`, where `field` is the (possibly
+  nested) name of a field of the model to be tuned, and `s` an
+  arbitrary sampler object for that field. This means only that
+  `rand(rng, s)` is defined and returns valid values for the field.
 
-- Any vector of objects of the above form
+- any vector of objects of the above form
 
 distribution types  | for fitting to ranges of this type
 --------------------|-----------------------------------
 `Arcsine`, `Uniform`, `Biweight`, `Cosine`, `Epanechnikov`, `SymTriangularDist`, `Triweight` | bounded
-`Gamma`, `InverseGaussian`, `Poisson` | positive
+`Gamma`, `InverseGaussian`, `Poisson` | positive (bounded or unbounded)
 `Normal`, `Logistic`, `LogNormal`, `Cauchy`, `Gumbel`, `Laplace`  | any
 
 `ParamRange` objects are constructed using the `range` method.
@@ -48,7 +49,7 @@ distribution types  | for fitting to ranges of this type
     # uniform sampling of :(atom.λ) from [0, 1] without defining a NumericRange:
     struct MySampler end
     Base.rand(rng::AbstractRNG, ::MySampler) = rand(rng)
-    range3 = (:(atom.λ), MySampler())
+    range3 = (:(atom.λ), MySampler(), range1)
 
 ### Algorithm
 
@@ -63,7 +64,7 @@ type.
 See also [`TunedModel`](@ref), [`range`](@ref), [`sampler`](@ref).
 
 """
-mutable struct RandomSearch <: TuningStrategy 
+mutable struct RandomSearch <: TuningStrategy
     bounded::Distributions.Univariate
     positive_unbounded::Distributions.Univariate
     others::Distribution.Univariate
@@ -73,60 +74,54 @@ end
 # Constructor with keywords
 function RandomSearch(; bounded=Distributions.Uniform,
                       positive_unbounded=Distributions.Gamma,
-                      others=Normal,
+                      others=Distributions.Normal,
                       rng=Random.GLOBAL_RNG)
     _rng = rng isa Integer ? Random.MersenneTwister(rng) : rng
-    return RandomSearch(bounded, positive_unbounded, others, rng)
+    return RandomSearch(bounded, positive_unbounded, others, _rng)
 end
 
 isnumeric(::Any) = false
 isnumeric(::NumericRange) = true
 
-# function setup(tuning::RandomSearch, model, user_range, verbosity)
-#     ranges, distributions = # I AM HERE
-#         process_user_random_range(user_range, tuning.distribution, verbosity)
-#     distributions = adjusted_distributions(tuning.goal, ranges, distributions)
+# `state`, which is not mutated, consists of a tuple of (field, sampler)
+# pairs:
+setup(tuning::RandomSearch, model, user_range, verbosity) =
+    process_user_random_range(user_range,
+                              tuning.bounded,
+                              tuning.positive_unbounded,
+                              tuning.other)
 
-#     fields = map(r -> r.field, ranges)
+function MLJTuning.models!(tuning::RandomSearch,
+                           model,
+                           history
+                           state,
+                           verbosity)
 
-#     parameter_scales = scale.(ranges)
+    # We generate all remaining models at once. Since the value of
+    # `tuning.n` can change between calls to `models!`
+    n_so_far = _length(history) # _length(nothing) = 0
+    n = tuning.n === nothing ? DEFAULT_N : tuning.n
+    n_models = max(0, n - n_so_far)
 
-#     if tuning.shuffle
-#         models = grid(tuning.rng, model, ranges, distributions)
-#     else
-#         models = grid(model, ranges, distributions)
-#     end
+    return map(1:n_models) do _
+        clone = deepcopy(model)
+        for (fld, s) field_sampler_pairs
+            recursive_setproperty!(clone, fld, rand(rng, s))
+        end
+        clone
+    end
 
-#     state = (models=models,
-#              fields=fields,
-#              parameter_scales=parameter_scales)
+end
 
-#     return state
+function tuning_report(tuning::RandomSearch, history, field_sampler_pairs)
 
-# end
+    fields = first.(field_sampler_pairs)
+    parameter_scales = map(field_sampler_pairs) do (fld, s)
+        scale(s)
+    end
 
-# MLJTuning.models!(tuning::RandomSearch, model, history::Nothing,
-#                   state, verbosity) = state.models
-# MLJTuning.models!(tuning::RandomSearch, model, history,
-#                   state, verbosity) =
-#     state.models[length(history) + 1:end]
+    plotting = plotting_report(fields, parameter_scales, history)
 
-# function tuning_report(tuning::RandomSearch, history, state)
+    return (history=history, plotting=plotting)
 
-#     plotting = plotting_report(state.fields, state.parameter_scales, history)
-
-#     # todo: remove collects?
-#     return (history=history, plotting=plotting)
-
-# end
-
-# function default_n(tuning::RandomSearch, user_range)
-#     ranges, distributions =
-#         process_grid_range(user_range, tuning.distribution, -1)
-
-#     distributions = adjusted_distributions(tuning.goal, ranges, distributions)
-#     len(t::Tuple{NumericRange,Integer}) = length(iterator(t[1], t[2]))
-#     len(t::Tuple{NominalRange,Integer}) = t[2]
-#     return prod(len.(zip(ranges, distributions)))
-
-# end
+end

@@ -175,8 +175,7 @@ Base.rand(rng::AbstractRNG, ::MySampler) = rand(rng)
                                        Dist.Gamma,
                                        Dist.Cauchy) |> first
     s = last(p)
-    @test s.distribution == Dist.truncated(Poisson(r2.origin), 5.0, Inf)
-
+    @test s.distribution == Dist.truncated(Dist.Poisson(r2.unit), 5.0, Inf)
 
 end
 true
