@@ -34,8 +34,10 @@ function MLJTuning.models!(tuning::Explicit,
     while i < n_remaining
         next === nothing && break
         m, s = next
-        push!(models, m)
-        i += 1
+        if !isrecorded(m, history)
+            push!(models, m)
+            i += 1
+        end
         next = iterate(range, s)
     end
 

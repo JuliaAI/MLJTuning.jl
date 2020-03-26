@@ -17,6 +17,8 @@ export learning_curve!, learning_curve
 
 import MLJBase
 using MLJBase
+# TODO: rm next import after is_same_except is imported into MLJBase
+import MLJModelInterface 
 import MLJBase: Bounded, Unbounded, DoublyUnbounded,
     LeftUnbounded, RightUnbounded
 using RecipesBase
