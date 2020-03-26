@@ -21,7 +21,7 @@ X = (x1=x1, x2=x2, x3=x3);
 y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.4*rand(N);
 
 m(K) = KNNRegressor(K=K)
-r = [m(K) for K in 2:13]
+r = (m(K) for K in 2:13)
 
 @testset "constructor" begin
     @test_throws ErrorException TunedModel(model=first(r), tuning=Explicit(),
@@ -121,8 +121,6 @@ end)
     
 end
 
-@test MockExplicit == MockExplicit
-
 @testset_accelerated("passing of model metadata", accel,
                      (exclude=[CPUThreads],), begin
                      tm = TunedModel(model=first(r), tuning=MockExplicit(),
@@ -131,7 +129,7 @@ end
                      fitresult, meta_state, report = fit(tm, 0, X, y);
                      history, _, state = meta_state;
                      for (m, r) in history
-                         #@test m.K == r.K
+                         @test m.K == r.K
                      end
 end)
 
