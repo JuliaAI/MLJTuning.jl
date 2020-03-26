@@ -29,7 +29,7 @@ using Random
 
 ## CONSTANTS
 
-const DEFAULT_N == 10 # for when `default_n` is not implemented
+const DEFAULT_N = 10 # for when `default_n` is not implemented
 
 
 ## INCLUDE FILES
