@@ -178,4 +178,6 @@ Base.rand(rng::AbstractRNG, ::MySampler) = rand(rng)
     @test s.distribution == Dist.truncated(Dist.Poisson(r2.unit), 5.0, Inf)
 
 end
+
+end
 true

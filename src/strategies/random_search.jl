@@ -95,15 +95,10 @@ function MLJTuning.models!(tuning::RandomSearch,
                            model,
                            history
                            state,
+                           n_remaining,
                            verbosity)
 
-    # We generate all remaining models at once. Since the value of
-    # `tuning.n` can change between calls to `models!`
-    n_so_far = _length(history) # _length(nothing) = 0
-    n = tuning.n === nothing ? DEFAULT_N : tuning.n
-    n_models = max(0, n - n_so_far)
-
-    return map(1:n_models) do _
+    return map(1:n_remaining) do _
         clone = deepcopy(model)
         for (fld, s) field_sampler_pairs
             recursive_setproperty!(clone, fld, rand(rng, s))

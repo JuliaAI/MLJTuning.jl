@@ -23,7 +23,7 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.4*rand(N);
 m(K) = KNNRegressor(K=K)
 r = [m(K) for K in 2:13]
 
-# TODO: replace the above with the line below and fix post an issue on
+# TODO: replace the above with the line below and post an issue on
 # the failure (a bug in Distributed, I reckon):
 # r = (m(K) for K in 2:13)
 

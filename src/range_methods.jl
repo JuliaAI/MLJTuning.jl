@@ -1,8 +1,3 @@
-## SCALE FOR SAMPLERS
-
-TODO:
-
-
 ## BOUNDEDNESS TRAIT
 
 # For random search and perhaps elsewhere, we need a variation on the
