@@ -38,6 +38,17 @@ r = [m(K) for K in 2:13]
                TunedModel(model=first(r), tuning=Explicit(), range=r))
 end
 
+@testset "duplicate models ignored" begin
+    s = [m(K) for K in 2:13]
+    push!(s, m(2))
+    tm = TunedModel(model=first(r), tuning=Explicit(),
+                    range=r, resampling=CV(nfolds=2),
+                    measures=[rms, l1])
+    fitresult, meta_state, report = fit(tm, 0, X, y);
+    history, _, state = meta_state;
+    @test length(history) == length(2:13)
+end
+
 results = [(evaluate(model, X, y,
                      resampling=CV(nfolds=2),
                      measure=rms,
@@ -120,9 +131,9 @@ end)
         catch MethodError
             DEFAULT_N
         end
-        
+
     end
-    
+
 end
 
 @testset_accelerated("passing of model metadata", accel,
