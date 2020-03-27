@@ -35,27 +35,3 @@ tuning_report(tuning::TuningStrategy, history, state) = (history=history,)
 
 # for declaring the default number of models to evaluate:
 default_n(tuning::TuningStrategy, range) = DEFAULT_N
-
-
-## CONVENIENCE METHODS
-
-"""
-    MLJTuning.isrecorded(model, history)
-    MLJTuning.isrecorded(model, history, exceptions::Symbol...)
-
-Test if `history` has an entry for some model `m` sharing the same
-hyperparameter values as `model`, with the possible exception of fields
-specified in `exceptions`.
-
-More precisely, the requirement is that
-`MLJModelInterface.is_same_except(m, model, exceptions...)` be true.
-
-"""
-isrecorded(model::MLJBase.Model, ::Nothing) = false
-function isrecorded(model::MLJBase.Model, history)::Bool
-    for (metamodel, _) in history
-        MLJModelInterface.is_same_except(_first(metamodel), model) &&
-            return true
-    end
-    return false
-end
