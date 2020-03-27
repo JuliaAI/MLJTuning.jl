@@ -1,14 +1,16 @@
-module TestTunedModels
-
 using Distributed
 
 using Test
-using MLJTuning
 using MLJBase
 import ComputationalResources: CPU1, CPUProcesses, CPUThreads
 using Random
 Random.seed!(1234)
-@everywhere using ..Models
+
+@everywhere begin
+    using ..Models
+    using MLJTuning # gets extended in tests
+end
+
 using ..TestUtilities
 
 N = 30
@@ -20,6 +22,10 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.4*rand(N);
 
 m(K) = KNNRegressor(K=K)
 r = [m(K) for K in 2:13]
+
+# TODO: replace the above with the line below and fix post an issue on
+# the failure (a bug in Distributed, I reckon):
+# r = (m(K) for K in 2:13)
 
 @testset "constructor" begin
     @test_throws ErrorException TunedModel(model=first(r), tuning=Explicit(),
@@ -86,7 +92,49 @@ end
     @test map(event -> last(event).measurement[1], history) ≈ results
 end)
 
+@everywhere begin
+
+    # variation of the Explicit strategy that annotates the models
+    # with metadata
+    mutable struct MockExplicit <: MLJTuning.TuningStrategy end
+
+    annotate(model) = (model, params(model)[1])
+
+    _length(x) = length(x)
+    _length(::Nothing) = 0
+    function MLJTuning.models!(tuning::MockExplicit,
+                               model,
+                               history,
+                               state,
+                               n_remaining,
+                               verbosity)
+        return  annotate.(state)[_length(history) + 1:end]
+    end
+
+    MLJTuning.result(tuning::MockExplicit, history, state, e, metadata) =
+        (measure=e.measure, measurement=e.measurement, K=metadata)
+
+    function default_n(tuning::Explicit, range)
+        try
+            length(range)
+        catch MethodError
+            DEFAULT_N
+        end
+        
+    end
+    
 end
 
-true
+@testset_accelerated("passing of model metadata", accel,
+                     (exclude=[CPUThreads],), begin
+                     tm = TunedModel(model=first(r), tuning=MockExplicit(),
+                                     range=r, resampling=CV(nfolds=2),
+                                     measures=[rms, l1], acceleration=accel)
+                     fitresult, meta_state, report = fit(tm, 0, X, y);
+                     history, _, state = meta_state;
+                     for (m, r) in history
+                         @test m.K == r.K
+                     end
+end)
 
+true

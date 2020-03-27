@@ -1,16 +1,54 @@
-mutable struct Explicit <: TuningStrategy end 
+mutable struct Explicit <: TuningStrategy end
+
+mutable struct ExplicitState{R,N}
+    range::R               # a model-generating iterator
+    next::Union{Nothing,N} # to hold output of `iterate(range)`
+end
+
+ExplicitState(r::R, ::Nothing) where R = ExplicitState{R,Nothing}(r,nothing)
+ExplictState(r::R, n::N) where {R,N} = ExplicitState{R,Union{Nothing,N}}(r,n)
+
+function MLJTuning.setup(tuning::Explicit, model, range, verbosity)
+    next = iterate(range)
+    return ExplicitState(range, next)
+end
 
 # models! returns all available models in the range at once:
-MLJTuning.models!(tuning::Explicit, model, history::Nothing,
-                  state, verbosity) = state
-MLJTuning.models!(tuning::Explicit, model, history,
-                  state, verbosity) = state[length(history) + 1:end]
+function MLJTuning.models!(tuning::Explicit,
+                           model,
+                           history,
+                           state,
+                           n_remaining,
+                           verbosity)
 
-function MLJTuning.default_n(tuning::Explicit, range)
+    range, next  = state.range, state.next
+
+    next === nothing && return nothing
+
+    m, s = next
+    models = [m, ]
+
+    next = iterate(range, s)
+
+    i = 1 # current length of `models`
+    while i < n_remaining
+        next === nothing && break
+        m, s = next
+        push!(models, m)
+        i += 1
+        next = iterate(range, s)
+    end
+
+    state.next = next
+
+    return models
+
+end
+
+function default_n(tuning::Explicit, range)
     try
         length(range)
     catch MethodError
-        10
+        DEFAULT_N
     end
 end
-

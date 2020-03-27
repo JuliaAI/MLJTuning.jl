@@ -104,11 +104,13 @@ function setup(tuning::Grid, model, user_range, verbosity)
 
 end
 
-MLJTuning.models!(tuning::Grid, model, history::Nothing,
-                  state, verbosity) = state.models
-MLJTuning.models!(tuning::Grid, model, history,
-                  state, verbosity) =
-    state.models[length(history) + 1:end]
+MLJTuning.models!(tuning::Grid,
+                  model,
+                  history,
+                  state,
+                  n_remaining,
+                  verbosity) =
+                      state.models[_length(history) + 1:end]
 
 function tuning_report(tuning::Grid, history, state)
 
