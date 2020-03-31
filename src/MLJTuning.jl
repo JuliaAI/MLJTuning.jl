@@ -7,7 +7,7 @@ module MLJTuning
 export TunedModel
 
 # defined in strategies/:
-export Explicit, Grid
+export Explicit, Grid, RandomSearch
 
 # defined in learning_curves.jl:
 export learning_curve!, learning_curve
@@ -17,8 +17,6 @@ export learning_curve!, learning_curve
 
 import MLJBase
 using MLJBase
-# TODO: rm next import after is_same_except is imported into MLJBase
-import MLJModelInterface 
 import MLJBase: Bounded, Unbounded, DoublyUnbounded,
     LeftUnbounded, RightUnbounded
 using RecipesBase
@@ -42,6 +40,7 @@ include("tuned_models.jl")
 include("range_methods.jl")
 include("strategies/explicit.jl")
 include("strategies/grid.jl")
+include("strategies/random_search.jl")
 include("plotrecipes.jl")
 include("learning_curves.jl")
 

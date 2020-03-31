@@ -15,9 +15,6 @@ function boundedness(r::NumericRange{<:Any,<:RightUnbounded})
     return Other
 end
 
-
-## PRE-PROCESSING OF USER-SPECIFIED CARTESIAN RANGE OBJECTS
-
 """
     MLJTuning.grid([rng, ] prototype, ranges, resolutions)
 
@@ -53,6 +50,9 @@ function grid(prototype::Model, ranges, resolutions)
         clone
     end
 end
+
+
+## PRE-PROCESSING OF USER-SPECIFIED CARTESIAN RANGE OBJECTS
 
 """
     process_grid_range(user_specified_range, resolution, verbosity)

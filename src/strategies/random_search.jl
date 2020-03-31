@@ -3,7 +3,7 @@ const ParameterName=Union{Symbol,Expr}
 """
     RandomSearch(bounded=Distributions.Uniform,
                  positive_unbounded=Distributions.Gamma,
-                 others=Distributions.Normal,
+                 other=Distributions.Normal,
                  rng=Random.GLOBAL_RNG)
 
 Instantiate a random search tuning strategy, for searching over
@@ -16,11 +16,12 @@ dimenension.
 
 - a pair of the form `(r, d)`, with `r` as above and where `d` is a
   probability vector of the same length as `r.values`, if `r` is a
-  `NominalRange`, and is otherwise: (i) any `Distributions.Univariate`
-  *instance*; or (ii) one of the *subtypes* of
-  `Distributions.Univariate` listed in the table below, for automatic
-  fitting using `Distributions.fit(d, r)` (a distribution whose
-  support always lies between `r.lower` and `r.upper`.)
+  `NominalRange`, and is otherwise: (i) any
+  `Distributions.UnivariateDistribution` *instance*; or (ii) one of
+  the *subtypes* of `Distributions.UnivariateDistribution` listed in
+  the table below, for automatic fitting using `Distributions.fit(d,
+  r)` (a distribution whose support always lies between `r.lower` and
+  `r.upper`.)
 
 - any pair of the form `(field, s)`, where `field` is the (possibly
   nested) name of a field of the model to be tuned, and `s` an
@@ -65,47 +66,49 @@ See also [`TunedModel`](@ref), [`range`](@ref), [`sampler`](@ref).
 
 """
 mutable struct RandomSearch <: TuningStrategy
-    bounded::Distributions.Univariate
-    positive_unbounded::Distributions.Univariate
-    others::Distribution.Univariate
+    bounded
+    positive_unbounded
+    other
     rng::Random.AbstractRNG
 end
 
 # Constructor with keywords
 function RandomSearch(; bounded=Distributions.Uniform,
                       positive_unbounded=Distributions.Gamma,
-                      others=Distributions.Normal,
+                      other=Distributions.Normal,
                       rng=Random.GLOBAL_RNG)
-    _rng = rng isa Integer ? Random.MersenneTwister(rng) : rng
-    return RandomSearch(bounded, positive_unbounded, others, _rng)
-end
+    (bounded isa Type{<:Distributions.UnivariateDistribution} &&
+        positive_unbounded isa Type{<:Distributions.UnivariateDistribution} &&
+        other isa Type{<:Distributions.UnivariateDistribution}) ||
+        error("`bounded`, `positive_unbounded` and `other` "*
+              "must all be subtypes of "*
+              "`Distributions.UnivariateDistribution`. ")
 
-isnumeric(::Any) = false
-isnumeric(::NumericRange) = true
+    _rng = rng isa Integer ? Random.MersenneTwister(rng) : rng
+    return RandomSearch(bounded, positive_unbounded, other, _rng)
+end
 
 # `state`, which is not mutated, consists of a tuple of (field, sampler)
 # pairs:
 setup(tuning::RandomSearch, model, user_range, verbosity) =
-    process_user_random_range(user_range,
+    process_random_range(user_range,
                               tuning.bounded,
                               tuning.positive_unbounded,
                               tuning.other)
 
 function MLJTuning.models!(tuning::RandomSearch,
                            model,
-                           history
-                           state,
+                           history,
+                           state, # tuple of (field, sampler) pairs
                            n_remaining,
                            verbosity)
-
     return map(1:n_remaining) do _
         clone = deepcopy(model)
-        for (fld, s) field_sampler_pairs
-            recursive_setproperty!(clone, fld, rand(rng, s))
+        for (fld, s) in state
+            recursive_setproperty!(clone, fld, rand(tuning.rng, s))
         end
         clone
     end
-
 end
 
 function tuning_report(tuning::RandomSearch, history, field_sampler_pairs)
