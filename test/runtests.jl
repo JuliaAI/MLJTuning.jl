@@ -28,6 +28,10 @@ end
     @test include("strategies/grid.jl")
 end
 
+@testset "random search" begin
+    @test include("strategies/random_search.jl")
+end
+
 @testset "learning curves" begin
         @test include("learning_curves.jl")
 end
