@@ -217,16 +217,17 @@ function event(metamodel,
     model = _first(metamodel)
     metadata = _last(metamodel)
     resampling_machine.model.model = model
-    verb = (verbosity == 2 ? 0 : verbosity - 1)
+    verb = (verbosity >= 2 ? verbosity - 3 : verbosity - 1)
     fit!(resampling_machine, verbosity=verb)
     e = evaluate(resampling_machine)
     r = result(tuning, history, state, e, metadata)
 
     if verbosity > 2
-        println(params(model))
+        println("hyperparameters: $(params(model))")
     end
+
     if verbosity > 1
-        println("$r")
+        println("result: $r")
     end
 
     return model, r
@@ -300,6 +301,7 @@ function build(history,
                                    history,
                                    state,
                                    acceleration)
+
         history = _vcat(history, Δhistory)
     end
     return history
