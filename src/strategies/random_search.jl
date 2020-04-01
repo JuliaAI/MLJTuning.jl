@@ -10,7 +10,7 @@ Instantiate a random search tuning strategy, for searching over
 Cartesian hyperparameter domains, with customizable priors in each
 dimension.
 
-### Supported ranges:
+### Supported ranges
 
 - a single one-dimensional range (`ParamRange` object) `r`
 
@@ -38,7 +38,7 @@ distribution types  | for fitting to ranges of this type
 
 `ParamRange` objects are constructed using the `range` method.
 
-### Examples:
+### Examples
 
     range1 = range(model, :hyper1, lower=1, origin=2, unit=1)
 
