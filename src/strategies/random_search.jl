@@ -40,10 +40,10 @@ distribution types  | for fitting to ranges of this type
 
 ### Examples
 
-    range1 = range(model, :hyper1, lower=1, origin=2, unit=1)
+    range1 = range(model, :hyper1, lower=0, upper=1)
 
     range2 = [(range(model, :hyper1, lower=1, upper=10), Arcsine),
-               range(model, :hyper2, lower=2, upper=4),
+               range(model, :hyper2, lower=2, upper=Inf, unit=1, origin=3),
               (range(model, :hyper2, lower=2, upper=4), Normal(0, 3)),
                range(model, :hyper3, values=[:ball, :tree], [0.3, 0.7])]
 
