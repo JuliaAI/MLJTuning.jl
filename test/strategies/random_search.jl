@@ -28,8 +28,9 @@ mutable struct SuperModel <: Deterministic
     model2::DummyModel
 end
 
-MLJBase.fit(::DummyModel, verbosity::Int, X, y) = std(y), nothing, nothing
-MLJBase.predict(::DummyModel, fitresult, Xnew)  = fitresult
+MLJBase.fit(::DummyModel, verbosity::Int, X, y) = mean(y), nothing, nothing
+MLJBase.predict(::DummyModel, fitresult, Xnew) =
+    fill(fitresult, schema(Xnew).nrows)
 
 dummy_model = DummyModel(1, 9, 'k')
 super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))
@@ -57,7 +58,7 @@ end
     @test s0.distribution == Dist.Categorical(0.5, 0.5)
     @test s1.distribution == Dist.SymTriangularDist(2,1)
     γ = s2.distribution
-    @test mean(γ) == 2 
+    @test mean(γ) == 2
     @test std(γ) == 3
 end
 
@@ -90,6 +91,35 @@ end
     a, b, c = dict[-1], dict[0], dict[1]
     @test abs(b/a - 2) < 0.06
     @test abs(b/c - 2) < 0.06
+end
+
+@testset "tuned model using random search and its report" begin
+    N = 4
+    model = DummyModel(1, 1, 'k')
+    r1 = range(model, :lambda, lower=0, upper=1)
+    r2 = range(model, :metric, lower=-1, upper=1)
+    user_range = [r1, r2]
+    tuning = RandomSearch(rng=1)
+    tuned_model = TunedModel(model=model,
+                             tuning=tuning,
+                             n=N,
+                             resampling=Holdout(fraction_train=0.5),
+                             range=user_range,
+                             measures=[rms,mae])
+    mach = machine(tuned_model, X, y)
+    fit!(mach, verbosity=0)
+
+    # model predicts mean of training target, so:
+    train, test = partition(eachindex(y), 0.5)
+    μ = mean(y[train])
+    error = mean((y[test] .- μ).^2) |> sqrt
+
+    r = report(mach)
+    @test r.plotting.parameter_names ==
+        ["lambda", "metric"]
+    @test r.plotting.parameter_scales == [:linear, :linear]
+    @test r.plotting.measurements ≈ fill(error, N)
+    @test size(r.plotting.parameter_values) == (N, 2)
 end
 
 end # module
