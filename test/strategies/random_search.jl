@@ -18,7 +18,7 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.2*rand(100);
 
 mutable struct DummyModel <: Deterministic
     lambda::Int
-    metric::Int
+    alpha::Int
     kernel::Char
 end
 
@@ -66,7 +66,7 @@ end
     N = 10000
     model = DummyModel(1, 1, 'k')
     r1 = range(model, :lambda, lower=0, upper=1)
-    r2 = range(model, :metric, lower=-1, upper=1)
+    r2 = range(model, :alpha, lower=-1, upper=1)
     user_range = [r1, r2]
     tuning = RandomSearch(rng=1)
     tuned_model = TunedModel(model=model,
@@ -84,10 +84,10 @@ end
 
     # check the samples of each hyperparam have expected distritution:
     lambdas = map(m -> m.lambda, my_models)
-    metrics = map(m -> m.metric, my_models)
+    alphas = map(m -> m.alpha, my_models)
     a, b = values(Dist.countmap(lambdas))
     @test abs(a/b - 1) < 0.06
-    dict = Dist.countmap(metrics)
+    dict = Dist.countmap(alphas)
     a, b, c = dict[-1], dict[0], dict[1]
     @test abs(b/a - 2) < 0.06
     @test abs(b/c - 2) < 0.06
@@ -97,7 +97,7 @@ end
     N = 4
     model = DummyModel(1, 1, 'k')
     r1 = range(model, :lambda, lower=0, upper=1)
-    r2 = range(model, :metric, lower=-1, upper=1)
+    r2 = range(model, :alpha, lower=-1, upper=1)
     user_range = [r1, r2]
     tuning = RandomSearch(rng=1)
     tuned_model = TunedModel(model=model,
@@ -116,7 +116,7 @@ end
 
     r = report(mach)
     @test r.plotting.parameter_names ==
-        ["lambda", "metric"]
+        ["lambda", "alpha"]
     @test r.plotting.parameter_scales == [:linear, :linear]
     @test r.plotting.measurements ≈ fill(error, N)
     @test size(r.plotting.parameter_values) == (N, 2)
