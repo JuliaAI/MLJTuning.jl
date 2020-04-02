@@ -109,6 +109,7 @@ function MLJTuning.models!(tuning::RandomSearch,
                            verbosity)
     return map(1:n_remaining) do _
         clone = deepcopy(model)
+        Random.shuffle!(tuning.rng, state |> collect)
         for (fld, s) in state
             recursive_setproperty!(clone, fld, rand(tuning.rng, s))
         end
