@@ -9,7 +9,10 @@ default `resolution` in each numeric dimension.
 
 ### Supported ranges:
 
-- A single one-dimensional range (`ParamRange` object) `r`, or pair of
+A single one-dimensional range or vector of one-dimensioinal ranges
+can be specified. Specically, a range can consist of:
+
+- A single one-dimensional range (ie, `ParamRange` object) `r`, or pair of
   the form `(r, res)` where `res` specifies a resolution to override
   the default `resolution`.
 

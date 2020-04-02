@@ -12,6 +12,11 @@ dimension.
 
 ### Supported ranges
 
+A single one-dimensional range or vector of one-dimensioinal ranges
+can be specified. If not paired with a prior, then one is fitted,
+according to fallback distribution types specified by the tuning
+strategy hyperparameters. Specifically, a range can consist of:
+
 - a single one-dimensional range (`ParamRange` object) `r`
 
 - a pair of the form `(r, d)`, with `r` as above and where `d` is a
