@@ -122,5 +122,31 @@ end
     @test size(r.plotting.parameter_values) == (N, 2)
 end
 
+struct ConstantSampler
+    c
+end
+Base.rand(rng::Random.AbstractRNG, s::ConstantSampler) = s.c
+
+@testset "multiple samplers for single field" begin
+    N = 1000
+    model = DummyModel(1, 1, 'k')
+    r = range(model, :alpha, lower=-1, upper=1)
+    user_range = [(:lambda, ConstantSampler(0)),
+             r,
+             (:lambda, ConstantSampler(1))]
+    tuning = RandomSearch(rng=123)
+    tuned_model = TunedModel(model=model,
+                             tuning=tuning,
+                             n=N,
+                             range=user_range,
+                             measures=[rms,mae])
+    mach = fit!(machine(tuned_model, X, y))
+    my_models = first.(report(mach).history);
+    lambdas = map(m -> m.lambda, my_models);
+    a, b = values(Dist.countmap(lambdas))
+    @test abs(a/b -1) < 0.04
+    @test a + b == N
+end
+
 end # module
 true
