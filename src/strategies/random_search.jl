@@ -45,16 +45,18 @@ distribution types  | for fitting to ranges of this type
 
 ### Examples
 
+    using Distributions
+
     range1 = range(model, :hyper1, lower=0, upper=1)
 
     range2 = [(range(model, :hyper1, lower=1, upper=10), Arcsine),
-               range(model, :hyper2, lower=2, upper=Inf, unit=1, origin=3),
+              range(model, :hyper2, lower=2, upper=Inf, unit=1, origin=3),
               (range(model, :hyper2, lower=2, upper=4), Normal(0, 3)),
-               range(model, :hyper3, values=[:ball, :tree], [0.3, 0.7])]
+              (range(model, :hyper3, values=[:ball, :tree]), [0.3, 0.7])]
 
     # uniform sampling of :(atom.λ) from [0, 1] without defining a NumericRange:
     struct MySampler end
-    Base.rand(rng::AbstractRNG, ::MySampler) = rand(rng)
+    Base.rand(rng::Random.AbstractRNG, ::MySampler) = rand(rng)
     range3 = (:(atom.λ), MySampler(), range1)
 
 ### Algorithm
@@ -93,13 +95,13 @@ function RandomSearch(; bounded=Distributions.Uniform,
     return RandomSearch(bounded, positive_unbounded, other, _rng)
 end
 
-# `state`, which is not mutated, consists of a tuple of (field, sampler)
-# pairs:
+# `state` consists of a tuple of (field, sampler) pairs (that gets
+# shuffled each iteration):
 setup(tuning::RandomSearch, model, user_range, verbosity) =
     process_random_range(user_range,
                               tuning.bounded,
                               tuning.positive_unbounded,
-                              tuning.other)
+                              tuning.other) |> collect
 
 function MLJTuning.models!(tuning::RandomSearch,
                            model,
@@ -109,7 +111,7 @@ function MLJTuning.models!(tuning::RandomSearch,
                            verbosity)
     return map(1:n_remaining) do _
         clone = deepcopy(model)
-        Random.shuffle!(tuning.rng, state |> collect)
+        Random.shuffle!(tuning.rng, state)
         for (fld, s) in state
             recursive_setproperty!(clone, fld, rand(tuning.rng, s))
         end
