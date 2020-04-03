@@ -291,38 +291,42 @@ Grid(; goal=nothing, resolution=10, shuffle=true,
 
 Generally new types are defined for each class of range object a
 tuning strategy should like to handle, and the tuning strategy
-functions to be implemented are dispatched on these types. Here are
-the range objects supported by `Grid`:
+functions to be implemented are dispatched on these types. It is
+recommended that every tuning strategy support at least these types:
 
-  - one-dimensional `NumericRange` or `NominalRange` objects (of
-    abstract type `ParamRange`) provided by MLJBase.
+- one-dimensional ranges `r`, where `r` is a `MLJBase.ParamRange` instance
 
-  - a tuple `(p, r)` where `p` is one of the above range objects, and
-	`r` a resolution to override the default `resolution` of the
-	strategy
+- (optional) pairs of the form `(r, data)`, where `data` is metadata,
+  such as a resolution in a grid search, or a distribution in a random
+  search
 
-  - vectors of objects of the above form, e.g., `[r1, (r2, 5), r3]`
-	where `r1` and `r2` are `NumericRange` objects and `r3` a
-	`NominalRange` object.
+- abstract vectors whose elements are of the above form
 
-Both `NumericRange` and `NominalRange` are constructed with the
-`MLJBase` extension to the `range` function. Use the `iterator` and
-`sampler` methods to convert ranges into one-dimensional grids or for
-random sampling, respectively. See the docstrings for details.
+Recall that `ParamRange` has two concrete subtypes `NumericRange` and
+`NominalRange`, whose instances are constructed with the `MLJBase`
+extension to the `range` function. 
 
-Recall that `NominalRange` has a `values` field, while `NumericRange`
-has the fields `upper`, `lower`, `scale`, `unit` and `origin`. The
-`unit` field specifies a preferred length scale, while `origin` a
-preferred "central value". These default to `(upper - lower)/2` and
-`(upper + lower)/2`, respectively, in the bounded case (neither `upper
-= Inf` nor `lower = -Inf`). The fields `origin` and `unit` are used in
-generating grids or fitting probability distributions to unbounded
-ranges.
+Note in particular that a `NominalRange` has a `values` field, while
+`NumericRange` has the fields `upper`, `lower`, `scale`, `unit` and
+`origin`. The `unit` field specifies a preferred length scale, while
+`origin` a preferred "central value". These default to `(upper -
+lower)/2` and `(upper + lower)/2`, respectively, in the bounded case
+(neither `upper = Inf` nor `lower = -Inf`). The fields `origin` and
+`unit` are used in generating grids or fitting probability
+distributions to unbounded ranges.
 
 A `ParamRange` object is always associated with the name of a
 hyperparameter (a field of the prototype in the context of tuning)
-which is recorded in its `field` attribute, but for composite models
-this might be a be a "nested name", such as `:(atom.max_depth)`.
+which is recorded in its `field` attribute, a `Symbol`, but for
+composite models this might be a be an `Expr`, such as
+`:(atom.max_depth)`.
+
+Use the `iterator` and `sampler` methods to convert ranges into
+one-dimensional grids or for random sampling, respectively. See the
+[tuning
+section](https://alan-turing-institute.github.io/MLJ.jl/dev/tuning_models/#API-1)
+of the MLJ manual or doc-strings for more on these methods and the
+`Grid` and `RandomSearch` implementations.
 
 
 #### The `result` method: For building each entry of the history
