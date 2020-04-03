@@ -127,15 +127,15 @@ key                 | value
 plus others specific to the `tuning` strategy, such as `history=...`.
 
 
-### Hyperparameter summary
+### Summary of key-word arguments
 
 - `model`: `Supervised` model prototype that is cloned and mutated to
   generate models for evaluation
 
-- `tuning`: tuning strategy to be applied (eg, `Grid()`, `RandomSearch()`)
+- `tuning=Grid()`: tuning strategy to be applied (eg, `RandomSearch()`)
 
-- `resampling`: resampling strategy (eg, `Holdout()`, `CV()`),
-  `StratifiedCV()` to be applied in performance evaluations
+- `resampling=Holdout()`: resampling strategy (eg, `Holdout()`, `CV()`),
+  `StratifiedCV()`) to be applied in performance evaluations
 
 - `measure`: measure or measures to be applied in performance
   evaluations; only the first used in optimization (unless the
@@ -145,28 +145,27 @@ plus others specific to the `tuning` strategy, such as `history=...`.
   evaluations, if supported (see important note above for behaviour in
   unspecified case)
 
-- `repeats`: for generating train/test sets multiple times in
-                             resampling; see [`evaluate!`](@ref) for
-                             details
+- `repeats=1`: for generating train/test sets multiple times in
+  resampling; see [`evaluate!`](@ref) for details
 
 - `operation=predict`: operation to be applied to each fitted model;
-  usually `predict` but `predict_mean`, `predict_median` and
-  `predict_mode` can be used for `Probabilistic` models, in
-  conjunction with `Deterministic` measures
+  usually `predict` but `predict_mean`, `predict_median` or
+  `predict_mode` can be used for `Probabilistic` models, if
+  the specified measures are `Deterministic`
 
-- `range`: range object; see tuning strategy specific documentation
-                             for supported types
+- `range`: range object; tuning strategy documentation describes
+  supported types
 
-- `n`: number of iterations (ie, models to be evaluated); if left
-                             unspecified then `default_n(tuning,
-                             range)` is used
+- `n`: number of iterations (ie, models to be evaluated); set by
+  tuning strategy if left unspecified
 
 - `train_best=true`: whether to train the optimal model
 
-- `acceleration`: mode of parallelization for tuning strategies that
-  support this
+- `acceleration=default_resource()`: mode of parallelization for
+  tuning strategies that support this
 
-- `acceleration_resampling`: mode of parallelization for resampling
+- `acceleration_resampling=CPU1()`: mode of parallelization for
+  resampling
 
 - `check_measure`: whether to check `measure` is compatible with the
   specified `model` and `operation`)
