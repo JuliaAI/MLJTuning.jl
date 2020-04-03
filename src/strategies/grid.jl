@@ -13,13 +13,17 @@ A single one-dimensional range or vector of one-dimensioinal ranges
 can be specified. Specifically, in `Grid` search, the `range` field
 of a `TunedModel` instance can be:
 
-- A single one-dimensional range (ie, `ParamRange` object) `r`, or pair of
-  the form `(r, res)` where `res` specifies a resolution to override
-  the default `resolution`.
+- A single one-dimensional range - ie, `ParamRange` object - `r`, or
+  pair of the form `(r, res)` where `res` specifies a resolution to
+  override the default `resolution`.
 
 - Any vector of objects of the above form
 
+Two ranges *for the same field* can be combined by simply including
+both ranges in the list, as in Example 3 below. 
+
 `ParamRange` objects are constructed using the `range` method.
+
 
 Example 1:
 
@@ -30,6 +34,12 @@ Example 2:
     [(range(model, :hyper1, lower=1, upper=10), 15),
       range(model, :hyper2, lower=2, upper=4),
       range(model, :hyper3, values=[:ball, :tree])]
+
+Example 3:
+
+    # a range generating the grid `[1, 2, 10, 20, 30]` for `:hyper1`:
+    [range(model, :hyper1, values=[1, 2]),
+     (range(model, :hyper1, lower= 10, upper=30), 3)]
 
 Note: All the `field` values of the `ParamRange` objects (`:hyper1`,
 `:hyper2`, `:hyper3` in the preceding example) must refer to field
@@ -44,7 +54,8 @@ cases all `values` of each specified `NominalRange` are exhausted. If
 `goal` is specified, then all resolutions are ignored, and a global
 resolution is applied to the `NumericRange` objects that maximizes the
 number of grid points, subject to the restriction that this not exceed
-`goal`. Otherwise the default `resolution` and any parameter-specific
+`goal`. (This assumes no field appears twice in the `range` vector.)
+Otherwise the default `resolution` and any parameter-specific
 resolutions apply.
 
 In all cases the models generated are shuffled using `rng`, unless
@@ -68,6 +79,8 @@ Grid(; goal=nothing, resolution=10, shuffle=true,
 isnumeric(::Any) = false
 isnumeric(::NumericRange) = true
 
+# To replace resolutions for numeric ranges with goal-adjusted ones if
+# a goal is specified:
 adjusted_resolutions(::Nothing,  ranges, resolutions) = resolutions
 function adjusted_resolutions(goal, ranges, resolutions)
     # get the product Π of the lengths of the NominalRanges:
@@ -85,19 +98,50 @@ function adjusted_resolutions(goal, ranges, resolutions)
     end
 end
 
+# For deciding scale for duplicated fields:
+_merge(s1, s2) = (s1 == :none ? s2 : s1)
+
+function fields_iterators_and_scales(ranges, resolutions)
+
+    # following could have non-unique entries:
+    fields = map(r -> r.field, ranges)
+
+    iterator_given_field = Dict{Union{Symbol,Expr},Vector}()
+    scale_given_field = Dict{Union{Symbol,Expr},Any}()
+    for i in eachindex(ranges)
+        fld = fields[i]
+        r = ranges[i]
+        if haskey(iterator_given_field, fld)
+            iterator_given_field[fld] =
+                vcat(iterator_given_field[fld], iterator(r, resolutions[i]))
+            scale_given_field[fld] =
+                _merge(scale_given_field[fld], scale(r))
+        else
+            iterator_given_field[fld] = iterator(r, resolutions[i])
+            scale_given_field[fld] = scale(r)
+        end
+    end
+    fields = unique(fields)
+    iterators = map(fld->iterator_given_field[fld], fields)
+    scales = map(fld->scale_given_field[fld], fields)
+
+    return fields, iterators, scales
+
+end
+
 function setup(tuning::Grid, model, user_range, verbosity)
     ranges, resolutions =
         process_grid_range(user_range, tuning.resolution, verbosity)
+
     resolutions = adjusted_resolutions(tuning.goal, ranges, resolutions)
 
-    fields = map(r -> r.field, ranges)
-
-    parameter_scales = scale.(ranges)
+    fields, iterators, parameter_scales =
+        fields_iterators_and_scales(ranges, resolutions)
 
     if tuning.shuffle
-        models = grid(tuning.rng, model, ranges, resolutions)
+        models = grid(tuning.rng, model, fields, iterators)
     else
-        models = grid(model, ranges, resolutions)
+        models = grid(model, fields, iterators)
     end
 
     state = (models=models,
@@ -126,12 +170,15 @@ function tuning_report(tuning::Grid, history, state)
 end
 
 function default_n(tuning::Grid, user_range)
+
     ranges, resolutions =
         process_grid_range(user_range, tuning.resolution, -1)
 
     resolutions = adjusted_resolutions(tuning.goal, ranges, resolutions)
-    len(t::Tuple{NumericRange,Integer}) = length(iterator(t[1], t[2]))
-    len(t::Tuple{NominalRange,Integer}) = t[2]
-    return prod(len.(zip(ranges, resolutions)))
+
+    fields, iterators, parameter_scales =
+        fields_iterators_and_scales(ranges, resolutions)
+
+    return prod(length.(iterators))
 
 end
