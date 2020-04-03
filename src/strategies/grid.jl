@@ -19,8 +19,8 @@ of a `TunedModel` instance can be:
 
 - Any vector of objects of the above form
 
-Two ranges *for the same field* can be combined by simply including
-both ranges in the list, as in Example 3 below. 
+Two elements of a `range` vector may share the same `field` attribute,
+with the effect that their grids are combined, as in Example 3 below.
 
 `ParamRange` objects are constructed using the `range` method.
 
