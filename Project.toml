@@ -14,7 +14,7 @@ RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 
 [compat]
 ComputationalResources = "^0.3"
-Distributions = "^0.22"
+Distributions = "^0.22,^0.23"
 MLJBase = "^0.12.2"
 MLJModelInterface = "^0.2"
 RecipesBase = "^0.8"
