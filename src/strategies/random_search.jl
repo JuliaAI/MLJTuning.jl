@@ -15,7 +15,8 @@ dimension.
 A single one-dimensional range or vector of one-dimensioinal ranges
 can be specified. If not paired with a prior, then one is fitted,
 according to fallback distribution types specified by the tuning
-strategy hyperparameters. Specifically, a range can consist of:
+strategy hyperparameters. Specifically, in `RandomSearch`, the `range`
+field of a `TunedModel` instance can be:
 
 - a single one-dimensional range (`ParamRange` object) `r`
 
@@ -37,8 +38,7 @@ strategy hyperparameters. Specifically, a range can consist of:
 
 A range vector may contain multiple entries for the same model field,
 as in `range = [(:lambda, s1), (:alpha, s), (:lambda, s2)]`. In that
-case the entry used in each iteration is random. See more under
-[Algorithm](@ref).
+case the entry used in each iteration is random.
 
 distribution types  | for fitting to ranges of this type
 --------------------|-----------------------------------

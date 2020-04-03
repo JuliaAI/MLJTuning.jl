@@ -502,8 +502,9 @@ where:
 model
 
 - `tuning_report(::MyTuningStrategy, ...)` is a method the implementer
-  may overload. It should return a named tuple. The fallback is to
-  return the raw history:
+  may overload. It should return a named tuple with `history` as one
+  of the keys (the format up to the implementation.) The fallback is
+  to return the raw history:
 
 ```julia
 MLJTuning.tuning_report(tuning, history, state) = (history=history,)
