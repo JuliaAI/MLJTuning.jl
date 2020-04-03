@@ -23,7 +23,7 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.4*rand(N);
 m(K) = KNNRegressor(K=K)
 r = [m(K) for K in 2:13]
 
-# TODO: replace the above with the line below and fix post an issue on
+# TODO: replace the above with the line below and post an issue on
 # the failure (a bug in Distributed, I reckon):
 # r = (m(K) for K in 2:13)
 
@@ -37,6 +37,19 @@ r = [m(K) for K in 2:13]
     @test_logs((:info, r"No measure"),
                TunedModel(model=first(r), tuning=Explicit(), range=r))
 end
+
+# @testset "duplicate models warning" begin
+#     s = [m(K) for K in 2:13]
+#     push!(s, m(13))
+#     tm = TunedModel(model=first(s), tuning=Explicit(),
+#                     range=s, resampling=CV(nfolds=2),
+#                     measures=[rms, l1])
+#     @test_logs((:info, r"Attempting"),
+#                (:warn, r"A model already"),
+#                fitresult, meta_state, report = fit(tm, 1, X, y))
+#     history, _, state = meta_state;
+#     @test length(history) == length(2:13) + 1
+# end
 
 results = [(evaluate(model, X, y,
                      resampling=CV(nfolds=2),
@@ -120,9 +133,9 @@ end)
         catch MethodError
             DEFAULT_N
         end
-        
+
     end
-    
+
 end
 
 @testset_accelerated("passing of model metadata", accel,

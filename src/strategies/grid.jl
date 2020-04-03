@@ -9,7 +9,11 @@ default `resolution` in each numeric dimension.
 
 ### Supported ranges:
 
-- A single one-dimensional range (`ParamRange` object) `r`, or pair of
+A single one-dimensional range or vector of one-dimensioinal ranges
+can be specified. Specifically, in `Grid` search, the `range` field
+of a `TunedModel` instance can be:
+
+- A single one-dimensional range (ie, `ParamRange` object) `r`, or pair of
   the form `(r, res)` where `res` specifies a resolution to override
   the default `resolution`.
 
@@ -83,7 +87,7 @@ end
 
 function setup(tuning::Grid, model, user_range, verbosity)
     ranges, resolutions =
-        process_user_range(user_range, tuning.resolution, verbosity)
+        process_grid_range(user_range, tuning.resolution, verbosity)
     resolutions = adjusted_resolutions(tuning.goal, ranges, resolutions)
 
     fields = map(r -> r.field, ranges)
@@ -123,7 +127,7 @@ end
 
 function default_n(tuning::Grid, user_range)
     ranges, resolutions =
-        process_user_range(user_range, tuning.resolution, -1)
+        process_grid_range(user_range, tuning.resolution, -1)
 
     resolutions = adjusted_resolutions(tuning.goal, ranges, resolutions)
     len(t::Tuple{NumericRange,Integer}) = length(iterator(t[1], t[2]))
