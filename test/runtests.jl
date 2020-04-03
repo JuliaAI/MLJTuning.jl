@@ -20,12 +20,16 @@ end
     @test include("tuned_models.jl")
 end
 
-@testset "ranges" begin
-    @test include("ranges.jl")
+@testset "range_methods" begin
+    @test include("range_methods.jl")
 end
 
 @testset "grid" begin
     @test include("strategies/grid.jl")
+end
+
+@testset "random search" begin
+    @test include("strategies/random_search.jl")
 end
 
 @testset "learning curves" begin

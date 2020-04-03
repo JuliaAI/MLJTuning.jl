@@ -1,5 +1,10 @@
+## TYPES TO BE SUBTYPED
+
 abstract type TuningStrategy <: MLJBase.MLJType end
 MLJBase.show_as_constructed(::Type{<:TuningStrategy}) = true
+
+
+## METHODS TO BE IMPLEMENTED
 
 # for initialization of state (compulsory)
 setup(tuning::TuningStrategy, model, range, verbosity) = range
@@ -30,5 +35,3 @@ tuning_report(tuning::TuningStrategy, history, state) = (history=history,)
 
 # for declaring the default number of models to evaluate:
 default_n(tuning::TuningStrategy, range) = DEFAULT_N
-
-

@@ -7,7 +7,7 @@ module MLJTuning
 export TunedModel
 
 # defined in strategies/:
-export Explicit, Grid
+export Explicit, Grid, RandomSearch
 
 # defined in learning_curves.jl:
 export learning_curve!, learning_curve
@@ -17,8 +17,11 @@ export learning_curve!, learning_curve
 
 import MLJBase
 using MLJBase
+import MLJBase: Bounded, Unbounded, DoublyUnbounded,
+    LeftUnbounded, RightUnbounded
 using RecipesBase
 using Distributed
+import Distributions
 import ComputationalResources: CPU1, CPUProcesses,
     CPUThreads, AbstractResource
 using Random
@@ -26,7 +29,7 @@ using Random
 
 ## CONSTANTS
 
-const DEFAULT_N = 10
+const DEFAULT_N = 10 # for when `default_n` is not implemented
 
 
 ## INCLUDE FILES
@@ -34,9 +37,10 @@ const DEFAULT_N = 10
 include("utilities.jl")
 include("tuning_strategy_interface.jl")
 include("tuned_models.jl")
-include("ranges.jl")
+include("range_methods.jl")
 include("strategies/explicit.jl")
 include("strategies/grid.jl")
+include("strategies/random_search.jl")
 include("plotrecipes.jl")
 include("learning_curves.jl")
 
