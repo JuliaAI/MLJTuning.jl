@@ -20,14 +20,18 @@ field of a `TunedModel` instance can be:
 
 - a single one-dimensional range (`ParamRange` object) `r`
 
-- a pair of the form `(r, d)`, with `r` as above and where `d` is a
-  probability vector of the same length as `r.values`, if `r` is a
-  `NominalRange`, and is otherwise: (i) any
-  `Distributions.UnivariateDistribution` *instance*; or (ii) one of
-  the *subtypes* of `Distributions.UnivariateDistribution` listed in
-  the table below, for automatic fitting using `Distributions.fit(d,
-  r)` (a distribution whose support always lies between `r.lower` and
-  `r.upper`.)
+- a pair of the form `(r, d)`, with `r` as above and where `d` is:
+
+    - a probability vector of the same length as `r.values` (`r` a
+      `NominalRange`)
+
+    - any `Distributions.UnivariateDistribution` *instance* (`r` a
+      `NumericRange`)
+
+    - one of the *subtypes* of `Distributions.UnivariateDistribution`
+      listed in the table below, for automatic fitting using
+      `Distributions.fit(d, r)`, a distribution whose support always
+      lies between `r.lower` and `r.upper` (`r` a `NumericRange`)
 
 - any pair of the form `(field, s)`, where `field` is the (possibly
   nested) name of a field of the model to be tuned, and `s` an

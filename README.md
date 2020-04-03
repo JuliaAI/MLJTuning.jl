@@ -232,7 +232,7 @@ In setting up a tuning task, the user constructs an instance of the
 
 ### Implementation requirements for new tuning strategies
 
-As sample implemenations, see [/src/strategies/](/src/strategies)
+As sample implementations, see [/src/strategies/](/src/strategies)
 
 #### Summary of functions
 
