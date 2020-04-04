@@ -53,10 +53,15 @@ r2 = range(super_model, :K, lower=1, upper=10, scale=:log10)
 
 @testset "models from cartesian range and resolutions" begin
 
+    f1 = r1.field
+    f2 = r2.field
+    itr1 = iterator(r1, nothing)
+    itr2 = iterator(r2, 7)
+
     # with method:
-    m1 = MLJTuning.grid(super_model, [r1, r2], [nothing, 7])
-    m1r = MLJTuning.grid(MersenneTwister(123), super_model, [r1, r2],
-                         [nothing, 7])
+    m1 = MLJTuning.grid(super_model, [f1, f2], [itr1, itr2])
+    m1r = MLJTuning.grid(MersenneTwister(123), super_model, [f1, f2],
+                         [itr1, itr2])
 
     # generate all models by hand:
     models1 = [SuperModel(1, DummyModel(1.2, 9.5, 'c'), dummy_model),
@@ -76,8 +81,10 @@ r2 = range(super_model, :K, lower=1, upper=10, scale=:log10)
     @test m1r != models1
     @test _issubset(models1, m1r) && _issubset(m1, models1)
 
+    itr1 = iterator(r1, 1)
+
     # with method:
-    m2 = MLJTuning.grid(super_model, [r1, r2], [1, 7])
+    m2 = MLJTuning.grid(super_model, [f1, f2], [itr1, itr2])
 
     # generate all models by hand:
     models2 = [SuperModel(1, DummyModel(1.2, 9.5, 'c'), dummy_model),

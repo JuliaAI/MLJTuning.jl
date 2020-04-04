@@ -66,7 +66,7 @@ distribution types  | for fitting to ranges of this type
     # uniform sampling of :(atom.λ) from [0, 1] without defining a NumericRange:
     struct MySampler end
     Base.rand(rng::Random.AbstractRNG, ::MySampler) = rand(rng)
-    range3 = (:(atom.λ), MySampler(), range1)
+    range3 = (:(atom.λ), MySampler())
 
 ### Algorithm
 
