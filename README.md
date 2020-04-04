@@ -186,8 +186,8 @@ begin, on the basis of the specific strategy and a user-specified
   searched *plus* strategy-specific data explaining how models from
   that space are actually to be generated (e.g.,
   hyperparameter-specific grid resolutions or probability
-  distributions). For the range objects supported by the `Grid`
-  strategy, see [below](#range-types).
+  distributions). For more on range types see [Range
+  types](#range-types) below.
 
 
 ### Interface points for user input
