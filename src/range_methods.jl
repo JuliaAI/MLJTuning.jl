@@ -31,21 +31,18 @@ the results. Otherwise models are ordered, with the first
 hyperparameter referenced cycling fastest.
 
 """
-grid(rng::AbstractRNG, prototype::Model, ranges, resolutions) =
-    shuffle(rng, grid(prototype, ranges, resolutions))
+grid(rng::AbstractRNG, prototype::Model, fields, iterators) =
+    shuffle(rng, grid(prototype, fields, iterators))
 
-function grid(prototype::Model, ranges, resolutions)
-
-    iterators = broadcast(iterator, ranges, resolutions)
+function grid(prototype::Model, fields, iterators)
 
     A = MLJBase.unwind(iterators...)
 
     N = size(A, 1)
     map(1:N) do i
         clone = deepcopy(prototype)
-        for k in eachindex(ranges)
-            field = ranges[k].field
-            recursive_setproperty!(clone, field, A[i,k])
+        for k in eachindex(fields)
+            recursive_setproperty!(clone, fields[k], A[i,k])
         end
         clone
     end
@@ -57,8 +54,8 @@ end
 """
     process_grid_range(user_specified_range, resolution, verbosity)
 
-Utility to convert a user-specified range (see [`Grid`](@ref)) into a
-pair of tuples `(ranges, resolutions)`.
+Convert a user-specified range (see [`Grid`](@ref)) into a tuple  of
+tuples `(ranges, resolutions)`.
 
 For example, if `r1`, `r2` are `NumericRange`s and `s` is a
 NominalRange` with 5 values, then we have:

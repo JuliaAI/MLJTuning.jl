@@ -34,7 +34,25 @@ super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))
 
 s = range(super_model, :(model1.kernel), values=['c', 'd'])
 r1 = range(super_model, :(model1.lambda), lower=20, upper=31)
+rr1 = range(super_model, :(model1.lambda), values=[0.0, 1.0])
 r2 = range(super_model, :K, lower=1, upper=11, scale=:log10)
+
+@testset "scale merge" begin
+    @test MLJTuning._merge(sin, cos) == sin
+    @test MLJTuning._merge(:none, sin) == sin
+    @test MLJTuning._merge(sin, :none) == sin
+    @test MLJTuning._merge(:log, :linear) == :log
+end
+
+@testset "extracting fields and iterators" begin
+    ranges = (r1, r2, rr1)
+    resolutions = (2, 3, nothing)
+    fields, iterators, scales =
+        MLJTuning.fields_iterators_and_scales(ranges, resolutions)
+    @test fields == [:(model1.lambda), :K]
+    @test iterators == [[20.0, 31.0, 0.0, 1.0], [1, 3, 11]]
+    @test scales == [:linear, :log10]
+end
 
 @testset "setup, default_n" begin
     user_range = [r1, (r2, 3), s]
@@ -106,7 +124,6 @@ r2 = range(super_model, :K, lower=1, upper=11, scale=:log10)
     @test models2 == m2
 
 end
-
 
 @testset "2-parameter tune, with nesting" begin
 
@@ -225,22 +242,25 @@ end
 
 end
 
+@testset "field duplicated" begin
+    N = 100
+    X = (x = rand(3N), );
+    y = categorical(rand("abc", 3N));
 
-# ## LEARNING CURVE
-
-# @testset "learning curves" begin
-#     atom = FooBarRegressor()
-#     ensemble = EnsembleModel(atom=atom, n=50, rng=1)
-#     mach = machine(ensemble, X, y)
-#     r_lambda = range(ensemble, :(atom.lambda),
-#                      lower=0.0001, upper=0.1, scale=:log10)
-#     curve = MLJ.learning_curve!(mach; range=r_lambda)
-#     atom.lambda=0.3
-#     r_n = range(ensemble, :n, lower=10, upper=100)
-#     curve2 = MLJ.learning_curve!(mach; range=r_n)
-#     curve3 = learning_curve(ensemble, X, y; range=r_n)
-#     @test curve2.measurements ≈ curve3.measurements
-# end
+    model = KNNClassifier()
+    r1 = range(model, :K, values=[2, 3, 4, 5])
+    r2 = range(model, :K, lower=10, upper=50, scale=:log)
+    r3 = range(model, :leafsize, values=[10, 11])
+    tuning = Grid(resolution=2, shuffle=false)
+    tuned_model = TunedModel(model=model,
+                             tuning=tuning, measure=BrierScore(),
+                             resampling=Holdout(fraction_train=2/3),
+                             range=[r1, r2, r3])
+    mach = fit!(machine(tuned_model, X, y))
+    Kvalues = map(m->m.K, first.(report(mach).history))
+    once = [2, 3, 4, 5, 10, 50]
+    @test Kvalues == vcat(once, once)
+end
 
 end # module
 true
