@@ -138,8 +138,8 @@ begin, on the basis of the specific strategy and a user-specified
 - An *evaluation* is the value returned by some call to the
   `evaluate!` method, when passed the resampling strategy (e.g.,
   `CV(nfolds=9)` and performance measures specified by the user when
-  specifying the tuning task (e.g., `cross_entropy`b,
-  `accuracy`). Recall that such a value is a named tuple of vectors
+  specifying the tuning task (e.g., `cross_entropy`,
+  `accuracy`, `mae`). Recall that such a value is a named tuple of vectors
   with keys `measure`, `measurement`, `per_fold`, and
   `per_observation`. See [Evaluating Model
   Performance](https://alan-turing-institute.github.io/MLJ.jl/dev/evaluating_model_performance/)
