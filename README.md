@@ -11,7 +11,7 @@ learning models.
 
  - [Who is this repo for?](#who-is-this-repo-for)
  - [What's provided here?](#what-is-provided-here)
- - [How do I implement a new tuning strategy?](#How-do-I-implement-a-new-tuning-strategy)
+ - [How do I implement a new tuning strategy?](#how-do-i-implement-a-new-tuning-strategy)
 
 *Note:* This component of the [MLJ
   stack](https://github.com/alan-turing-institute/MLJ.jl#the-mlj-universe)
@@ -32,8 +32,7 @@ MLJTuning is the place for developers to integrate hyperparameter
 optimization algorithms (here called *tuning strategies*) into MLJ,
 either by adding code to [/src/strategies](/src/strategies), or by
 importing MLJTuning into a third-pary package and implementing
-MLJTuning's [tuning strategy
-interface](#implementing-a-new-tuning-strategy).
+MLJTuning's [tuning strategy interface](#how-do-i-implement-a-new-tuning-strategy).
   
 MLJTuning is a component of the [MLJ
   stack](https://github.com/alan-turing-institute/MLJ.jl#the-mlj-universe)
