@@ -56,7 +56,7 @@ This repository contains:
   strategy) before training the optimal model on all supplied data
 
 - an abstract **[tuning strategy
-  interface]((#implementing-a-new-tuning-strategy))** to allow
+  interface](#how-do-i-implement-a-new-tuning-strategy)** to allow
   developers to conveniently implement common hyperparameter
   optimization strategies, such as:
 
