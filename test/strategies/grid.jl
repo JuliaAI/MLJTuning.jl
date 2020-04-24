@@ -152,11 +152,12 @@ end
 
     fit!(tuned, verbosity=0)
     r = report(tuned)
-    @test r.best_report isa NamedTuple{(:machines, :reports)}
+    @test r.best_report isa NamedTuple{(:machines, :report_given_machine)}
     fit!(tuned, verbosity=0)
     rep = report(tuned)
     fp = fitted_params(tuned)
-    @test fp.best_fitted_params isa NamedTuple{(:machines, :fitted_params)}
+    @test fp.best_fitted_params isa
+        NamedTuple{(:machines, :fitted_params_given_machine)}
     b = fp.best_model
     @test b isa SimpleDeterministicCompositeModel
 
