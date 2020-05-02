@@ -6,6 +6,7 @@ import ComputationalResources: CPU1, CPUProcesses, CPUThreads
 using Random
 Random.seed!(1234)
 
+
 @everywhere begin
     using ..Models
     using MLJTuning # gets extended in tests
@@ -63,7 +64,7 @@ results = [(evaluate(model, X, y,
     @test_throws ArgumentError fit(tm, 0, X, y)
 end
 
-@testset_accelerated "basic fit" accel (exclude=[CPUThreads],) begin
+@testset_accelerated "basic fit" accel begin
     best_index = argmin(results)
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
@@ -77,18 +78,30 @@ end
     @test report.history == history
 end
 
-@testset_accelerated "accel. resampling" accel (exclude=[CPUThreads],) begin
+@testset_accelerated "accel. (CPUThreads)" accel begin
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
-                    measures=[rms, l1], acceleration_resampling=accel)
+                    measures=[rms, l1], acceleration= CPUThreads(),
+                    acceleration_resampling=accel)
     fitresult, meta_state, report = fit(tm, 0, X, y);
     history, _, state = meta_state;
     results3 = map(event -> last(event).measurement[1], history)
     @test results3 ≈ results
 end
 
-@testset_accelerated("under/over supply of models", accel,
-                     (exclude=[CPUThreads],), begin
+@testset_accelerated "accel. (CPUProcesses)" accel begin
+    best_index = argmin(results)
+    tm = TunedModel(model=first(r), tuning=Explicit(),
+                    range=r, resampling=CV(nfolds=2),
+                    measures=[rms, l1], acceleration=CPUProcesses(),
+                    acceleration_resampling=accel)
+    fitresult, meta_state, report = fit(tm, 0, X, y);
+    history, _, state = meta_state;
+    results4 = map(event -> last(event).measurement[1], history)
+    @test results4 ≈ results
+end
+
+@testset_accelerated("under/over supply of models", accel, begin
                      tm = TunedModel(model=first(r), tuning=Explicit(),
                                      range=r, measures=[rms, l1],
                                      acceleration=accel,
@@ -139,7 +152,7 @@ end)
 end
 
 @testset_accelerated("passing of model metadata", accel,
-                     (exclude=[CPUThreads],), begin
+                  begin
                      tm = TunedModel(model=first(r), tuning=MockExplicit(),
                                      range=r, resampling=CV(nfolds=2),
                                      measures=[rms, l1], acceleration=accel)

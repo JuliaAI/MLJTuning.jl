@@ -25,6 +25,7 @@ import Distributions
 import ComputationalResources: CPU1, CPUProcesses,
     CPUThreads, AbstractResource
 using Random
+using ProgressMeter
 
 
 ## CONSTANTS
