@@ -233,19 +233,19 @@ function MLJBase.clean!(tuned_model::EitherTunedModel)
     if (tuned_model.acceleration isa CPUProcesses && 
         tuned_model.acceleration_resampling isa CPUProcesses)
         message *= 
-        "The combination acceleration=$acceration and"*
-        " acceleration_resampling=$acceleration_resampling is"*
+        "The combination acceleration=$(tuned_model.acceleration) and"*
+        " acceleration_resampling=$(tuned_model.acceleration) is"*
         "  not generally optimal. You may want to consider setting"*
-        " `acceleration = CPUProcesses() and"*
+        " `acceleration = CPUProcesses()` and"*
         " `acceleration_resampling = CPUThreads()`."
      end
     if (tuned_model.acceleration isa CPUThreads && 
         tuned_model.acceleration_resampling isa CPUProcesses)
         message *= 
-        "The combination acceleration=$acceration and"*
-        " acceleration_resampling=$acceleration_resampling is"*
+        "The combination acceleration=$(tuned_model.acceleration) and"*
+        " acceleration_resampling=$(tuned_model.acceleration) is"*
         "  not generally optimal. You may want to consider setting"*
-        " `acceleration = CPUProcesses() and"*
+        " `acceleration = CPUProcesses()` and"*
         " `acceleration_resampling = CPUThreads()`."
      end
     return message
