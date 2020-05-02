@@ -108,8 +108,8 @@ end
                                      acceleration=accel,
                                      resampling=CV(nfolds=2),
                                      n=4)
-    mach = machine(tm, X, y, verbosity=0)
-    fit!(mach, verbosity=0)
+    mach = machine(tm, X, y)
+    fit!(mach, verbosity=1)
     history = MLJBase.report(mach).history
     @test map(event -> last(event).measurement[1], history) ≈ results[1:4]
 
