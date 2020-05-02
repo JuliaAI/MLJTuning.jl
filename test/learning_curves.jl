@@ -19,7 +19,7 @@ x3 = rand(100);
 X = (x1=x1, x2=x2, x3=x3);
 y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.2*rand(100);
 
-@testset_accelerated "learning curves" accel (exclude=[CPUThreads],) begin
+@testset_accelerated "learning curves" accel begin
     atom = FooBarRegressor()
     ensemble = EnsembleModel(atom=atom, n=50)
     mach = machine(ensemble, X, y)
