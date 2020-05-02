@@ -78,6 +78,7 @@ end
     @test report.history == history
 end
 
+@static if VERSION >= v"1.3.0-DEV.573"
 @testset_accelerated "accel. (CPUThreads)" accel begin
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
@@ -88,7 +89,7 @@ end
     results3 = map(event -> last(event).measurement[1], history)
     @test results3 ≈ results
 end
-
+end
 @testset_accelerated "accel. (CPUProcesses)" accel begin
     best_index = argmin(results)
     tm = TunedModel(model=first(r), tuning=Explicit(),
@@ -107,7 +108,7 @@ end
                                      acceleration=accel,
                                      resampling=CV(nfolds=2),
                                      n=4)
-    mach = machine(tm, X, y)
+    mach = machine(tm, X, y, verbosity=0)
     fit!(mach, verbosity=0)
     history = MLJBase.report(mach).history
     @test map(event -> last(event).measurement[1], history) ≈ results[1:4]
