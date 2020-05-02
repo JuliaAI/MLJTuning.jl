@@ -121,8 +121,10 @@ function learning_curve(model::Supervised, args...;
                              acceleration=acceleration_grid)
 
     tuned = machine(tuned_model, args...)
+    ## One tuned_mach per thread
+    tuned_machs = Dict(1 => tuned)
 
-    results = _tuning_results(rngs, acceleration, tuned, rng_name, verbosity)
+    results = _tuning_results(rngs, acceleration, tuned_machs, rng_name, verbosity)
 
     parameter_name=results.parameter_names[1]
     parameter_scale=results.parameter_scales[1]
@@ -141,12 +143,12 @@ _collate(plotting1, plotting2) =
                              plotting2.measurements),))
 
 # fallback:
-_tuning_results(rngs, acceleration, tuned, rngs_name, verbosity) =
+_tuning_results(rngs, acceleration, tuned_machs, rngs_name, verbosity) =
     error("acceleration=$acceleration unsupported. ")
 
 # single curve:
-_tuning_results(rngs::Nothing, acceleration, tuned, rngs_name, verbosity) =
-    _single_curve(tuned, verbosity)
+_tuning_results(rngs::Nothing, acceleration, tuned_machs, rngs_name, verbosity) =
+    _single_curve(tuned_machs[1], verbosity)
 
 function _single_curve(tuned, verbosity)
     fit!(tuned, verbosity=verbosity, force=true)
@@ -155,9 +157,9 @@ end
 
 # CPU1:
 function _tuning_results(rngs::AbstractVector, acceleration::CPU1,
-                         tuned, rng_name, verbosity)
+                         tuned_machs, rng_name, verbosity)
+    tuned = tuned_machs[1]
     old_rng = recursive_getproperty(tuned.model.model, rng_name)
-
     ret = reduce(_collate,
                  [begin
                   recursive_setproperty!(tuned.model.model, rng_name, rng)
@@ -173,8 +175,8 @@ end
 
 # CPUProcesses:
 function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
-    tuned, rng_name, verbosity)
-
+    tuned_machs, rng_name, verbosity)
+    tuned = tuned_machs[1]
     old_rng = recursive_getproperty(tuned.model.model, rng_name)
     ret = @distributed (_collate) for rng in rngs
         recursive_setproperty!(tuned.model.model, rng_name, rng)
@@ -186,3 +188,55 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
     return ret
 end
 
+# CPUThreads:
+@static if VERSION >= v"1.3.0-DEV.573"
+function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
+    tuned_machs, rng_name, verbosity)
+    
+    n_threads = Threads.nthreads()
+    if n_threads == 1
+        return _tuning_results(rngs, CPU1(),
+                         tuned_machs, rng_name, verbosity)
+    end
+    
+    n_rngs = length(rngs)
+    old_rng = recursive_getproperty(tuned_machs[1].model.model, rng_name)
+
+    results = Array{Any, 1}(undef, n_rngs)
+   
+    @sync begin  
+      
+      @sync for rng_part in Iterators.partition(1:n_rngs, max(1,floor(Int, n_rngs/n_threads)))    
+        Threads.@spawn begin
+          foreach(rng_part) do k
+            id = Threads.threadid()
+            if !haskey(tuned_machs, id)
+                ## deepcopy of model is because other threads can still change the state
+                ## of tuned_machs[id].model.model
+                   tuned_machs[id] =
+                       machine(TunedModel(model = deepcopy(tuned_machs[1].model.model),
+                             range=tuned_machs[1].model.range,
+                             tuning=tuned_machs[1].model.tuning,
+                             resampling=tuned_machs[1].model.resampling,
+                             operation=tuned_machs[1].model.operation,
+                             measure=tuned_machs[1].model.measure,
+                             train_best=tuned_machs[1].model.train_best,
+                             weights=tuned_machs[1].model.weights,
+                             repeats=tuned_machs[1].model.repeats,
+                             acceleration=tuned_machs[1].model.acceleration),
+                             tuned_machs[1].args...)
+            end
+            recursive_setproperty!(tuned_machs[id].model.model, rng_name, rngs[k]) 
+            fit!(tuned_machs[id], verbosity=-1, force=true)
+            results[k] = tuned_machs[id].report.plotting   
+          end
+        end
+    end
+    recursive_setproperty!(tuned_machs[1].model.model, rng_name, old_rng)
+   end
+  
+   return reduce(_collate, results)
+
+end
+
+end
