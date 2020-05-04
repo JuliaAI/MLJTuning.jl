@@ -107,6 +107,26 @@ function learning_curve(model::Supervised, args...;
                   "`AbstractVector{<:AbstractRNG}`. ")
         end
     end
+    if (acceleration isa CPUProcesses && 
+        acceleration_grid isa CPUProcesses)
+        message = 
+        "The combination acceleration=$(tuned_model.acceleration) and"*
+        " acceleration_resampling=$(tuned_model.acceleration) is"*
+        "  not generally optimal. You may want to consider setting"*
+        " `acceleration = CPUProcesses()` and"*
+        " `acceleration_resampling = CPUThreads()`."
+       @warn message
+     end
+    if (acceleration isa CPUThreads && 
+        acceleration_grid isa CPUProcesses)
+        message = 
+        "The combination acceleration=$(tuned_model.acceleration) and"*
+        " acceleration_resampling=$(tuned_model.acceleration) is"*
+        "  not generally optimal. You may want to consider setting"*
+        " `acceleration = CPUProcesses()` and"*
+        " `acceleration_resampling = CPUThreads()`."
+        @warn message
+     end
 
     tuned_model = TunedModel(model=model,
                              range=range,
@@ -202,7 +222,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
     n_rngs = length(rngs)
     old_rng = recursive_getproperty(tuned_machs[1].model.model, rng_name)
 
-    results = Array{Any, 1}(undef, n_rngs)
+    results = Vector{NamedTuple}(undef, n_rngs) ##since we use Grid for now
    
     @sync begin  
       
