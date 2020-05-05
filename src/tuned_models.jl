@@ -384,7 +384,7 @@ function assemble_events(metamodels,
     verbosity < 1 || update!(p,0)
     lock_ = ReentrantLock()
     partitions = Iterators.partition(1:n_metamodels, 
-                    max(1,floor(Int, n_metamodels/n_threads)))
+                    max(1,cld(n_metamodels, n_threads)))
    @sync begin
     @sync for parts in partitions    
       Threads.@spawn begin        
