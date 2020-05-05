@@ -223,7 +223,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
     old_rng = recursive_getproperty(tuned_machs[1].model.model, rng_name)
 
     results = Vector{NamedTuple}(undef, n_rngs) ##since we use Grid for now
-    partitions = Iterators.partition(1:n_rngs, max(1,floor(Int, n_rngs/n_threads)))
+    partitions = Iterators.partition(1:n_rngs, max(1,cld(n_rngs, n_threads)))
     local ret 
    
     @sync begin  
