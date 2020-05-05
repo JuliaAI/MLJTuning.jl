@@ -2,6 +2,7 @@ module TestLearningCurves
 
 using Test
 using Distributed
+
 @everywhere begin
     using MLJBase
     using MLJTuning
