@@ -385,8 +385,8 @@ function assemble_events(metamodels,
     lock_ = ReentrantLock()
     partitions = Iterators.partition(1:n_metamodels, 
                     max(1,floor(Int, n_metamodels/n_threads)))
+   @sync begin
     @sync for parts in partitions    
-    
       Threads.@spawn begin        
         foreach(parts) do m
             id = Threads.threadid()
@@ -414,6 +414,7 @@ function assemble_events(metamodels,
 
       end
 
+    end
     end
 
     return ret         
