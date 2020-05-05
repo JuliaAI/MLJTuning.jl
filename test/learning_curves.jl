@@ -25,7 +25,7 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.2*rand(100);
     mach = machine(ensemble, X, y)
     r_lambda = range(ensemble, :(atom.lambda),
                      lower=0.0001, upper=0.1, scale=:log10)
-
+    
     if accel == CPU1()
         curve = @test_logs((:info, r"No measure"),
                            (:info, r"Training"),
@@ -43,11 +43,11 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.2*rand(100);
     @test length(curve.parameter_values) == length(curve.measurements)
     atom.lambda=0.3
     r_n = range(ensemble, :n, lower=10, upper=100)
-
+    println("Testing progressmeter rngs option with $(accel)")
     curves = learning_curve(mach; range=r_n, resolution=7,
                              acceleration=accel,
                              rngs = MersenneTwister.(1:3),
-                             rng_name=:rng)
+                             rng_name=:rng, verbosity = 1)
     @test size(curves.measurements) == (length(curves.parameter_values), 3)
     @test length(curves.parameter_values) == 7
 
@@ -59,14 +59,14 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.2*rand(100);
     curves2 = learning_curve(mach; range=r_n, resolution=7,
                              acceleration=accel,
                              rngs = 3,
-                             rng_name=:rng)
+                             rng_name=:rng, verbosity=0)
     @test curves2.measurements ≈ curves.measurements
 
     # alternative signature:
     curves3 = learning_curve(ensemble, X, y; range=r_n, resolution=7,
                              acceleration=accel,
                              rngs = 3,
-                             rng_name=:rng)
+                             rng_name=:rng, verbosity=0)
 
     @test curves2.measurements ≈ curves3.measurements
 
