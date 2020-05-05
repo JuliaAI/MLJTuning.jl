@@ -234,7 +234,7 @@ function MLJBase.clean!(tuned_model::EitherTunedModel)
         tuned_model.acceleration_resampling isa CPUProcesses)
         message *= 
         "The combination acceleration=$(tuned_model.acceleration) and"*
-        " acceleration_resampling=$(tuned_model.acceleration) is"*
+        " acceleration_resampling=$(tuned_model.acceleration_resampling) is"*
         "  not generally optimal. You may want to consider setting"*
         " `acceleration = CPUProcesses()` and"*
         " `acceleration_resampling = CPUThreads()`."
@@ -243,7 +243,7 @@ function MLJBase.clean!(tuned_model::EitherTunedModel)
         tuned_model.acceleration_resampling isa CPUProcesses)
         message *= 
         "The combination acceleration=$(tuned_model.acceleration) and"*
-        " acceleration_resampling=$(tuned_model.acceleration) is"*
+        " acceleration_resampling=$(tuned_model.acceleration_resampling) is"*
         "  not generally optimal. You may want to consider setting"*
         " `acceleration = CPUProcesses()` and"*
         " `acceleration_resampling = CPUThreads()`."
@@ -354,13 +354,13 @@ end
 
 @static if VERSION >= v"1.3.0-DEV.573"
 # one machine for each thread; cycle through available threads:
-function assemble_events(metamodels,
+function assemble_events(metamodels::AbstractVector{M},
                          resampling_machines,
                          verbosity,
                          tuning,
                          history,
                          state,
-                         acceleration::CPUThreads)
+                         acceleration::CPUThreads) where {M<:MLJBase.Model}
     
     if Threads.nthreads() == 1
         return assemble_events(metamodels,
@@ -373,9 +373,8 @@ function assemble_events(metamodels,
    end
     n_metamodels = length(metamodels)
     n_threads = Threads.nthreads()
-    
-    
-    ret = Array{Any, 1}(undef, n_metamodels)
+
+    ret = Vector{Tuple{M,Any}}(undef, n_metamodels)
     verbosity < 1 || (p = Progress(n_metamodels,
                  dt = 0,
                  desc = "Evaluating over $(n_metamodels) metamodels: ",
@@ -384,10 +383,11 @@ function assemble_events(metamodels,
                  color = :yellow))
     verbosity < 1 || update!(p,0)
     lock_ = ReentrantLock()
+    partitions = Iterators.partition(1:n_metamodels, 
+                    max(1,floor(Int, n_metamodels/n_threads)))
+    @sync for parts in partitions    
     
-    @sync for parts in Iterators.partition(1:n_metamodels, max(1,floor(Int, n_metamodels/n_threads)))   
-    
-    Threads.@spawn begin        
+      Threads.@spawn begin        
         foreach(parts) do m
             id = Threads.threadid()
             if !haskey(resampling_machines, id)
@@ -402,16 +402,17 @@ function assemble_events(metamodels,
                       acceleration  = resampling_machines[1].model.acceleration),
                       resampling_machines[1].args...)
             end
-        ret[m] = event(metamodels[m], resampling_machines[id], verbosity, tuning, history, state)
-        verbosity < 1 || begin
+            ret[m] = event(metamodels[m], resampling_machines[id], 
+                                verbosity, tuning, history, state)
+            verbosity < 1 || @sync begin
                             lock(lock_)do
                                 p.counter +=1 
                                 ProgressMeter.updateProgress!(p)
                             end
-                        end
-      end
+                         end
+        end
 
-    end
+      end
 
     end
 
