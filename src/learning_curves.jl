@@ -110,21 +110,21 @@ function learning_curve(model::Supervised, args...;
     if (acceleration isa CPUProcesses && 
         acceleration_grid isa CPUProcesses)
         message = 
-        "The combination acceleration=$(tuned_model.acceleration) and"*
-        " acceleration_resampling=$(tuned_model.acceleration) is"*
+        "The combination acceleration=$(acceleration) and"*
+        " acceleration_grid=$(acceleration_grid) is"*
         "  not generally optimal. You may want to consider setting"*
         " `acceleration = CPUProcesses()` and"*
-        " `acceleration_resampling = CPUThreads()`."
+        " `acceleration_grid = CPUThreads()`."
        @warn message
      end
     if (acceleration isa CPUThreads && 
         acceleration_grid isa CPUProcesses)
         message = 
-        "The combination acceleration=$(tuned_model.acceleration) and"*
-        " acceleration_resampling=$(tuned_model.acceleration) is"*
+        "The combination acceleration=$(acceleration) and"*
+        " acceleration_grid=$(acceleration_grid) is"*
         "  not generally optimal. You may want to consider setting"*
         " `acceleration = CPUProcesses()` and"*
-        " `acceleration_resampling = CPUThreads()`."
+        " `acceleration_grid = CPUThreads()`."
         @warn message
      end
 
@@ -200,7 +200,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
     old_rng = recursive_getproperty(tuned.model.model, rng_name)
     ret = @distributed (_collate) for rng in rngs
         recursive_setproperty!(tuned.model.model, rng_name, rng)
-        fit!(tuned, verbosity=-1, force=true)
+        fit!(tuned, verbosity=verbosity, force=true)
         tuned.report.plotting
     end
     recursive_setproperty!(tuned.model.model, rng_name, old_rng)
@@ -247,7 +247,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
                              tuned_machs[1].args...)
             end
             recursive_setproperty!(tuned_machs[id].model.model, rng_name, rngs[k]) 
-            fit!(tuned_machs[id], verbosity=-1, force=true)
+            fit!(tuned_machs[id], verbosity=verbosity, force=true)
             results[k] = tuned_machs[id].report.plotting   
           end
         end
