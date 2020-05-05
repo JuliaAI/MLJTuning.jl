@@ -223,11 +223,14 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
     old_rng = recursive_getproperty(tuned_machs[1].model.model, rng_name)
 
     results = Vector{NamedTuple}(undef, n_rngs) ##since we use Grid for now
+    partitions = Iterators.partition(1:n_rngs, max(1,floor(Int, n_rngs/n_threads)))
+    local ret 
    
     @sync begin  
       
-      @sync for rng_part in Iterators.partition(1:n_rngs, max(1,floor(Int, n_rngs/n_threads)))    
+      @sync for rng_part in partitions   
         Threads.@spawn begin
+           
           foreach(rng_part) do k
             id = Threads.threadid()
             if !haskey(tuned_machs, id)
@@ -252,10 +255,11 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
           end
         end
     end
+    ret =  reduce(_collate, results)   
     recursive_setproperty!(tuned_machs[1].model.model, rng_name, old_rng)
    end
   
-   return reduce(_collate, results)
+   return ret
 
 end
 
