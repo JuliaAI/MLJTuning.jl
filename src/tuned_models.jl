@@ -354,13 +354,13 @@ end
 
 @static if VERSION >= v"1.3.0-DEV.573"
 # one machine for each thread; cycle through available threads:
-function assemble_events(metamodels::AbstractVector{Tuple{M,T}},
+function assemble_events(metamodels,
                          resampling_machines,
                          verbosity,
                          tuning,
                          history,
                          state,
-                         acceleration::CPUThreads) where {T, M<:MLJBase.Model}
+                         acceleration::CPUThreads)
     
     if Threads.nthreads() == 1
         return assemble_events(metamodels,
@@ -373,7 +373,7 @@ function assemble_events(metamodels::AbstractVector{Tuple{M,T}},
    end
     n_metamodels = length(metamodels)
     n_threads = Threads.nthreads()
-
+    M = typeof(_first(first(metamodels)))
     ret = Vector{Tuple{M,Any}}(undef, n_metamodels)
     verbosity < 1 || (p = Progress(n_metamodels,
                  dt = 0,
