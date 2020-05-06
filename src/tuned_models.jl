@@ -313,7 +313,10 @@ function assemble_events(metamodels,
       @sync begin   
         ret = map(metamodels) do m
             r= event(m, resampling_machine, verbosity, tuning, history, state)
-            verbosity < 1 || next!(p)
+            verbosity < 1 || begin
+                      p.counter += 1
+                      ProgressMeter.updateProgress!(p)  
+                    end 
             r
        end
       end
