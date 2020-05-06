@@ -404,7 +404,7 @@ function assemble_events(metamodels,
             end
             ret[m] = event(metamodels[m], resampling_machines[id], 
                                 verbosity, tuning, history, state)
-            verbosity < 1 || @sync begin
+            verbosity < 1 || begin
                             lock(lock_)do
                                 p.counter +=1 
                                 ProgressMeter.updateProgress!(p)
