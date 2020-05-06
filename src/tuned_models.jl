@@ -329,26 +329,40 @@ function assemble_events(metamodels,
                          state,
                          acceleration::CPUProcesses)
   resampling_machine = resampling_machines[1]
-
-  ret = if verbosity < 1
-       pmap(metamodels) do m
-            event(m, resampling_machine, verbosity, tuning, history, state)
-       end
-  else
-      n_metamodels = length(metamodels)
-      p = Progress(n_metamodels,
+n_metamodels = length(metamodels)
+local ret
+channel = RemoteChannel(()->Channel{Bool}(min(1000, n_metamodels)), 1)
+@sync begin
+    verbosity < 1 || (p = Progress(n_metamodels,
                  dt = 0,
-                 desc = "Evaluating over $(n_metamodels) metamodels: ",
+                 desc = "Evaluating over $n_metamodels metamodels: ",
                  barglyphs = BarGlyphs("[=> ]"),
                  barlen = 25,
-                 color = :yellow)
-      update!(p,0)
-      progress_pmap(metamodels, progress=p) do m
-            event(m, resampling_machine, verbosity, tuning, history, state)
-      end
-
-  end
+                 color = :yellow))
+        # printing the progress bar
+       verbosity < 1 || @async begin
+                    update!(p,0)
+                    while take!(channel)
+                    p.counter +=1
+                    ProgressMeter.updateProgress!(p)
+                    end
+                    end
+        
     
+     @sync begin
+            ret = @distributed vcat for m in metamodels
+        	r = event(m, resampling_machine, verbosity, tuning, history, state)
+        	verbosity < 1 || begin
+                            put!(channel, true)
+                            #yield()
+                            end
+        	r
+    	   end
+    end
+    verbosity < 1 || put!(channel, false)
+    
+    end
+    close(channel)
     return ret
 end
 
