@@ -178,16 +178,31 @@ end
 # CPU1:
 function _tuning_results(rngs::AbstractVector, acceleration::CPU1,
                          tuned_machs, rng_name, verbosity)
+    local ret
     tuned = tuned_machs[1]
     old_rng = recursive_getproperty(tuned.model.model, rng_name)
-    ret = reduce(_collate,
-                 [begin
-                  recursive_setproperty!(tuned.model.model, rng_name, rng)
-                  fit!(tuned, verbosity=verbosity, force=true)
-                  tuned.report.plotting
-                  end
-                  for rng in rngs])
-
+    n_rngs = length(rngs)
+    verbosity < 1 || begin
+                 p = Progress(n_rngs,
+                 dt = 0,
+                 desc = "Evaluating Learning curve with $(n_rngs) rngs: ",
+                 barglyphs = BarGlyphs("[=> ]"),
+                 barlen = 18,
+                 color = :yellow)
+                 update!(p,0)
+                end
+    @sync begin
+    ret = mapreduce(_collate, rngs) do rng
+              recursive_setproperty!(tuned.model.model, rng_name, rng)
+              fit!(tuned, verbosity=verbosity-1, force=true)
+              r =tuned.report.plotting
+              verbosity < 1 || begin
+                      p.counter += 1
+                      ProgressMeter.updateProgress!(p) 
+                    end
+              r
+              end
+    end
     recursive_setproperty!(tuned.model.model, rng_name, old_rng)
 
     return ret
@@ -196,15 +211,42 @@ end
 # CPUProcesses:
 function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
     tuned_machs, rng_name, verbosity)
-    tuned = tuned_machs[1]
+    
+   tuned = tuned_machs[1]
     old_rng = recursive_getproperty(tuned.model.model, rng_name)
+    n_rngs = length(rngs)
+    channel = RemoteChannel(()->Channel{Bool}(min(1000, n_rngs)), 1)
+    local ret
+    @sync begin
+    verbosity < 1 || (p = Progress(n_rngs,
+                 dt = 0,
+                 desc = "Evaluating Learning curve with $(n_rngs) rngs: ",
+                 barglyphs = BarGlyphs("[=> ]"),
+                 barlen = 18,
+                 color = :yellow))
+        # printing the progress bar
+       verbosity < 1 || @async begin
+                    update!(p,0)
+                    while take!(channel)
+                    p.counter +=1
+                    ProgressMeter.updateProgress!(p)
+                    end
+                    end
+   @sync begin
     ret = @distributed (_collate) for rng in rngs
         recursive_setproperty!(tuned.model.model, rng_name, rng)
-        fit!(tuned, verbosity=verbosity, force=true)
-        tuned.report.plotting
+        fit!(tuned, verbosity=verbosity-1, force=true)
+        r=tuned.report.plotting
+        verbosity < 1 || begin
+                           put!(channel, true)
+                         end
+        r
+    end
     end
     recursive_setproperty!(tuned.model.model, rng_name, old_rng)
-
+    verbosity < 1 || put!(channel, false)
+    end
+    
     return ret
 end
 
@@ -221,13 +263,24 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
     
     n_rngs = length(rngs)
     old_rng = recursive_getproperty(tuned_machs[1].model.model, rng_name)
+    verbosity < 1 || begin
+                 p = Progress(n_rngs,
+                 dt = 0,
+                 desc = "Evaluating Learning curve with $(n_rngs) rngs: ",
+                 barglyphs = BarGlyphs("[=> ]"),
+                 barlen = 18,
+                 color = :yellow)
+                 update!(p,0)
+                end
+    loc = ReentrantLock()
 
-    results = Vector{NamedTuple}(undef, n_rngs) ##since we use Grid for now
-    partitions = Iterators.partition(1:n_rngs, max(1,cld(n_rngs, n_threads)))
+    results = Vector{Any}(undef, n_rngs) ##since we use Grid for now
+    partitions = Iterators.partition(1:n_rngs, cld(n_rngs, n_threads))
     local ret 
+    
    
     @sync begin  
-      
+     
       @sync for rng_part in partitions   
         Threads.@spawn begin
            
@@ -236,7 +289,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
             if !haskey(tuned_machs, id)
                 ## deepcopy of model is because other threads can still change the state
                 ## of tuned_machs[id].model.model
-                   tuned_machs[id] =
+                    tuned_machs[id] =
                        machine(TunedModel(model = deepcopy(tuned_machs[1].model.model),
                              range=tuned_machs[1].model.range,
                              tuning=tuned_machs[1].model.tuning,
@@ -249,17 +302,26 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
                              acceleration=tuned_machs[1].model.acceleration),
                              tuned_machs[1].args...)
             end
-            recursive_setproperty!(tuned_machs[id].model.model, rng_name, rngs[k]) 
-            fit!(tuned_machs[id], verbosity=verbosity, force=true)
-            results[k] = tuned_machs[id].report.plotting   
+            recursive_setproperty!(tuned_machs[id].model.model, rng_name, rngs[k])
+            fit!(tuned_machs[id], verbosity=verbosity-1, force=true)
+            verbosity < 1 || begin
+                              lock(loc)do
+                                p.counter +=1
+                                ProgressMeter.updateProgress!(p)
+                             end
+                            end
+            
+            results[k] = tuned_machs[id].report.plotting
+            end
+   
           end
+          
         end
     end
-    ret =  reduce(_collate, results)   
+    ret =  reduce(_collate, results) 
     recursive_setproperty!(tuned_machs[1].model.model, rng_name, old_rng)
-   end
-  
    return ret
+
 
 end
 
