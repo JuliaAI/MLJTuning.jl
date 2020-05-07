@@ -230,11 +230,24 @@ function MLJBase.clean!(tuned_model::EitherTunedModel)
             "Setting measure=$(tuned_model.measure). "
         end
     end
-    if !(tuned_model.acceleration isa Union{CPU1, CPUProcesses})
-        message *= "Supported `acceleration` types are `CPU1` "*
-        "and `CPUProcesses`. Setting `acceleration=CPU1()`. "
-        tuned_model.acceleration = CPU1()
-    end
+    if (tuned_model.acceleration isa CPUProcesses && 
+        tuned_model.acceleration_resampling isa CPUProcesses)
+        message *= 
+        "The combination acceleration=$(tuned_model.acceleration) and"*
+        " acceleration_resampling=$(tuned_model.acceleration_resampling) is"*
+        "  not generally optimal. You may want to consider setting"*
+        " `acceleration = CPUProcesses()` and"*
+        " `acceleration_resampling = CPUThreads()`."
+     end
+    if (tuned_model.acceleration isa CPUThreads && 
+        tuned_model.acceleration_resampling isa CPUProcesses)
+        message *= 
+        "The combination acceleration=$(tuned_model.acceleration) and"*
+        " acceleration_resampling=$(tuned_model.acceleration_resampling) is"*
+        "  not generally optimal. You may want to consider setting"*
+        " `acceleration = CPUProcesses()` and"*
+        " `acceleration_resampling = CPUThreads()`."
+     end
     return message
 end
 
@@ -278,27 +291,153 @@ function event(metamodel,
 end
 
 function assemble_events(metamodels,
-                         resampling_machine,
+                         resampling_machines,
                          verbosity,
                          tuning,
                          history,
                          state,
                          acceleration::CPU1)
-    map(metamodels) do m
-        event(m, resampling_machine, verbosity, tuning, history, state)
-    end
+     local ret
+     resampling_machine = resampling_machines[1]
+     n_metamodels = length(metamodels)
+     verbosity < 1 || begin
+                 p = Progress(n_metamodels,
+                 dt = 0,
+                 desc = "Evaluating over $(n_metamodels) metamodels: ",
+                 barglyphs = BarGlyphs("[=> ]"),
+                 barlen = 25,
+                 color = :yellow)
+                 update!(p,0)
+      end
+    
+      @sync begin   
+        ret = map(metamodels) do m
+            r= event(m, resampling_machine, verbosity, tuning, history, state)
+            verbosity < 1 || begin
+                      p.counter += 1
+                      ProgressMeter.updateProgress!(p)  
+                    end 
+            r
+       end
+      end
+
+    return ret
 end
 
 function assemble_events(metamodels,
-                         resampling_machine,
+                         resampling_machines,
                          verbosity,
                          tuning,
                          history,
                          state,
                          acceleration::CPUProcesses)
-    pmap(metamodels) do m
-        event(m, resampling_machine, verbosity, tuning, history, state)
+  resampling_machine = resampling_machines[1]
+n_metamodels = length(metamodels)
+local ret
+channel = RemoteChannel(()->Channel{Bool}(min(1000, n_metamodels)), 1)
+@sync begin
+    verbosity < 1 || (p = Progress(n_metamodels,
+                 dt = 0,
+                 desc = "Evaluating over $n_metamodels metamodels: ",
+                 barglyphs = BarGlyphs("[=> ]"),
+                 barlen = 25,
+                 color = :yellow))
+        # printing the progress bar
+       verbosity < 1 || @async begin
+                    update!(p,0)
+                    while take!(channel)
+                    p.counter +=1
+                    ProgressMeter.updateProgress!(p)
+                    end
+                    end
+        
+    
+     @sync begin
+            ret = @distributed vcat for m in metamodels
+        	r = event(m, resampling_machine, verbosity, tuning, history, state)
+        	verbosity < 1 || begin
+                            put!(channel, true)
+                            #yield()
+                            end
+        	r
+    	   end
     end
+    verbosity < 1 || put!(channel, false)
+    
+    end
+    close(channel)
+    return ret
+end
+
+@static if VERSION >= v"1.3.0-DEV.573"
+# one machine for each thread; cycle through available threads:
+function assemble_events(metamodels,
+                         resampling_machines,
+                         verbosity,
+                         tuning,
+                         history,
+                         state,
+                         acceleration::CPUThreads)
+    
+    if Threads.nthreads() == 1
+        return assemble_events(metamodels,
+                         resampling_machines,
+                         verbosity,
+                         tuning,
+                         history,
+                         state,
+                         CPU1())
+   end
+    n_metamodels = length(metamodels)
+    n_threads = Threads.nthreads()
+    M = typeof(_first(first(metamodels)))
+    ret = Vector{Tuple{M,Any}}(undef, n_metamodels)
+    verbosity < 1 || (p = Progress(n_metamodels,
+                 dt = 0,
+                 desc = "Evaluating over $(n_metamodels) metamodels: ",
+                 barglyphs = BarGlyphs("[=> ]"),
+                 barlen = 25,
+                 color = :yellow))
+    verbosity < 1 || update!(p,0)
+    lock_ = ReentrantLock()
+    partitions = Iterators.partition(1:n_metamodels, 
+                    max(1,cld(n_metamodels, n_threads)))
+   @sync begin
+    @sync for parts in partitions    
+      Threads.@spawn begin        
+        foreach(parts) do m
+            id = Threads.threadid()
+            if !haskey(resampling_machines, id)
+               resampling_machines[id] =
+                   machine(Resampler(model= resampling_machines[1].model.model,
+                      resampling    = resampling_machines[1].model.resampling,
+                      measure       = resampling_machines[1].model.measure,
+                      weights       = resampling_machines[1].model.weights,
+                      operation     = resampling_machines[1].model.operation,
+                      check_measure = resampling_machines[1].model.check_measure,
+                      repeats       = resampling_machines[1].model.repeats,
+                      acceleration  = resampling_machines[1].model.acceleration),
+                      resampling_machines[1].args...)
+            end
+            ret[m] = event(metamodels[m], resampling_machines[id], 
+                                verbosity, tuning, history, state)
+            verbosity < 1 || begin
+                            lock(lock_)do
+                                p.counter +=1 
+                                ProgressMeter.updateProgress!(p)
+                            end
+                         end
+        end
+
+      end
+
+    end
+    end
+
+    return ret         
+end
+
+
 end
 
 # history is intialized to `nothing` because it's type is not known.
@@ -317,7 +456,7 @@ function build(history,
                state,
                verbosity,
                acceleration,
-               resampling_machine)
+               resampling_machines)
     j = _length(history)
     models_exhausted = false
     while j < n && !models_exhausted
@@ -339,7 +478,7 @@ function build(history,
         j += Δj
 
         Δhistory = assemble_events(metamodels,
-                                   resampling_machine,
+                                   resampling_machines,
                                    verbosity,
                                    tuning,
                                    history,
@@ -376,9 +515,11 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
                           repeats       = tuned_model.repeats,
                           acceleration  = tuned_model.acceleration_resampling)
     resampling_machine = machine(resampler, data...)
-
+    # For multithreading we need a clone of `resampling_machine` for each thread
+    # doing work. We have to be careful about data race.
+    resampling_machines = Dict(1 => resampling_machine)
     history = build(nothing, n, tuning, model, state,
-                    verbosity, acceleration, resampling_machine)
+                    verbosity, acceleration, resampling_machines)
 
     best_model, best_result = best(tuning, history)
     fitresult = machine(best_model, data...)
@@ -393,7 +534,7 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
     end
 
     report = merge(prereport, tuning_report(tuning, history, state))
-    meta_state = (history, deepcopy(tuned_model), state, resampling_machine)
+    meta_state = (history, deepcopy(tuned_model), state, resampling_machines)
 
     return fitresult, meta_state, report
 end
@@ -401,7 +542,7 @@ end
 function MLJBase.update(tuned_model::EitherTunedModel, verbosity::Integer,
                         old_fitresult, old_meta_state, data...)
 
-    history, old_tuned_model, state, resampling_machine = old_meta_state
+    history, old_tuned_model, state, resampling_machines = old_meta_state
     acceleration = tuned_model.acceleration
 
     tuning = tuned_model.tuning
@@ -423,7 +564,7 @@ function MLJBase.update(tuned_model::EitherTunedModel, verbosity::Integer,
         "to search, bringing total to $n!. "
 
         history = build(history, n!, tuning, model, state,
-                        verbosity, acceleration, resampling_machine)
+                        verbosity, acceleration, resampling_machines)
 
         best_model, best_result = best(tuning, history)
 
@@ -441,7 +582,7 @@ function MLJBase.update(tuned_model::EitherTunedModel, verbosity::Integer,
         _report = merge(prereport, tuning_report(tuning, history, state))
 
         meta_state = (history, deepcopy(tuned_model), state,
-                      resampling_machine)
+                      resampling_machines)
 
         return fitresult, meta_state, _report
 
@@ -484,3 +625,4 @@ MLJBase.input_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.input_scitype(M)
 MLJBase.target_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.target_scitype(M)
+
