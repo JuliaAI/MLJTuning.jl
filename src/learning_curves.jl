@@ -107,6 +107,26 @@ function learning_curve(model::Supervised, args...;
                   "`AbstractVector{<:AbstractRNG}`. ")
         end
     end
+    if (acceleration isa CPUProcesses && 
+        acceleration_grid isa CPUProcesses)
+        message = 
+        "The combination acceleration=$(acceleration) and"*
+        " acceleration_grid=$(acceleration_grid) is"*
+        "  not generally optimal. You may want to consider setting"*
+        " `acceleration = CPUProcesses()` and"*
+        " `acceleration_grid = CPUThreads()`."
+       @warn message
+     end
+    if (acceleration isa CPUThreads && 
+        acceleration_grid isa CPUProcesses)
+        message = 
+        "The combination acceleration=$(acceleration) and"*
+        " acceleration_grid=$(acceleration_grid) is"*
+        "  not generally optimal. You may want to consider setting"*
+        " `acceleration = CPUProcesses()` and"*
+        " `acceleration_grid = CPUThreads()`."
+        @warn message
+     end
 
     tuned_model = TunedModel(model=model,
                              range=range,
@@ -121,8 +141,10 @@ function learning_curve(model::Supervised, args...;
                              acceleration=acceleration_grid)
 
     tuned = machine(tuned_model, args...)
+    ## One tuned_mach per thread
+    tuned_machs = Dict(1 => tuned)
 
-    results = _tuning_results(rngs, acceleration, tuned, rng_name, verbosity)
+    results = _tuning_results(rngs, acceleration, tuned_machs, rng_name, verbosity)
 
     parameter_name=results.parameter_names[1]
     parameter_scale=results.parameter_scales[1]
@@ -141,12 +163,12 @@ _collate(plotting1, plotting2) =
                              plotting2.measurements),))
 
 # fallback:
-_tuning_results(rngs, acceleration, tuned, rngs_name, verbosity) =
+_tuning_results(rngs, acceleration, tuned_machs, rngs_name, verbosity) =
     error("acceleration=$acceleration unsupported. ")
 
 # single curve:
-_tuning_results(rngs::Nothing, acceleration, tuned, rngs_name, verbosity) =
-    _single_curve(tuned, verbosity)
+_tuning_results(rngs::Nothing, acceleration, tuned_machs, rngs_name, verbosity) =
+    _single_curve(tuned_machs[1], verbosity)
 
 function _single_curve(tuned, verbosity)
     fit!(tuned, verbosity=verbosity, force=true)
@@ -155,17 +177,32 @@ end
 
 # CPU1:
 function _tuning_results(rngs::AbstractVector, acceleration::CPU1,
-                         tuned, rng_name, verbosity)
+                         tuned_machs, rng_name, verbosity)
+    local ret
+    tuned = tuned_machs[1]
     old_rng = recursive_getproperty(tuned.model.model, rng_name)
-
-    ret = reduce(_collate,
-                 [begin
-                  recursive_setproperty!(tuned.model.model, rng_name, rng)
-                  fit!(tuned, verbosity=verbosity, force=true)
-                  tuned.report.plotting
-                  end
-                  for rng in rngs])
-
+    n_rngs = length(rngs)
+    verbosity < 1 || begin
+                 p = Progress(n_rngs,
+                 dt = 0,
+                 desc = "Evaluating Learning curve with $(n_rngs) rngs: ",
+                 barglyphs = BarGlyphs("[=> ]"),
+                 barlen = 18,
+                 color = :yellow)
+                 update!(p,0)
+                end
+    @sync begin
+    ret = mapreduce(_collate, rngs) do rng
+              recursive_setproperty!(tuned.model.model, rng_name, rng)
+              fit!(tuned, verbosity=verbosity-1, force=true)
+              r =tuned.report.plotting
+              verbosity < 1 || begin
+                      p.counter += 1
+                      ProgressMeter.updateProgress!(p) 
+                    end
+              r
+              end
+    end
     recursive_setproperty!(tuned.model.model, rng_name, old_rng)
 
     return ret
@@ -173,16 +210,119 @@ end
 
 # CPUProcesses:
 function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
-    tuned, rng_name, verbosity)
-
+    tuned_machs, rng_name, verbosity)
+    
+   tuned = tuned_machs[1]
     old_rng = recursive_getproperty(tuned.model.model, rng_name)
+    n_rngs = length(rngs)
+    channel = RemoteChannel(()->Channel{Bool}(min(1000, n_rngs)), 1)
+    local ret
+    @sync begin
+    verbosity < 1 || (p = Progress(n_rngs,
+                 dt = 0,
+                 desc = "Evaluating Learning curve with $(n_rngs) rngs: ",
+                 barglyphs = BarGlyphs("[=> ]"),
+                 barlen = 18,
+                 color = :yellow))
+        # printing the progress bar
+       verbosity < 1 || @async begin
+                    update!(p,0)
+                    while take!(channel)
+                    p.counter +=1
+                    ProgressMeter.updateProgress!(p)
+                    end
+                    end
+   @sync begin
     ret = @distributed (_collate) for rng in rngs
         recursive_setproperty!(tuned.model.model, rng_name, rng)
-        fit!(tuned, verbosity=-1, force=true)
-        tuned.report.plotting
+        fit!(tuned, verbosity=verbosity-1, force=true)
+        r=tuned.report.plotting
+        verbosity < 1 || begin
+                           put!(channel, true)
+                         end
+        r
+    end
     end
     recursive_setproperty!(tuned.model.model, rng_name, old_rng)
-
+    verbosity < 1 || put!(channel, false)
+    end
+    
     return ret
 end
 
+# CPUThreads:
+@static if VERSION >= v"1.3.0-DEV.573"
+function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
+    tuned_machs, rng_name, verbosity)
+    
+    n_threads = Threads.nthreads()
+    if n_threads == 1
+        return _tuning_results(rngs, CPU1(),
+                         tuned_machs, rng_name, verbosity)
+    end
+    
+    n_rngs = length(rngs)
+    old_rng = recursive_getproperty(tuned_machs[1].model.model, rng_name)
+    verbosity < 1 || begin
+                 p = Progress(n_rngs,
+                 dt = 0,
+                 desc = "Evaluating Learning curve with $(n_rngs) rngs: ",
+                 barglyphs = BarGlyphs("[=> ]"),
+                 barlen = 18,
+                 color = :yellow)
+                 update!(p,0)
+                end
+    loc = ReentrantLock()
+
+    results = Vector{Any}(undef, n_rngs) ##since we use Grid for now
+    partitions = Iterators.partition(1:n_rngs, cld(n_rngs, n_threads))
+    local ret 
+    
+   
+    @sync begin  
+     
+      @sync for rng_part in partitions   
+        Threads.@spawn begin
+           
+          foreach(rng_part) do k
+            id = Threads.threadid()
+            if !haskey(tuned_machs, id)
+                ## deepcopy of model is because other threads can still change the state
+                ## of tuned_machs[id].model.model
+                    tuned_machs[id] =
+                       machine(TunedModel(model = deepcopy(tuned_machs[1].model.model),
+                             range=tuned_machs[1].model.range,
+                             tuning=tuned_machs[1].model.tuning,
+                             resampling=tuned_machs[1].model.resampling,
+                             operation=tuned_machs[1].model.operation,
+                             measure=tuned_machs[1].model.measure,
+                             train_best=tuned_machs[1].model.train_best,
+                             weights=tuned_machs[1].model.weights,
+                             repeats=tuned_machs[1].model.repeats,
+                             acceleration=tuned_machs[1].model.acceleration),
+                             tuned_machs[1].args...)
+            end
+            recursive_setproperty!(tuned_machs[id].model.model, rng_name, rngs[k])
+            fit!(tuned_machs[id], verbosity=verbosity-1, force=true)
+            verbosity < 1 || begin
+                              lock(loc)do
+                                p.counter +=1
+                                ProgressMeter.updateProgress!(p)
+                             end
+                            end
+            
+            results[k] = tuned_machs[id].report.plotting
+            end
+   
+          end
+          
+        end
+    end
+    ret =  reduce(_collate, results) 
+    recursive_setproperty!(tuned_machs[1].model.model, rng_name, old_rng)
+   return ret
+
+
+end
+
+end
