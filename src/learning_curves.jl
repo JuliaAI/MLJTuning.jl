@@ -108,13 +108,13 @@ function learning_curve(model::Supervised, args...;
         end
     end
     if acceleration isa CPUThreads
-        typeof(acceleration.settings) <: Signed || 
-          throw(ArgumentError("`n`used in `CPUThreads(n)`must" *
-                            "be an instance of type `T<:Signed`"))
         nthreads = Threads.nthreads() 
         if acceleration.settings isa Nothing 
             acceleration = CPUThreads(nthreads)
         end
+        typeof(acceleration.settings) <: Signed || 
+          throw(ArgumentError("`n`used in `CPUThreads(n)`must" *
+                            "be an instance of type `T<:Signed`"))
         acceleration.settings > 0 || 
             throw(error("Can't accelerate using $(acceleration.settings) tasks"))
     end
