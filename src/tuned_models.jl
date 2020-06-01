@@ -193,11 +193,11 @@ function TunedModel(; model=nothing,
                               "range will do. ")
     
     acceleration isa CPUThreads && begin         
-         typeof(acceleration.settings) <: Signed ||
-            throw(ArgumentError("`n` used in `CPUThreads(n)`must" *
-                                "be an instance of type `T<:Signed`"))
          acceleration isa CPUThreads{Nothing} && (acceleration = 
                                                    CPUThreads(Threads.nthreads()) )
+        typeof(acceleration.settings) <: Signed ||
+            throw(ArgumentError("`n` used in `CPUThreads(n)`must" *
+                                "be an instance of type `T<:Signed`"))
          acceleration.settings > 0 || throw(error("Can't accelerate using"*
                                         "$(acceleration.settings) tasks"))
     end
