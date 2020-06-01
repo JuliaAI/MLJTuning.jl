@@ -25,7 +25,7 @@ the (possibly nested) RNG field, and a vector `rngs` of RNG's, one for
 each curve. Alternatively, set `rngs` to the number of curves desired,
 in which case RNG's are automatically generated. The individual curve
 computations can be distributed across multiple processes using
-`acceleration=CPUProcesses()`. See the second example below for a
+`acceleration=CPUProcesses()` or `acceleration=CPUThreads()`. See the second example below for a
 demonstration.
 
 ```julia
@@ -107,8 +107,10 @@ function learning_curve(model::Supervised, args...;
                   "`AbstractVector{<:AbstractRNG}`. ")
         end
     end
-    if (acceleration isa CPUThreads &&
-        rngs isa AbstractVector{<:AbstractRNG})
+    if acceleration isa CPUThreads
+        typeof(acceleration.settings) <: Signed || 
+          throw(ArgumentError("`n`used in `CPUThreads(n)`must" *
+                            "be an instance of type `T<:Signed`"))
         nthreads = Threads.nthreads() 
         if acceleration.settings isa Nothing 
             acceleration = CPUThreads(nthreads)
@@ -255,8 +257,8 @@ end
 
 # CPUThreads:
 @static if VERSION >= v"1.3.0-DEV.573"
-function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads{T},
-    tuned, rng_name, verbosity) where T <: Integer
+function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
+    tuned, rng_name, verbosity)
     
     n_threads = Threads.nthreads()
     if n_threads == 1
