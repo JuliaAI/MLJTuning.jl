@@ -18,7 +18,7 @@ ComputationalResources = "^0.3"
 Distributions = "^0.22,^0.23"
 MLJBase = "^0.12.2,^0.13"
 MLJModelInterface = "^0.2"
-ProgressMeter = "^1.1"
+ProgressMeter = "^1.3"
 RecipesBase = "^0.8"
 julia = "^1"
 
