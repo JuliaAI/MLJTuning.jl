@@ -192,28 +192,20 @@ function TunedModel(; model=nothing,
                               "If `tuning=Explicit()`, any model in the "*
                               "range will do. ")
     
-    acceleration isa CPUThreads && begin         
-         acceleration isa CPUThreads{Nothing} && (acceleration = 
-                                                   CPUThreads(Threads.nthreads()) )
-        typeof(acceleration.settings) <: Signed ||
-            throw(ArgumentError("`n` used in `CPUThreads(n)`must" *
-                                "be an instance of type `T<:Signed`"))
-         acceleration.settings > 0 || throw(error("Can't accelerate using"*
-                                        "$(acceleration.settings) tasks"))
-    end
+   _acceleration = _process_accel_Settings(acceleration) 
 
     if model isa Deterministic
         tuned_model = DeterministicTunedModel(model, tuning, resampling,
                                        measure, weights, operation, range,
                                               train_best, repeats, n,
-                                              acceleration,
+                                              _acceleration,
                                               acceleration_resampling,
                                               check_measure)
     elseif model isa Probabilistic
         tuned_model = ProbabilisticTunedModel(model, tuning, resampling,
                                        measure, weights, operation, range,
                                               train_best, repeats, n,
-                                              acceleration,
+                                              _acceleration,
                                               acceleration_resampling,
                                               check_measure)
     else
@@ -397,7 +389,7 @@ function assemble_events(metamodels,
 
     n_metamodels = length(metamodels)
     ntasks = acceleration.settings
-    partitions = MLJBase.chunks(1:n_metamodels, ntasks)
+    partitions = chunks(1:n_metamodels, ntasks)
     tasks = Vector{Task}(undef, length(partitions))
     verbosity < 1 || begin 
                 p = Progress(n_metamodels,
