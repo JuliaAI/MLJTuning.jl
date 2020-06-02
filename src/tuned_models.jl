@@ -192,7 +192,7 @@ function TunedModel(; model=nothing,
                               "If `tuning=Explicit()`, any model in the "*
                               "range will do. ")
     
-   _acceleration = _process_accel_Settings(acceleration) 
+   _acceleration = _process_accel_settings(acceleration) 
 
     if model isa Deterministic
         tuned_model = DeterministicTunedModel(model, tuning, resampling,
