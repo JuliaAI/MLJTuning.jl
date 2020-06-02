@@ -18,7 +18,8 @@ export learning_curve!, learning_curve
 import MLJBase
 using MLJBase
 import MLJBase: Bounded, Unbounded, DoublyUnbounded,
-    LeftUnbounded, RightUnbounded
+    LeftUnbounded, RightUnbounded,
+    chunks, _process_accel_settings 
 using RecipesBase
 using Distributed
 import Distributions
