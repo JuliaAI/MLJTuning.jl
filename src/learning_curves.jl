@@ -107,17 +107,7 @@ function learning_curve(model::Supervised, args...;
                   "`AbstractVector{<:AbstractRNG}`. ")
         end
     end
-    if acceleration isa CPUThreads
-        nthreads = Threads.nthreads() 
-        if acceleration.settings isa Nothing 
-            acceleration = CPUThreads(nthreads)
-        end
-        typeof(acceleration.settings) <: Signed || 
-          throw(ArgumentError("`n`used in `CPUThreads(n)`must" *
-                            "be an instance of type `T<:Signed`"))
-        acceleration.settings > 0 || 
-            throw(error("Can't accelerate using $(acceleration.settings) tasks"))
-    end
+    _acceleration = _process_accel_settings(acceleration)
     if (acceleration isa CPUProcesses && 
         acceleration_grid isa CPUProcesses)
         message = 
@@ -153,7 +143,7 @@ function learning_curve(model::Supervised, args...;
 
     tuned = machine(tuned_model, args...)
 
-    results = _tuning_results(rngs, acceleration, tuned, rng_name, verbosity)
+    results = _tuning_results(rngs, _acceleration, tuned, rng_name, verbosity)
 
     parameter_name=results.parameter_names[1]
     parameter_scale=results.parameter_scales[1]
@@ -172,8 +162,8 @@ _collate(plotting1, plotting2) =
                              plotting2.measurements),))
 
 # fallback:
-_tuning_results(rngs, acceleration, tuned, rngs_name, verbosity) =
-    error("acceleration=$acceleration unsupported. ")
+#_tuning_results(rngs, acceleration, tuned, rngs_name, verbosity) =
+#    error("acceleration=$acceleration unsupported. ")
 
 # single curve:
 _tuning_results(rngs::Nothing, acceleration, tuned, rngs_name, verbosity) =
@@ -268,7 +258,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
     
     n_rngs = length(rngs)
     ntasks = acceleration.settings
-    partitions = MLJBase.chunks(1:n_rngs, ntasks)
+    partitions = chunks(1:n_rngs, ntasks)
     verbosity < 1 || begin
                  p = Progress(n_rngs,
                  dt = 0,
