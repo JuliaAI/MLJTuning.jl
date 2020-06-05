@@ -389,7 +389,7 @@ function assemble_events(metamodels,
 
     n_metamodels = length(metamodels)
     ntasks = acceleration.settings
-    partitions = chunks(1:n_metamodels, ntasks)
+    partitions = MLJBase.chunks(1:n_metamodels, ntasks)
     tasks = Vector{Task}(undef, length(partitions))
     verbosity < 1 || begin 
                 p = Progress(n_metamodels,
