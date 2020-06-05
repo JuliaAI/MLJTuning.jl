@@ -5,16 +5,17 @@ using MLJBase
 using MLJTuning
 import Distributions
 import Random
-import Random.seed!
-seed!(1234)
+using StableRNGs
 
 const Dist = Distributions
 
-x1 = rand(100);
-x2 = rand(100);
-x3 = rand(100)
+rng = StableRNGs.StableRNG(1234)
+
+x1 = rand(rng, 100);
+x2 = rand(rng, 100);
+x3 = rand(rng, 100)
 X = (x1=x1, x2=x2, x3=x3);
-y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.2*rand(100);
+y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.2*rand(rng, 100);
 
 mutable struct DummyModel <: Deterministic
     lambda::Int
@@ -46,8 +47,9 @@ r2 = range(super_model, :K, lower=0, upper=Inf, origin=2, unit=3)
 end
 
 @testset "setup" begin
+    rng = StableRNGs.StableRNG(1234)
     user_range = [r0, (r1, Dist.SymTriangularDist), r2]
-    tuning = RandomSearch(positive_unbounded=Dist.Gamma, rng=123)
+    tuning = RandomSearch(positive_unbounded=Dist.Gamma, rng=rng)
 
     @test MLJTuning.default_n(tuning, user_range) == MLJTuning.DEFAULT_N
 
@@ -63,12 +65,13 @@ end
 end
 
 @testset "models!" begin
+    rng = StableRNGs.StableRNG(1234)
     N = 10000
     model = DummyModel(1, 1, 'k')
     r1 = range(model, :lambda, lower=0, upper=1)
     r2 = range(model, :alpha, lower=-1, upper=1)
     user_range = [r1, r2]
-    tuning = RandomSearch(rng=1)
+    tuning = RandomSearch(rng=rng)
     tuned_model = TunedModel(model=model,
                              tuning=tuning,
                              n=N,
@@ -94,12 +97,13 @@ end
 end
 
 @testset "tuned model using random search and its report" begin
+    rng = StableRNGs.StableRNG(1234)
     N = 4
     model = DummyModel(1, 1, 'k')
     r1 = range(model, :lambda, lower=0, upper=1)
     r2 = range(model, :alpha, lower=-1, upper=1)
     user_range = [r1, r2]
-    tuning = RandomSearch(rng=1)
+    tuning = RandomSearch(rng=rng)
     tuned_model = TunedModel(model=model,
                              tuning=tuning,
                              n=N,
@@ -128,13 +132,14 @@ end
 Base.rand(rng::Random.AbstractRNG, s::ConstantSampler) = s.c
 
 @testset "multiple samplers for single field" begin
+    rng = StableRNGs.StableRNG(1234)
     N = 1000
     model = DummyModel(1, 1, 'k')
     r = range(model, :alpha, lower=-1, upper=1)
     user_range = [(:lambda, ConstantSampler(0)),
              r,
              (:lambda, ConstantSampler(1))]
-    tuning = RandomSearch(rng=123)
+    tuning = RandomSearch(rng=rng)
     tuned_model = TunedModel(model=model,
                              tuning=tuning,
                              n=N,
@@ -144,7 +149,7 @@ Base.rand(rng::Random.AbstractRNG, s::ConstantSampler) = s.c
     my_models = first.(report(mach).history);
     lambdas = map(m -> m.lambda, my_models);
     a, b = values(Dist.countmap(lambdas))
-    @test abs(a/b -1) < 0.04
+    @test abs(a/b -1) < 0.06
     @test a + b == N
 end
 
