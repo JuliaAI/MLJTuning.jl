@@ -258,7 +258,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
     
     n_rngs = length(rngs)
     ntasks = acceleration.settings
-    partitions = chunks(1:n_rngs, ntasks)
+    partitions = MLJBase.chunks(1:n_rngs, ntasks)
     verbosity < 1 || begin
                  p = Progress(n_rngs,
                  dt = 0,
