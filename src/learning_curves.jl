@@ -211,15 +211,18 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
     
     old_rng = recursive_getproperty(tuned.model.model, rng_name)
     n_rngs = length(rngs)
-    channel = RemoteChannel(()->Channel{Bool}(min(1000, n_rngs)), 1)
+    
     local ret
     @sync begin
-    verbosity < 1 || (p = Progress(n_rngs,
+    verbosity < 1 || begin 
+                p = Progress(n_rngs,
                  dt = 0,
                  desc = "Evaluating Learning curve with $(n_rngs) rngs: ",
                  barglyphs = BarGlyphs("[=> ]"),
                  barlen = 18,
-                 color = :yellow))
+                 color = :yellow)
+                channel = RemoteChannel(()->Channel{Bool}(min(1000, n_rngs)), 1)
+        end
         # printing the progress bar
         verbosity < 1 || @async begin
                     update!(p,0)
@@ -228,7 +231,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
                     ProgressMeter.updateProgress!(p)
                     end
                     close(channel)
-                    end
+                 end
    @sync begin
     ret = @distributed (_collate) for rng in rngs
         recursive_setproperty!(tuned.model.model, rng_name, rng)
@@ -236,12 +239,11 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
         r=tuned.report.plotting
         verbosity < 1 || put!(channel, true)
         r
-    end
-    end
+     end
+   end
     recursive_setproperty!(tuned.model.model, rng_name, old_rng)
     verbosity < 1 || put!(channel, false)
-    end
-    
+ end
     return ret
 end
 
