@@ -3,7 +3,7 @@ language: julia
 os:
   - linux
 env:
-  - JULIA_NUM_THREADS=2
+  - JULIA_NUM_THREADS=3
 julia:
   - 1.0
   #- 1.1
@@ -16,6 +16,8 @@ matrix:
     - julia: nightly
 notifications:
   email: false
+git:
+  depth: 9999999
 after_success:
  - julia -e 'import Pkg; Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'
 
