@@ -415,7 +415,8 @@ function assemble_events(metamodels,
     @sync for (i, parts) in enumerate(partitions)  
       tasks[i] = Threads.@spawn begin    
          # One tresampling_machine per task
-         tresampling_machine =
+         Threads.threadid() == 1 || begin
+                        resampling_machine =
                    machine(Resampler(model= resampling_machine.model.model,
                       resampling    = resampling_machine.model.resampling,
                       measure       = resampling_machine.model.measure,
@@ -425,9 +426,9 @@ function assemble_events(metamodels,
                       repeats       = resampling_machine.model.repeats,
                       acceleration  = resampling_machine.model.acceleration),
                       resampling_machine.args...)       
-
+                    end
          map(parts) do m
-            r = event(metamodels[m], tresampling_machine, 
+            r = event(metamodels[m], resampling_machine, 
                                 verbosity, tuning, history, state)
             verbosity < 1 || put!(ch, true)
             r
