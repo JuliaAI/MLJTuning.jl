@@ -159,21 +159,19 @@ function TunedModel(; model=nothing,
     model == nothing && error("You need to specify model=... .\n"*
                               "If `tuning=Explicit()`, any model in the "*
                               "range will do. ")
-    
-   _acceleration = _process_accel_settings(acceleration) 
 
     if model isa Deterministic
         tuned_model = DeterministicTunedModel(model, tuning, resampling,
                                        measure, weights, operation, range,
                                               train_best, repeats, n,
-                                              _acceleration,
+                                              acceleration,
                                               acceleration_resampling,
                                               check_measure)
     elseif model isa Probabilistic
         tuned_model = ProbabilisticTunedModel(model, tuning, resampling,
                                        measure, weights, operation, range,
                                               train_best, repeats, n,
-                                              _acceleration,
+                                              acceleration,
                                               acceleration_resampling,
                                               check_measure)
     else
@@ -218,7 +216,6 @@ function MLJBase.clean!(tuned_model::EitherTunedModel)
         " `acceleration = CPUProcesses()` and"*
         " `acceleration_resampling = CPUThreads()`."
      end
-    
     return message
 end
 
@@ -249,6 +246,7 @@ function event(metamodel,
     fit!(resampling_machine, verbosity=verb)
     e = evaluate(resampling_machine)
     r = result(tuning, history, state, e, metadata)
+
     if verbosity > 2
         println("hyperparameters: $(params(model))")
     end
@@ -261,13 +259,14 @@ function event(metamodel,
 end
 
 function assemble_events(metamodels,
-                         resampling_machine,
+                         resampling_machines,
                          verbosity,
                          tuning,
                          history,
                          state,
                          acceleration::CPU1)
-     local results
+     local ret
+     resampling_machine = resampling_machines[1]
      n_metamodels = length(metamodels)
      verbosity < 1 || begin
                  p = Progress(n_metamodels,
@@ -278,29 +277,31 @@ function assemble_events(metamodels,
                  color = :yellow)
                  update!(p,0)
       end
-      
-        results = map(metamodels) do m
+    
+      @sync begin   
+        ret = map(metamodels) do m
             r= event(m, resampling_machine, verbosity, tuning, history, state)
             verbosity < 1 || begin
                       p.counter += 1
                       ProgressMeter.updateProgress!(p)  
                     end 
             r
+       end
       end
 
-    return results
+    return ret
 end
 
 function assemble_events(metamodels,
-                         resampling_machine,
+                         resampling_machines,
                          verbosity,
                          tuning,
                          history,
                          state,
                          acceleration::CPUProcesses)
-
+  resampling_machine = resampling_machines[1]
 n_metamodels = length(metamodels)
-local results
+local ret
 channel = RemoteChannel(()->Channel{Bool}(min(1000, n_metamodels)), 1)
 @sync begin
     verbosity < 1 || (p = Progress(n_metamodels,
@@ -309,21 +310,22 @@ channel = RemoteChannel(()->Channel{Bool}(min(1000, n_metamodels)), 1)
                  barglyphs = BarGlyphs("[=> ]"),
                  barlen = 25,
                  color = :yellow))
-       # printing the progress bar
+        # printing the progress bar
        verbosity < 1 || @async begin
-                        update!(p,0)
-                        while take!(channel)
-                          p.counter +=1
-                          ProgressMeter.updateProgress!(p)
-                        end
-                      end
+                    update!(p,0)
+                    while take!(channel)
+                    p.counter +=1
+                    ProgressMeter.updateProgress!(p)
+                    end
+                    end
         
     
      @sync begin
-            results = @distributed vcat for m in metamodels
+            ret = @distributed vcat for m in metamodels
         	r = event(m, resampling_machine, verbosity, tuning, history, state)
         	verbosity < 1 || begin
                             put!(channel, true)
+                            #yield()
                             end
         	r
     	   end
@@ -332,13 +334,13 @@ channel = RemoteChannel(()->Channel{Bool}(min(1000, n_metamodels)), 1)
     
     end
     close(channel)
-    return results
+    return ret
 end
 
 @static if VERSION >= v"1.3.0-DEV.573"
 # one machine for each thread; cycle through available threads:
 function assemble_events(metamodels,
-                         resampling_machine,
+                         resampling_machines,
                          verbosity,
                          tuning,
                          history,
@@ -347,65 +349,62 @@ function assemble_events(metamodels,
     
     if Threads.nthreads() == 1
         return assemble_events(metamodels,
-                         resampling_machine,
+                         resampling_machines,
                          verbosity,
                          tuning,
                          history,
                          state,
                          CPU1())
    end
-
     n_metamodels = length(metamodels)
-    ntasks = acceleration.settings
-    partitions = chunks(1:n_metamodels, ntasks)
-    tasks = Vector{Task}(undef, length(partitions))
-    verbosity < 1 || begin 
-                p = Progress(n_metamodels,
+    n_threads = Threads.nthreads()
+    M = typeof(_first(first(metamodels)))
+    ret = Vector{Tuple{M,Any}}(undef, n_metamodels)
+    verbosity < 1 || (p = Progress(n_metamodels,
                  dt = 0,
                  desc = "Evaluating over $(n_metamodels) metamodels: ",
                  barglyphs = BarGlyphs("[=> ]"),
                  barlen = 25,
-                 color = :yellow)
-                 update!(p,0)
-                 ch = Channel{Bool}(length(partitions))
-               end
-
-    @sync begin
-        # printing the progress bar
-        verbosity < 1 || @async begin
-                              while take!(ch)
+                 color = :yellow))
+    verbosity < 1 || update!(p,0)
+    lock_ = ReentrantLock()
+    partitions = Iterators.partition(1:n_metamodels, 
+                    max(1,cld(n_metamodels, n_threads)))
+   @sync begin
+    @sync for parts in partitions    
+      Threads.@spawn begin        
+        foreach(parts) do m
+            id = Threads.threadid()
+            if !haskey(resampling_machines, id)
+               resampling_machines[id] =
+                   machine(Resampler(model= resampling_machines[1].model.model,
+                      resampling    = resampling_machines[1].model.resampling,
+                      measure       = resampling_machines[1].model.measure,
+                      weights       = resampling_machines[1].model.weights,
+                      operation     = resampling_machines[1].model.operation,
+                      check_measure = resampling_machines[1].model.check_measure,
+                      repeats       = resampling_machines[1].model.repeats,
+                      acceleration  = resampling_machines[1].model.acceleration),
+                      resampling_machines[1].args...)
+            end
+            ret[m] = event(metamodels[m], resampling_machines[id], 
+                                verbosity, tuning, history, state)
+            verbosity < 1 || begin
+                            lock(lock_)do
                                 p.counter +=1 
                                 ProgressMeter.updateProgress!(p)
-                              end
-                              close(ch)
-                        end
-    # One tresampling_machine per task
-    machs = [resampling_machine, [machine(Resampler(model= resampling_machine.model.model,
-                      resampling    = resampling_machine.model.resampling,
-                      measure       = resampling_machine.model.measure,
-                      weights       = resampling_machine.model.weights,
-                      operation     = resampling_machine.model.operation,
-                      check_measure = resampling_machine.model.check_measure,
-                      repeats       = resampling_machine.model.repeats,
-                      acceleration  = resampling_machine.model.acceleration),
-                      resampling_machine.args...) for _ in 2:length(partitions)]...] 
-      
-    @sync for (i, parts) in enumerate(partitions)  
-      tasks[i] = Threads.@spawn begin    
-         map(metamodels[parts]) do m
-            println("m = ", m , "Threadid = ", Threads.threadid())
-            r = event(m, machs[i], 
-                                verbosity, tuning, history, state)
-            verbosity < 1 || put!(ch, true)
-            r
-       end
+                            end
+                         end
+        end
+
+      end
+
     end
-       
-end    
-    verbosity < 1 || put!(ch, false)        
+    end
+
+    return ret         
 end
-  reduce(vcat, fetch.(tasks))
-end
+
 
 end
 
@@ -425,7 +424,7 @@ function build(history,
                state,
                verbosity,
                acceleration,
-               resampling_machine)
+               resampling_machines)
     j = _length(history)
     models_exhausted = false
     while j < n && !models_exhausted
@@ -445,14 +444,15 @@ function build(history,
         Δj == 0 && break
         shortfall < 0 && (metamodels = metamodels[1:n - j])
         j += Δj
-        
+
         Δhistory = assemble_events(metamodels,
-                                   resampling_machine,
+                                   resampling_machines,
                                    verbosity,
                                    tuning,
                                    history,
                                    state,
                                    acceleration)
+
         history = _vcat(history, Δhistory)
     end
     return history
@@ -483,9 +483,11 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
                           repeats       = tuned_model.repeats,
                           acceleration  = tuned_model.acceleration_resampling)
     resampling_machine = machine(resampler, data...)
+    # For multithreading we need a clone of `resampling_machine` for each thread
+    # doing work. We have to be careful about data race.
+    resampling_machines = Dict(1 => resampling_machine)
     history = build(nothing, n, tuning, model, state,
-                    verbosity, acceleration, resampling_machine)
-
+                    verbosity, acceleration, resampling_machines)
 
     best_model, best_result = best(tuning, history)
     fitresult = machine(best_model, data...)
@@ -500,7 +502,7 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
     end
 
     report = merge(prereport, tuning_report(tuning, history, state))
-    meta_state = (history, deepcopy(tuned_model), state, resampling_machine)
+    meta_state = (history, deepcopy(tuned_model), state, resampling_machines)
 
     return fitresult, meta_state, report
 end
@@ -508,7 +510,7 @@ end
 function MLJBase.update(tuned_model::EitherTunedModel, verbosity::Integer,
                         old_fitresult, old_meta_state, data...)
 
-    history, old_tuned_model, state, resampling_machine = old_meta_state
+    history, old_tuned_model, state, resampling_machines = old_meta_state
     acceleration = tuned_model.acceleration
 
     tuning = tuned_model.tuning
@@ -530,7 +532,7 @@ function MLJBase.update(tuned_model::EitherTunedModel, verbosity::Integer,
         "to search, bringing total to $n!. "
 
         history = build(history, n!, tuning, model, state,
-                        verbosity, acceleration, resampling_machine)
+                        verbosity, acceleration, resampling_machines)
 
         best_model, best_result = best(tuning, history)
 
@@ -548,14 +550,14 @@ function MLJBase.update(tuned_model::EitherTunedModel, verbosity::Integer,
         _report = merge(prereport, tuning_report(tuning, history, state))
 
         meta_state = (history, deepcopy(tuned_model), state,
-                      resampling_machine)
+                      resampling_machines)
 
         return fitresult, meta_state, _report
 
     else
 
         return fit(tuned_model, verbosity, data...)
-  
+
     end
 
 end
@@ -590,7 +592,4 @@ MLJBase.is_pure_julia(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
 MLJBase.input_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.input_scitype(M)
 MLJBase.target_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
-
-
-
     MLJBase.target_scitype(M)
