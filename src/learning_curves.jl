@@ -305,11 +305,11 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
           end
        end
      end
-        recursive_setproperty!(tuned.model.model, rng_name, old_rng)
         verbosity < 1 || put!(ch, false)
    end
    
    ret =  reduce(_collate, fetch.(tasks)) 
+   recursive_setproperty!(tuned.model.model, rng_name, old_rng)
    return ret
 end
 
