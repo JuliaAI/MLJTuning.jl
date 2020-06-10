@@ -393,7 +393,6 @@ function assemble_events(metamodels,
     @sync for (i, parts) in enumerate(partitions)  
       tasks[i] = Threads.@spawn begin    
          map(metamodels[parts]) do m
-            println("m = ", m , "Threadid = ", Threads.threadid())
             r = event(m, machs[i], 
                                 verbosity, tuning, history, state)
             verbosity < 1 || put!(ch, true)
