@@ -227,22 +227,22 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
         verbosity < 1 || @async begin
                     update!(p,0)
                     while take!(channel)
-                    p.counter +=1
-                    ProgressMeter.updateProgress!(p)
+                        p.counter +=1
+                        ProgressMeter.updateProgress!(p)
                     end
                     close(channel)
                  end
    @sync begin
     ret = @distributed (_collate) for rng in rngs
-        recursive_setproperty!(tuned.model.model, rng_name, rng)
-        fit!(tuned, verbosity=verbosity-1, force=true)
-        r=tuned.report.plotting
-        verbosity < 1 || put!(channel, true)
-        r
-     end
-   end
-    recursive_setproperty!(tuned.model.model, rng_name, old_rng)
-    verbosity < 1 || put!(channel, false)
+            recursive_setproperty!(tuned.model.model, rng_name, rng)
+            fit!(tuned, verbosity=verbosity-1, force=true)
+            r=tuned.report.plotting
+            verbosity < 1 || put!(channel, true)
+            r
+        end
+     recursive_setproperty!(tuned.model.model, rng_name, old_rng)
+     verbosity < 1 || put!(channel, false)
+   end  
  end
     return ret
 end
@@ -297,15 +297,14 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
                          acceleration=tuned.model.acceleration),
                          tuned.args...) for _ in 2:length(partitions)]...] 
     @sync for (i,rng_part) in enumerate(partitions)   
-        tasks[i] = Threads.@spawn begin
-           
+        tasks[i] = Threads.@spawn begin  
           mapreduce(_collate, rng_part) do k
             recursive_setproperty!(tmachs[i].model.model, rng_name, rngs[k])
             fit!(tmachs[i], verbosity=verbosity-1, force=true)
             verbosity < 1 || put!(ch, true)
             tmachs[i].report.plotting
           end
-       end
+        end
      end
         verbosity < 1 || put!(ch, false)
    end
