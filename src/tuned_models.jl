@@ -301,9 +301,10 @@ function assemble_events(metamodels,
 
 n_metamodels = length(metamodels)
 local results
-channel = RemoteChannel(()->Channel{Bool}(min(1000, n_metamodels)), 1)
 @sync begin
-    verbosity < 1 || (p = Progress(n_metamodels,
+    verbosity < 1 || begin
+               channel = RemoteChannel(()->Channel{Bool}(min(1000, n_metamodels)), 1)
+                p = Progress(n_metamodels,
                  dt = 0,
                  desc = "Evaluating over $n_metamodels metamodels: ",
                  barglyphs = BarGlyphs("[=> ]"),
@@ -316,6 +317,7 @@ channel = RemoteChannel(()->Channel{Bool}(min(1000, n_metamodels)), 1)
                           p.counter +=1
                           ProgressMeter.updateProgress!(p)
                         end
+                       close(channel)
                       end
         
     
@@ -327,11 +329,10 @@ channel = RemoteChannel(()->Channel{Bool}(min(1000, n_metamodels)), 1)
                             end
         	r
     	   end
+          verbosity < 1 || put!(channel, false)
     end
-    verbosity < 1 || put!(channel, false)
-    
     end
-    close(channel)
+        
     return results
 end
 
