@@ -309,7 +309,8 @@ local results
                  desc = "Evaluating over $n_metamodels metamodels: ",
                  barglyphs = BarGlyphs("[=> ]"),
                  barlen = 25,
-                 color = :yellow))
+                 color = :yellow)
+        end
        # printing the progress bar
        verbosity < 1 || @async begin
                         update!(p,0)
