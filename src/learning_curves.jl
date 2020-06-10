@@ -255,7 +255,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
         return _tuning_results(rngs, CPU1(),
                          tuned, rng_name, verbosity)
     end
-    
+    old_rng = recursive_getproperty(tuned.model.model, rng_name)
     n_rngs = length(rngs)
     ntasks = acceleration.settings
     partitions = MLJBase.chunks(1:n_rngs, ntasks)
@@ -280,14 +280,10 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
                               end
                               close(ch)
                         end
-      
-    @sync for (i,rng_part) in enumerate(partitions)   
-        tasks[i] = Threads.@spawn begin
-           # One t_tuned per task
-            ## deepcopy of model is because other threads can still change the state
-            ## of tuned.model.model
-            t_tuned =
-               machine(TunedModel(model = deepcopy(tuned.model.model),
+    # One t_tuned per task
+    ## deepcopy of model is because other threads can still change the state
+    ## of tuned.model.model
+     tmachs = [tuned, [machine(TunedModel(model = deepcopy(tuned.model.model),
                          range=tuned.model.range,
                          tuning=tuned.model.tuning,
                          resampling=tuned.model.resampling,
@@ -297,15 +293,19 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
                          weights=tuned.model.weights,
                          repeats=tuned.model.repeats,
                          acceleration=tuned.model.acceleration),
-                         tuned.args...)
+                         tuned.args...) for _ in 2:length(partitions)]...] 
+    @sync for (i,rng_part) in enumerate(partitions)   
+        tasks[i] = Threads.@spawn begin
+           
           mapreduce(_collate, rng_part) do k
-            recursive_setproperty!(t_tuned.model.model, rng_name, rngs[k])
-            fit!(t_tuned, verbosity=verbosity-1, force=true)
+            recursive_setproperty!(tmachs[i].model.model, rng_name, rngs[k])
+            fit!(tmachs[i], verbosity=verbosity-1, force=true)
             verbosity < 1 || put!(ch, true)
-            t_tuned.report.plotting
+            tmachs[i].report.plotting
           end
        end
-       end
+     end
+        recursive_setproperty!(tuned.model.model, rng_name, old_rng)
         verbosity < 1 || put!(ch, false)
    end
    
