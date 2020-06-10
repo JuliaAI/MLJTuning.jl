@@ -3,7 +3,7 @@ language: julia
 os:
   - linux
 env:
-  - JULIA_NUM_THREADS=30
+  - JULIA_NUM_THREADS=2
 julia:
   - 1.0
   - 1.1
