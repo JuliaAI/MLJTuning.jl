@@ -230,9 +230,8 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
                         p.counter +=1
                         ProgressMeter.updateProgress!(p)
                     end
-                    close(channel)
                  end
-   @sync begin
+
     ret = @distributed (_collate) for rng in rngs
             recursive_setproperty!(tuned.model.model, rng_name, rng)
             fit!(tuned, verbosity=verbosity-1, force=true)
@@ -280,7 +279,6 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
                                 p.counter +=1 
                                 ProgressMeter.updateProgress!(p)
                               end
-                              close(ch)
                         end
     # One t_tuned per task
     ## deepcopy of model is because other threads can still change the state
