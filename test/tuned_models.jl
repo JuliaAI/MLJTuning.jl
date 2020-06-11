@@ -79,7 +79,7 @@ end
 end
 
 @static if VERSION >= v"1.3.0-DEV.573"
-@testset_accelerated "accel. (CPUThreads)" accel (exclude=[CPUProcesses],) begin
+@testset_accelerated "accel. (CPUThreads)" accel begin
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
                     measures=[rms, l1], acceleration= CPUThreads(),
@@ -90,7 +90,7 @@ end
     @test results3 ≈ results
 end
 end
-@testset_accelerated "accel. (CPUProcesses)" accel (exclude=[CPUProcesses],) begin
+@testset_accelerated "accel. (CPUProcesses)" accel begin
     best_index = argmin(results)
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
