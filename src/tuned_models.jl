@@ -311,27 +311,24 @@ local results
                  barlen = 25,
                  color = :yellow)
         end
-       # printing the progress bar
-       verbosity < 1 || @async begin
-                        update!(p,0)
-                        while take!(channel)
-                          p.counter +=1
-                          ProgressMeter.updateProgress!(p)
-                        end
-                       close(channel)
-                      end
+   # printing the progress bar
+   verbosity < 1 || @async begin
+                    update!(p,0)
+                    while take!(channel)
+                      p.counter +=1
+                      ProgressMeter.updateProgress!(p)
+                    end
+             end
         
-    
-     @sync begin
-            results = @distributed vcat for m in metamodels
-        	r = event(m, resampling_machine, verbosity, tuning, history, state)
-        	verbosity < 1 || begin
+
+    results = @distributed vcat for m in metamodels
+        r = event(m, resampling_machine, verbosity, tuning, history, state)
+            verbosity < 1 || begin
                             put!(channel, true)
                             end
-        	r
-    	   end
-          verbosity < 1 || put!(channel, false)
-    end
+        r
+       end
+      verbosity < 1 || put!(channel, false)
     end
         
     return results
@@ -369,7 +366,7 @@ function assemble_events(metamodels,
                  barlen = 25,
                  color = :yellow)
                  update!(p,0)
-                 ch = Channel{Bool}(length(partitions))
+                 ch = Channel{Bool}(min(1000, length(partitions)) )
                end
 
     @sync begin
@@ -379,7 +376,6 @@ function assemble_events(metamodels,
                                 p.counter +=1 
                                 ProgressMeter.updateProgress!(p)
                               end
-                              close(ch)
                         end
     # One tresampling_machine per task
     machs = [resampling_machine, [machine(Resampler(model= resampling_machine.model.model,
