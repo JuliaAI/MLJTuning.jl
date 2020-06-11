@@ -162,8 +162,8 @@ function TunedModel(; model=nothing,
     
     if (acceleration isa CPUThreads && 
         acceleration_resampling isa CPUProcesses)
-        acceleration = CPUProcesses 
-        acceleration_resampling = CPUThreads
+        acceleration = CPUProcesses()
+        acceleration_resampling = CPUThreads()
     end
    _acceleration = _process_accel_settings(acceleration) 
 
