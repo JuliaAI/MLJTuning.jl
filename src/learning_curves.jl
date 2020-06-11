@@ -223,14 +223,14 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
                  color = :yellow)
                 channel = RemoteChannel(()->Channel{Bool}(min(1000, n_rngs)), 1)
         end
-        # printing the progress bar
-        verbosity < 1 || @async begin
-                    update!(p,0)
-                    while take!(channel)
-                        p.counter +=1
-                        ProgressMeter.updateProgress!(p)
-                    end
-                 end
+    # printing the progress bar
+    verbosity < 1 || @async begin
+                update!(p,0)
+                while take!(channel)
+                    p.counter +=1
+                    ProgressMeter.updateProgress!(p)
+                end
+             end
 
     ret = @distributed (_collate) for rng in rngs
             recursive_setproperty!(tuned.model.model, rng_name, rng)
@@ -240,8 +240,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
             r
         end
      recursive_setproperty!(tuned.model.model, rng_name, old_rng)
-     verbosity < 1 || put!(channel, false)
-   end  
+     verbosity < 1 || put!(channel, false) 
  end
     return ret
 end
