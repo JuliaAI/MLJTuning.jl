@@ -1,8 +1,6 @@
-module TestTunedModels
 using Distributed
 
 using Test
-using Distributed
 
 @everywhere begin
     using MLJBase
@@ -13,7 +11,7 @@ end
 
 using Random
 Random.seed!(1234*myid())
-using ..TestUtilities
+using .TestUtilities
 
 N = 30
 x1 = rand(N);
@@ -165,5 +163,4 @@ end
                      end
 end)
 
-end #module
 true
