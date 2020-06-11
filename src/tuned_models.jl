@@ -210,7 +210,7 @@ function MLJBase.clean!(tuned_model::EitherTunedModel)
         " `acceleration = CPUProcesses()` and"*
         " `acceleration_resampling = CPUThreads()`."
      end
-    iif (tuned_model.acceleration isa CPUThreads && 
+    if (tuned_model.acceleration isa CPUThreads && 
         tuned_model.acceleration_resampling isa CPUProcesses)
         message *= 
         "The combination acceleration=$(tuned_model.acceleration) and"*
