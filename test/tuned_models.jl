@@ -1,18 +1,17 @@
 using Distributed
 
 using Test
-using MLJBase
-import ComputationalResources: CPU1, CPUProcesses, CPUThreads
-using Random
-Random.seed!(1234)
-
 
 @everywhere begin
+    using MLJBase
+    using MLJTuning
     using ..Models
-    using MLJTuning # gets extended in tests
+    import ComputationalResources: CPU1, CPUProcesses, CPUThreads
 end
 
-using ..TestUtilities
+using Random
+Random.seed!(1234*myid())
+using .TestUtilities
 
 N = 30
 x1 = rand(N);
@@ -163,6 +162,5 @@ end
                          @test m.K == r.K
                      end
 end)
-
 
 true
