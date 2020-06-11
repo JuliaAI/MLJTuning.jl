@@ -8,7 +8,7 @@ using Distributed
     using MLJTuning
     using ..Models
     import ComputationalResources: CPU1, CPUProcesses, CPUThreads
-    using Distributed
+    #using Distributed
 end
 using Random
 Random.seed!(1234*myid())

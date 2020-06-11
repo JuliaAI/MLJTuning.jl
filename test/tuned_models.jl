@@ -79,18 +79,18 @@ end
 end
 
 @static if VERSION >= v"1.3.0-DEV.573"
-@testset_accelerated "accel. (CPUThreads)" accel (exclude=[CPUProcesses],) begin
+@testset_accelerated "accel. (CPUThreads)" accel begin
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
                     measures=[rms, l1], acceleration= CPUThreads(),
                     acceleration_resampling=accel)
-    fitresult, meta_state, report = fit(tm, 1, X, y);
+    fitresult, meta_state, report = fit(tm, 0, X, y);
     history, _, state = meta_state;
     results3 = map(event -> last(event).measurement[1], history)
     @test results3 ≈ results
 end
 end
-@testset_accelerated "accel. (CPUProcesses)" accel (exclude=[CPUProcesses],) begin
+@testset_accelerated "accel. (CPUProcesses)" accel begin
     best_index = argmin(results)
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
@@ -163,5 +163,6 @@ end
                          @test m.K == r.K
                      end
 end)
+
 
 true
