@@ -18,6 +18,7 @@ include("test_utilities.jl")
 
 print("Loading some models for testing...")
 # load `Models` module containing models implementations for testing:
+include("models.jl") #incluse in main process to precompile
 @everywhere include("models.jl")
 print("\r                                           \r")
 
