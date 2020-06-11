@@ -107,7 +107,7 @@ function learning_curve(model::Supervised, args...;
                   "`AbstractVector{<:AbstractRNG}`. ")
         end
     end
-    _acceleration = _process_accel_settings(acceleration)
+    
     if (acceleration isa CPUProcesses && 
         acceleration_grid isa CPUProcesses)
         message = 
@@ -122,13 +122,15 @@ function learning_curve(model::Supervised, args...;
         acceleration_grid isa CPUProcesses)
         message = 
         "The combination acceleration=$(acceleration) and"*
-        " acceleration_grid=$(acceleration_grid) is"*
-        "  not generally optimal. You may want to consider setting"*
+        " acceleration_grid=$(acceleration_grid) isn't supported. \n"*
+        "Resetting to"*
         " `acceleration = CPUProcesses()` and"*
         " `acceleration_grid = CPUThreads()`."
         @warn message
+        acceleration = CPUProcesses()  
+        acceleration_grid = CPUThreads()
      end
-   
+   _acceleration = _process_accel_settings(acceleration)
     tuned_model = TunedModel(model=model,
                              range=range,
                              tuning=Grid(resolution=resolution,
