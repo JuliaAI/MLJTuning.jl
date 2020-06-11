@@ -2,8 +2,9 @@
 language: julia
 os:
   - linux
+#For some reason we can't have more than 2 threads per job
 env:
-  - JULIA_NUM_THREADS=3
+  - JULIA_NUM_THREADS=2
 julia:
   - 1.0
   #- 1.1
