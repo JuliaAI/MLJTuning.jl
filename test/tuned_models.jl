@@ -80,7 +80,7 @@ end
 
 @static if VERSION >= v"1.3.0-DEV.573"
 @testset_accelerated "Basic fit (CPUThreads)" accel begin
-    printstyled("\n Testing progressmeter basic fit with $(accel) and CPUThreads resampling \n", color=:bold
+    printstyled("\n Testing progressmeter basic fit with $(accel) and CPUThreads resampling \n", color=:bold)
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
                     measures=[rms, l1], acceleration= CPUThreads(),
@@ -92,7 +92,7 @@ end
 end
 end
 @testset_accelerated "Basic fit (CPUProcesses)" accel begin
-    printstyled("\n Testing progressmeter basic fit with $(accel) and CPUProcesses resampling \n", color=:bold
+    printstyled("\n Testing progressmeter basic fit with $(accel) and CPUProcesses resampling \n", color=:bold)
     best_index = argmin(results)
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
