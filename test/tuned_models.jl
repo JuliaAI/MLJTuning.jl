@@ -90,7 +90,7 @@ end
     @test results3 ≈ results
 end
 end
-@testset_accelerated "accel. (CPUProcesses)" accel begin
+@testset_accelerated "accel. (CPUProcesses)" accel (exclude=[CPUProcesses],) begin
     best_index = argmin(results)
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
