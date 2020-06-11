@@ -160,11 +160,7 @@ function TunedModel(; model=nothing,
                               "If `tuning=Explicit()`, any model in the "*
                               "range will do. ")
     
-    if (acceleration isa CPUThreads && 
-        acceleration_resampling isa CPUProcesses)
-        acceleration = CPUProcesses()
-        acceleration_resampling = CPUThreads()
-    end
+    
    _acceleration = _process_accel_settings(acceleration) 
 
     if model isa Deterministic
@@ -214,12 +210,12 @@ function MLJBase.clean!(tuned_model::EitherTunedModel)
         " `acceleration = CPUProcesses()` and"*
         " `acceleration_resampling = CPUThreads()`."
      end
-    if (tuned_model.acceleration isa CPUThreads && 
+    iif (tuned_model.acceleration isa CPUThreads && 
         tuned_model.acceleration_resampling isa CPUProcesses)
         message *= 
         "The combination acceleration=$(tuned_model.acceleration) and"*
-        " acceleration_resampling=$(tuned_model.acceleration_resampling) isn't"*
-        " supported. \n Resetting to"*
+        " acceleration_resampling=$(tuned_model.acceleration_resampling) is"*
+        "  not generally optimal. You may want to consider setting"*
         " `acceleration = CPUProcesses()` and"*
         " `acceleration_resampling = CPUThreads()`."
      end
