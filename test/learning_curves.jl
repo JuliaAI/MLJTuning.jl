@@ -72,6 +72,8 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.2*rand(100);
 
 end
 
+@static if VERSION >= v"1.3.0-DEV.573"
+
 @testset_accelerated "learning curves (CPUThreads grid) " accel begin
     atom = FooBarRegressor()
     ensemble = EnsembleModel(atom=atom, n=50)
@@ -123,6 +125,8 @@ end
     @test curves2.measurements ≈ curves3.measurements
 
 end
+end
+
 @testset_accelerated "learning curves (CPUProcesses grid) " accel begin
     atom = FooBarRegressor()
     ensemble = EnsembleModel(atom=atom, n=50)
