@@ -84,7 +84,7 @@ end
                     range=r, resampling=CV(nfolds=2),
                     measures=[rms, l1], acceleration= CPUThreads(),
                     acceleration_resampling=accel)
-    fitresult, meta_state, report = fit(tm, 1, X, y);
+    fitresult, meta_state, report = fit(tm, 0, X, y);
     history, _, state = meta_state;
     results3 = map(event -> last(event).measurement[1], history)
     @test results3 ≈ results
