@@ -223,16 +223,15 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
                  color = :yellow)
                 channel = RemoteChannel(()->Channel{Bool}(min(1000, n_rngs)), 1)
         end
-        # printing the progress bar
-        verbosity < 1 || @async begin
-                    update!(p,0)
-                    while take!(channel)
-                        p.counter +=1
-                        ProgressMeter.updateProgress!(p)
-                    end
-                    close(channel)
-                 end
-   @sync begin
+    # printing the progress bar
+    verbosity < 1 || @async begin
+                update!(p,0)
+                while take!(channel)
+                    p.counter +=1
+                    ProgressMeter.updateProgress!(p)
+                end
+             end
+
     ret = @distributed (_collate) for rng in rngs
             recursive_setproperty!(tuned.model.model, rng_name, rng)
             fit!(tuned, verbosity=verbosity-1, force=true)
@@ -241,8 +240,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUProcesses,
             r
         end
      recursive_setproperty!(tuned.model.model, rng_name, old_rng)
-     verbosity < 1 || put!(channel, false)
-   end  
+     verbosity < 1 || put!(channel, false) 
  end
     return ret
 end
@@ -280,7 +278,6 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
                                 p.counter +=1 
                                 ProgressMeter.updateProgress!(p)
                               end
-                              close(ch)
                         end
     # One t_tuned per task
     ## deepcopy of model is because other threads can still change the state
