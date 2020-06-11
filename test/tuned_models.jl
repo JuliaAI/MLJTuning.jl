@@ -13,7 +13,7 @@ end
 
 using Random
 Random.seed!(1234*myid())
-using ..TestUtilitiess
+using ..TestUtilities
 
 N = 30
 x1 = rand(N);
