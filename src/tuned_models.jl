@@ -159,6 +159,16 @@ function TunedModel(; model=nothing,
     model == nothing && error("You need to specify model=... .\n"*
                               "If `tuning=Explicit()`, any model in the "*
                               "range will do. ")
+    
+    if (tuned_model.acceleration isa CPUThreads && 
+        tuned_model.acceleration_resampling isa CPUProcesses)
+        
+        tuned_model.acceleration = CPUProcesses()
+        tuned_model.acceleration_resampling = CPUThreads()        
+    end
+    
+    tuned_model.acceleration =
+        _process_accel_settings(tuned_model.acceleration) 
 
     if model isa Deterministic
         tuned_model = DeterministicTunedModel(model, tuning, resampling,
@@ -222,8 +232,6 @@ function MLJBase.clean!(tuned_model::EitherTunedModel)
         tuned_model.acceleration_resampling = CPUThreads()        
     end
     
-    tuned_model.acceleration =
-        _process_accel_settings(tuned_model.acceleration) 
     
     return message
 end
