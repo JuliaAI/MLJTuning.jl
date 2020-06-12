@@ -322,10 +322,9 @@ results = @sync begin
          barglyphs = BarGlyphs("[=> ]"),
          barlen = 25,
          color = :yellow)
-        
+   verbosity < 1 || update!(p,0)   
    # printing the progress bar
    verbosity < 1 || @async begin
-                    update!(p,0)
                     while take!(channel)
                       p.counter +=1
                       ProgressMeter.updateProgress!(p)
@@ -379,8 +378,9 @@ function assemble_events(metamodels,
          barlen = 25,
          color = :yellow)
     ch = Channel{Bool}(min(1000, length(partitions)) )
-    update!(p,0)
-        
+   
+    verbosity < 1 || update!(p,0)
+      
     @sync begin
         # printing the progress bar
         verbosity < 1 || @async begin
