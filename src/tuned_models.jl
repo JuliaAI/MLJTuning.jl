@@ -275,23 +275,22 @@ function assemble_events(metamodels,
                          acceleration::CPU1)
      local results
      n_metamodels = length(metamodels)
-     verbosity < 1 || begin
-                 p = Progress(n_metamodels,
-                 dt = 0,
-                 desc = "Evaluating over $(n_metamodels) metamodels: ",
-                 barglyphs = BarGlyphs("[=> ]"),
-                 barlen = 25,
-                 color = :yellow)
-                 update!(p,0)
-      end
-      
-        results = map(metamodels) do m
-            r= event(m, resampling_machine, verbosity, tuning, history, state)
-            verbosity < 1 || begin
-                      p.counter += 1
-                      ProgressMeter.updateProgress!(p)  
-                    end 
-            r
+     p = Progress(n_metamodels,
+         dt = 0,
+         desc = "Evaluating over $(n_metamodels) metamodels: ",
+         barglyphs = BarGlyphs("[=> ]"),
+         barlen = 25,
+         color = :yellow)
+                 
+    verbosity <1 || update!(p,0)
+
+    results = map(metamodels) do m
+        r= event(m, resampling_machine, verbosity, tuning, history, state)
+        verbosity < 1 || begin
+                  p.counter += 1
+                  ProgressMeter.updateProgress!(p)  
+                end 
+        r
       end
 
     return results
@@ -306,17 +305,16 @@ function assemble_events(metamodels,
                          acceleration::CPUProcesses)
 
 n_metamodels = length(metamodels)
-local results
-@sync begin
-    verbosity < 1 || begin
-               channel = RemoteChannel(()->Channel{Bool}(min(1000, n_metamodels)), 1)
-                p = Progress(n_metamodels,
-                 dt = 0,
-                 desc = "Evaluating over $n_metamodels metamodels: ",
-                 barglyphs = BarGlyphs("[=> ]"),
-                 barlen = 25,
-                 color = :yellow)
-        end
+
+results = @sync begin
+   channel = RemoteChannel(()->Channel{Bool}(min(1000, n_metamodels)), 1)
+   p = Progress(n_metamodels,
+         dt = 0,
+         desc = "Evaluating over $n_metamodels metamodels: ",
+         barglyphs = BarGlyphs("[=> ]"),
+         barlen = 25,
+         color = :yellow)
+        
    # printing the progress bar
    verbosity < 1 || @async begin
                     update!(p,0)
@@ -327,7 +325,7 @@ local results
              end
         
 
-    results = @distributed vcat for m in metamodels
+    ret = @distributed vcat for m in metamodels
         r = event(m, resampling_machine, verbosity, tuning, history, state)
             verbosity < 1 || begin
                             put!(channel, true)
@@ -335,6 +333,7 @@ local results
         r
        end
       verbosity < 1 || put!(channel, false)
+      ret
     end
         
     return results
@@ -363,18 +362,17 @@ function assemble_events(metamodels,
     n_metamodels = length(metamodels)
     ntasks = acceleration.settings
     partitions = chunks(1:n_metamodels, ntasks)
-    tasks = Vector{Task}(undef, length(partitions))
-    verbosity < 1 || begin 
-                p = Progress(n_metamodels,
-                 dt = 0,
-                 desc = "Evaluating over $(n_metamodels) metamodels: ",
-                 barglyphs = BarGlyphs("[=> ]"),
-                 barlen = 25,
-                 color = :yellow)
-                 update!(p,0)
-                 ch = Channel{Bool}(min(1000, length(partitions)) )
-               end
-
+    #tasks = Vector{Task}(undef, length(partitions))
+    results = Vector(undef, length(partitions))
+    p = Progress(n_metamodels,
+         dt = 0,
+         desc = "Evaluating over $(n_metamodels) metamodels: ",
+         barglyphs = BarGlyphs("[=> ]"),
+         barlen = 25,
+         color = :yellow)
+    ch = Channel{Bool}(min(1000, length(partitions)) )
+    update!(p,0)
+        
     @sync begin
         # printing the progress bar
         verbosity < 1 || @async begin
@@ -395,8 +393,8 @@ function assemble_events(metamodels,
                       resampling_machine.args...) for _ in 2:length(partitions)]...] 
       
     @sync for (i, parts) in enumerate(partitions)  
-      tasks[i] = Threads.@spawn begin    
-         map(metamodels[parts]) do m
+      Threads.@spawn begin    
+        results[i] =  map(metamodels[parts]) do m
             r = event(m, machs[i], 
                                 verbosity, tuning, history, state)
             verbosity < 1 || put!(ch, true)
@@ -407,7 +405,7 @@ function assemble_events(metamodels,
 end    
     verbosity < 1 || put!(ch, false)        
 end
-  reduce(vcat, fetch.(tasks))
+  reduce(vcat, results)
 end
 
 end
