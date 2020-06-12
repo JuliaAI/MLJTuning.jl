@@ -160,28 +160,28 @@ function TunedModel(; model=nothing,
                               "If `tuning=Explicit()`, any model in the "*
                               "range will do. ")
     
-    if (tuned_model.acceleration isa CPUThreads && 
-        tuned_model.acceleration_resampling isa CPUProcesses)
+    if (acceleration isa CPUThreads && 
+        acceleration_resampling isa CPUProcesses)
         
-        tuned_model.acceleration = CPUProcesses()
-        tuned_model.acceleration_resampling = CPUThreads()        
+        acceleration = CPUProcesses()
+        acceleration_resampling = CPUThreads()        
     end
     
-    tuned_model.acceleration =
-        _process_accel_settings(tuned_model.acceleration) 
+    _acceleration =
+        _process_accel_settings(acceleration) 
 
     if model isa Deterministic
         tuned_model = DeterministicTunedModel(model, tuning, resampling,
                                        measure, weights, operation, range,
                                               train_best, repeats, n,
-                                              acceleration,
+                                              _acceleration,
                                               acceleration_resampling,
                                               check_measure)
     elseif model isa Probabilistic
         tuned_model = ProbabilisticTunedModel(model, tuning, resampling,
                                        measure, weights, operation, range,
                                               train_best, repeats, n,
-                                              acceleration,
+                                              _acceleration,
                                               acceleration_resampling,
                                               check_measure)
     else
