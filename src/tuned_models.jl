@@ -281,8 +281,9 @@ function assemble_events(metamodels,
                          history,
                          state,
                          acceleration::CPU1)
-     local results
+
      n_metamodels = length(metamodels)
+    
      p = Progress(n_metamodels,
          dt = 0,
          desc = "Evaluating over $(n_metamodels) metamodels: ",
@@ -322,14 +323,15 @@ results = @sync begin
          barglyphs = BarGlyphs("[=> ]"),
          barlen = 25,
          color = :yellow)
-   verbosity < 1 || update!(p,0)   
+
    # printing the progress bar
-   verbosity < 1 || @async begin
-                    while take!(channel)
-                      p.counter +=1
-                      ProgressMeter.updateProgress!(p)
-                    end
-             end
+   verbosity < 1 || begin
+                      update!(p,0)   
+                      @async while take!(channel)
+                        p.counter +=1
+                        ProgressMeter.updateProgress!(p)
+                      end
+                   end
         
 
     ret = @distributed vcat for m in metamodels
@@ -349,12 +351,12 @@ end
 @static if VERSION >= v"1.3.0-DEV.573"
 # one machine for each thread; cycle through available threads:
 function assemble_events(metamodels,
-                         resampling_machine,
+                         resampling_machine{M},
                          verbosity,
                          tuning,
                          history,
                          state,
-                         acceleration::CPUThreads)
+                         acceleration::CPUThreads) where M<: Supervised
     
     if Threads.nthreads() == 1
         return assemble_events(metamodels,
@@ -379,18 +381,18 @@ function assemble_events(metamodels,
          color = :yellow)
     ch = Channel{Bool}(min(1000, length(partitions)) )
    
-    verbosity < 1 || update!(p,0)
       
     @sync begin
         # printing the progress bar
-        verbosity < 1 || @async begin
-                              while take!(ch)
-                                p.counter +=1 
-                                ProgressMeter.updateProgress!(p)
-                              end
+        verbosity < 1 || begin
+                          update!(p,0)
+                         @async while take!(ch)
+                            p.counter +=1 
+                            ProgressMeter.updateProgress!(p)
+                          end
                         end
     # One tresampling_machine per task
-    machs = [resampling_machine, [machine(Resampler(model= resampling_machine.model.model,
+    machs = [resampling_machine, [Machine{M}Resampler(model= resampling_machine.model.model,
                       resampling    = resampling_machine.model.resampling,
                       measure       = resampling_machine.model.measure,
                       weights       = resampling_machine.model.weights,
