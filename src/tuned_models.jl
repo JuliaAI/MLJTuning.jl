@@ -351,7 +351,7 @@ end
 @static if VERSION >= v"1.3.0-DEV.573"
 # one machine for each thread; cycle through available threads:
 function assemble_events(metamodels,
-                         resampling_machine{M},
+                         resampling_machine::Machine{M},
                          verbosity,
                          tuning,
                          history,
