@@ -275,7 +275,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
     
     ch = Channel{Bool}(length(partitions))
 
-    results = Vector(undef, length(partitions))
+    ret_ = Vector(undef, length(partitions))
 
     @sync begin
         verbosity < 1 || begin
@@ -302,7 +302,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
                          tuned.args...) for _ in 2:length(partitions)]...] 
     @sync for (i,rng_part) in enumerate(partitions)   
         Threads.@spawn begin  
-          results[1] = mapreduce(_collate, rng_part) do k
+          ret_[i] = mapreduce(_collate, rng_part) do k
             recursive_setproperty!(tmachs[i].model.model, rng_name, rngs[k])
             fit!(tmachs[i], verbosity=verbosity-1, force=true)
             verbosity < 1 || put!(ch, true)
@@ -313,7 +313,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
         verbosity < 1 || put!(ch, false)
    end
    
-   ret =  reduce(_collate, results) 
+   ret =  reduce(_collate, ret_) 
    recursive_setproperty!(tuned.model.model, rng_name, old_rng)
    return ret
 end
