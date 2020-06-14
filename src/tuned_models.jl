@@ -392,7 +392,7 @@ function assemble_events(metamodels,
                           end
                         end
     # One tresampling_machine per task
-    machs = [resampling_machine, [Machine{M}Resampler(model= resampling_machine.model.model,
+    machs = [resampling_machine, [Machine{M}(Resampler(model= resampling_machine.model.model,
                       resampling    = resampling_machine.model.resampling,
                       measure       = resampling_machine.model.measure,
                       weights       = resampling_machine.model.weights,
