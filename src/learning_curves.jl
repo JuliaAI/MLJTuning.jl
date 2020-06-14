@@ -179,7 +179,7 @@ end
 # CPU1:
 function _tuning_results(rngs::AbstractVector, acceleration::CPU1,
                          tuned, rng_name, verbosity)
-    local ret
+    
     old_rng = recursive_getproperty(tuned.model.model, rng_name)
     n_rngs = length(rngs)
     
@@ -260,6 +260,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
         return _tuning_results(rngs, CPU1(),
                          tuned, rng_name, verbosity)
     end
+    
     old_rng = recursive_getproperty(tuned.model.model, rng_name)
     n_rngs = length(rngs)
     ntasks = acceleration.settings
@@ -284,6 +285,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
                             ProgressMeter.updateProgress!(p)
                           end
                         end
+            
     # One t_tuned per task
     ## deepcopy of model is because other threads can still change the state
     ## of tuned.model.model
