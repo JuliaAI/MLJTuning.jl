@@ -289,7 +289,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
     # One t_tuned per task
     ## deepcopy of model is because other threads can still change the state
     ## of tuned.model.model
-     tmachs = [tuned, [Machine{typeof(tuned.model)}(TunedModel(model = deepcopy(tuned.model.model),
+     tmachs = [tuned, [machine(TunedModel(model = deepcopy(tuned.model.model),
                          range=tuned.model.range,
                          tuning=tuned.model.tuning,
                          resampling=tuned.model.resampling,
