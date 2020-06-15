@@ -166,14 +166,14 @@ function TunedModel(; model=nothing,
         tuned_model = DeterministicTunedModel(model, tuning, resampling,
                                        measure, weights, operation, range,
                                               train_best, repeats, n,
-                                              _acceleration,
+                                              acceleration,
                                               acceleration_resampling,
                                               check_measure)
     elseif model isa Probabilistic
         tuned_model = ProbabilisticTunedModel(model, tuning, resampling,
                                        measure, weights, operation, range,
                                               train_best, repeats, n,
-                                              _acceleration,
+                                              acceleration,
                                               acceleration_resampling,
                                               check_measure)
     else
