@@ -1,6 +1,6 @@
 ## TYPES AND CONSTRUCTOR
 
-mutable struct DeterministicTunedModel{T,M<:Deterministic,A,AR} <: MLJBase.Deterministic
+mutable struct DeterministicTunedModel{T,M<:Deterministic} <: MLJBase.Deterministic
     model::M
     tuning::T  # tuning strategy
     resampling # resampling strategy
@@ -11,12 +11,12 @@ mutable struct DeterministicTunedModel{T,M<:Deterministic,A,AR} <: MLJBase.Deter
     train_best::Bool
     repeats::Int
     n::Union{Int,Nothing}
-    acceleration::A
-    acceleration_resampling::AR
+    acceleration::AbstractResource
+    acceleration_resampling::AbstractResource
     check_measure::Bool
 end
 
-mutable struct ProbabilisticTunedModel{T,M<:Probabilistic,A,AR} <: MLJBase.Probabilistic
+mutable struct ProbabilisticTunedModel{T,M<:Probabilistic} <: MLJBase.Probabilistic
     model::M
     tuning::T  # tuning strategy
     resampling # resampling strategy
@@ -27,8 +27,8 @@ mutable struct ProbabilisticTunedModel{T,M<:Probabilistic,A,AR} <: MLJBase.Proba
     train_best::Bool
     repeats::Int
     n::Union{Int,Nothing}
-    acceleration::A
-    acceleration_resampling::AR
+    acceleration::AbstractResource
+    acceleration_resampling::AbstractResource
     check_measure::Bool
 end
 
@@ -160,15 +160,7 @@ function TunedModel(; model=nothing,
                               "If `tuning=Explicit()`, any model in the "*
                               "range will do. ")
     
-    if (acceleration isa CPUThreads && 
-        acceleration_resampling isa CPUProcesses)
-        
-        acceleration = CPUProcesses()
-        acceleration_resampling = CPUThreads()        
-    end
     
-    _acceleration =
-        _process_accel_settings(acceleration) 
 
     if model isa Deterministic
         tuned_model = DeterministicTunedModel(model, tuning, resampling,
@@ -232,6 +224,8 @@ function MLJBase.clean!(tuned_model::EitherTunedModel)
         tuned_model.acceleration_resampling = CPUThreads()        
     end
     
+    tuned_model.acceleration =
+        _process_accel_settings(tuned_model.acceleration)
     
     return message
 end
