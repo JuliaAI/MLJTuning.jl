@@ -290,7 +290,7 @@ function _tuning_results(rngs::AbstractVector, acceleration::CPUThreads,
     ## deepcopy of model is because other threads can still change the state
     ## of tuned.model.model
      tmachs = [tuned, [machine(TunedModel(model = deepcopy(tuned.model.model),
-                         range=tuned.model.range,
+                         range=deepcopy(tuned.model.range),
                          tuning=tuned.model.tuning,
                          resampling=tuned.model.resampling,
                          operation=tuned.model.operation,
