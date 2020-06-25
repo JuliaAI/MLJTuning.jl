@@ -18,8 +18,9 @@ include("test_utilities.jl")
 
 print("Loading some models for testing...")
 # load `Models` module containing models implementations for testing:
-@everywhere include("models.jl")
+include("models.jl") #precompile first in master node
 print("\r                                           \r")
+@everywhere include("models.jl")
 
 @testset "utilities" begin
     @test include("utilities.jl")

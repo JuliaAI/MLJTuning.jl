@@ -1,18 +1,17 @@
 using Distributed
 
 using Test
-using MLJBase
-import ComputationalResources: CPU1, CPUProcesses, CPUThreads
-using Random
-Random.seed!(1234)
-
 
 @everywhere begin
+    using MLJBase
+    using MLJTuning
     using ..Models
-    using MLJTuning # gets extended in tests
+    import ComputationalResources: CPU1, CPUProcesses, CPUThreads
 end
 
-using ..TestUtilities
+using Random
+Random.seed!(1234*myid())
+using .TestUtilities
 
 N = 30
 x1 = rand(N);
@@ -64,12 +63,13 @@ results = [(evaluate(model, X, y,
     @test_throws ArgumentError fit(tm, 0, X, y)
 end
 
-@testset_accelerated "basic fit" accel begin
+@testset_accelerated "basic fit (CPU1)" accel begin
+    printstyled("\n Testing progressmeter basic fit with $(accel) and CPU1 resampling \n", color=:bold)
     best_index = argmin(results)
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
                     measures=[rms, l1], acceleration=accel)
-    fitresult, meta_state, report = fit(tm, 0, X, y);
+    fitresult, meta_state, report = fit(tm, 1, X, y);
     history, _, state = meta_state;
     results2 = map(event -> last(event).measurement[1], history)
     @test results2 ≈ results
@@ -79,24 +79,26 @@ end
 end
 
 @static if VERSION >= v"1.3.0-DEV.573"
-@testset_accelerated "accel. (CPUThreads)" accel begin
+@testset_accelerated "Basic fit (CPUThreads)" accel begin
+    printstyled("\n Testing progressmeter basic fit with $(accel) and CPUThreads resampling \n", color=:bold)
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
                     measures=[rms, l1], acceleration= CPUThreads(),
                     acceleration_resampling=accel)
-    fitresult, meta_state, report = fit(tm, 0, X, y);
+    fitresult, meta_state, report = fit(tm, 1, X, y);
     history, _, state = meta_state;
     results3 = map(event -> last(event).measurement[1], history)
     @test results3 ≈ results
 end
 end
-@testset_accelerated "accel. (CPUProcesses)" accel begin
+@testset_accelerated "Basic fit (CPUProcesses)" accel begin
+    printstyled("\n Testing progressmeter basic fit with $(accel) and CPUProcesses resampling \n", color=:bold)
     best_index = argmin(results)
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
                     measures=[rms, l1], acceleration=CPUProcesses(),
                     acceleration_resampling=accel)
-    fitresult, meta_state, report = fit(tm, 0, X, y);
+    fitresult, meta_state, report = fit(tm, 1, X, y);
     history, _, state = meta_state;
     results4 = map(event -> last(event).measurement[1], history)
     @test results4 ≈ results
