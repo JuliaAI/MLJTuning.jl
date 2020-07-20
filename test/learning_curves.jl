@@ -70,6 +70,15 @@ y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.2*rand(100);
 
     @test curves2.measurements ≈ curves3.measurements
 
+   # restricting rows gives different answer:
+    curves4 = learning_curve(ensemble, X, y; range=r_n, resolution=7,
+                             rows = 1:60,
+                             acceleration=accel,
+                             rngs = 3,
+                             rng_name=:rng, verbosity=0)
+
+    @test !(curves4.measurements[1] ≈ curves2.measurements[1])
+
 end
 
 @static if VERSION >= v"1.3.0-DEV.573"
@@ -124,6 +133,15 @@ end
 
     @test curves2.measurements ≈ curves3.measurements
 
+    # restricting rows gives different answer:
+    curves4 = learning_curve(ensemble, X, y; range=r_n, resolution=7,
+                             acceleration=accel, acceleration_grid = CPUThreads(),
+                             rows = 1:60,
+                             rngs = 3,
+                             rng_name=:rng, verbosity=0)
+
+    @test !(curves4.measurements[1] ≈ curves2.measurements[1])
+
 end
 end
 
@@ -176,6 +194,15 @@ end
                              rng_name=:rng, verbosity=0)
 
     @test curves2.measurements ≈ curves3.measurements
+
+    # restricting rows gives different answer:
+    curves4 = learning_curve(ensemble, X, y; range=r_n, resolution=7,
+                             acceleration=accel, acceleration_grid = CPUProcesses(),
+                             rows=1:60,
+                             rngs = 3,
+                             rng_name=:rng, verbosity=0)
+
+    @test !(curves4.measurements[1] ≈ curves2.measurements[1])
 
 end
 
