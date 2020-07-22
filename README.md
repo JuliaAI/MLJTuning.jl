@@ -76,7 +76,7 @@ This repository contains:
   - [ ] Bayesian optimization using Gaussian processes
 
   - [x] structured tree Parzen estimators (`MLJTreeParzenTuning` from
-    [TreeParzen.jl](https://github.com/IQVIA-ML/TreeParzen.jl)
+    [TreeParzen.jl](https://github.com/IQVIA-ML/TreeParzen.jl))
 
   - [ ] multi-objective (Pareto) optimization
 
