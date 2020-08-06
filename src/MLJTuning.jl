@@ -32,16 +32,15 @@ using ProgressMeter
 
 const DEFAULT_N = 10 # for when `default_n` is not implemented
 
-
 ## INCLUDE FILES
 
 include("utilities.jl")
 include("tuning_strategy_interface.jl")
-include("tuned_models.jl")
-include("range_methods.jl")
 include("strategies/explicit.jl")
 include("strategies/grid.jl")
 include("strategies/random_search.jl")
+include("tuned_models.jl")
+include("range_methods.jl")
 include("plotrecipes.jl")
 include("learning_curves.jl")
 
