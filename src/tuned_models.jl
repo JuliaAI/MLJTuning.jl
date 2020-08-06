@@ -164,6 +164,7 @@ plus others specific to the `tuning` strategy, such as `history=...`.
 
 - `check_measure`: whether to check `measure` is compatible with the
   specified `model` and `operation`)
+
 """
 function TunedModel(; model=nothing,
                     tuning=Grid(),
