@@ -14,8 +14,8 @@
 
     xguide --> r.parameter_names[1]
     yguide --> r.parameter_names[2]
-    xscale --> (xsc == :linear ? :identity : xsc)
-    yscale --> (ysc == :linear ? :identity : ysc)
+    xscale --> (xsc in [:custom, :linear] ? :identity : xsc)
+    yscale --> (ysc in [:custom, :linear] ? :identity : ysc)
 
     st = get(plotattributes, :seriestype, :scatter)
 
