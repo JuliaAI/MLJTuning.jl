@@ -4,7 +4,7 @@ export FooBarRegressor
 
 import MLJBase
 using LinearAlgebra
-using ScientificTypes
+using MLJScientificTypes
 
 mutable struct FooBarRegressor <: MLJBase.Deterministic
     lambda::Float64

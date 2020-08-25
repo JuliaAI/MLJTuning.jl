@@ -1,6 +1,6 @@
 export DecisionTreeClassifier, DecisionTreeRegressor
 
-using ScientificTypes
+using MLJScientificTypes
 
 using CategoricalArrays
 
