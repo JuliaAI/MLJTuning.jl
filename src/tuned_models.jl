@@ -98,12 +98,6 @@ a score, rather than a loss, be sure to check that
 measure, rather than minimization. Override an incorrect value with
 `MLJ.orientation(::typeof(measure)) = :score`.
 
-*Important:* If `weights` are left unspecified, and `measure` supports
-sample weights, then any weight vector `w` used in constructing a
-corresponding tuning machine, as in `tuning_machine =
-machine(tuned_model, X, y, w)` (which is then used in *training* each
-model in the search) will also be passed to `measure` for evaluation.
-
 In the case of two-parameter tuning, a Plots.jl plot of performance
 estimates is returned by `plot(mach)` or `heatmap(mach)`.
 
@@ -137,9 +131,8 @@ plus others specific to the `tuning` strategy, such as `history=...`.
   strategy is multi-objective) but all reported to the history
 
 - `weights`: sample weights to be passed the measure(s) in performance
-  evaluations, if supported (see important note above for behaviour in
-  unspecified case)
-
+  evaluations, if supported.
+  
 - `repeats=1`: for generating train/test sets multiple times in
   resampling; see [`evaluate!`](@ref) for details
 
