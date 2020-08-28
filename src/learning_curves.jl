@@ -83,8 +83,7 @@ a machine.
 - `rows` - row indices to which resampling should be restricted;
   default is all rows
 
-- `weights` - sample weights used by `measure`; defaults to weights
-  bound to `mach` if these exist
+- `weights` - sample weights used by `measure` where supported
 
 - `operation` - operation, such as `predict`, to be used in
   evaluations. If `prediction_type(mach.model) == :probabilistic` but
