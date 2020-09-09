@@ -163,7 +163,7 @@ begin, on the basis of the specific strategy and a user-specified
   simply selects the model whose evaluation `e` has the smallest or
   largest `e.measurement[1]` value, according to whether the metric
   `e.measure[1]` is a `:loss` or `:score`. Most heuristics are
-  *generic* and in the sense they will apply no matter what tuning
+  *generic* in the sense they will apply no matter what tuning
   strategy is applied.  A selection heuristic supported by a
   multi-objective tuning strategy must select *some* "best" model
   (e.g., a random Pareto optimal solution).
@@ -181,9 +181,8 @@ begin, on the basis of the specific strategy and a user-specified
   (i) additional user-inspectable statistics that may be of interest -
   (for example the temperature in simulated annhealing); and (ii) any
   tuning strategy-specific information required to be recorded in the
-  history to be made available to `models!` for generating the next
-  batch of model candidates - for example an implementation-specific
-  representation of `model`.
+  history, for example an implementation-specific representation of
+  `model`.
 
 - A *tuning strategy* is an instance of some subtype `S <:
   TuningStrategy`, the name `S` (e.g., `Grid`) indicating the tuning
@@ -201,10 +200,10 @@ begin, on the basis of the specific strategy and a user-specified
   strategy, resampling strategy, performance measure(s), selection
   heuristic, and total iteration count are given. This definition is
   intentionally broad and the interface places no restriction on the
-  allowed types of this object, although all strategies should support
-  the one-dimensional range objects defined in `MLJBase` (see
-  [below](#range-types). A range may be generally be understood as the
-  "space" of models being searched *plus* strategy-specific data
+  allowed types of this object, although **all strategies should
+  support the one-dimensional range objects** defined in `MLJBase`
+  (see [below](#range-types)). Generally, a range may be understood as
+  the "space" of models being searched *plus* strategy-specific data
   explaining how models from that space are actually to be generated
   (e.g., grid resolutions or probability distributions specific to
   particular hyper-parameters). For more on range types see [Range
@@ -388,11 +387,6 @@ is `fit!` the first time, and not on subsequent calls (unless
 `force=true`). (Specifically, `MLJBase.fit(::TunedModel, ...)` calls
 `setup` but `MLJBase.update(::TunedModel, ...)` does not.)
 
-The `setup` function is called once only, when a `TunedModel` machine
-is `fit!` the first time, and not on subsequent calls (unless
-`force=true`). (Specifically, `MLJBase.fit(::TunedModel, ...)` calls
-`setup` but `MLJBase.update(::TunedModel, ...)` does not.)
-
 The `verbosity` is an integer indicating the level of logging: `0`
 means logging should be restricted to warnings, `-1`, means completely
 silent.
@@ -425,8 +419,8 @@ model instances to be evaluated. Any number of models can be returned
 (and this includes an empty vector or `nothing`, if models have been
 exhausted) and the evaluations will be performed in parallel (using
 the mode of parallelization defined by the `acceleration` field of the
-`TunedModel` instance). *An update of the history, performed
-automatically under the hood, only occurs after these evaluations.*
+`TunedModel` instance). ***An update of the history, performed
+automatically under the hood, only occurs after these evaluations.***
 
 Most sequential tuning strategies will want include the batch size as
 a hyperparameter, which we suggest they call `batch_size`, but this
@@ -434,14 +428,14 @@ field is not part of the tuning interface. In tuning, whatever models
 are returned by `models!` get evaluated in parallel.
 
 In a `Grid` tuning strategy, for example, `models!` returns a random
-selection of `n - length(history)` models from the grid, so that
-`models!` is called only once (in each call to
+selection of `n_remaining = n - length(history)` models from the grid,
+so that `models!` is called only once (in each call to
 `MLJBase.fit(::TunedModel, ...)` or `MLJBase.update(::TunedModel,
 ...)`). In a bona fide sequential method which is generating models
 non-deterministically (such as simulated annealing), `models!` might
 return a single model, or return a small batch of models to make use
 of parallelization (the method becoming "semi-sequential" in that
-case). 
+case).
 
 ##### Including model metadata
 
@@ -477,9 +471,9 @@ constructed with this code:
 ```julia
 report = merge((best_model=best_model, 
                 best_result=best_result, 
-				best_report=best_report,
-				history=history,),
-				tuning_report(tuning, history, state))
+                best_report=best_report,
+                history=history,),
+                tuning_report(tuning, history, state))
 ```
 
 where:
@@ -533,8 +527,6 @@ define
 ```julia
 MLJTuning.supports_heuristic(::SpecialHeuristic, ::TuningStrategy) = true
 ```
-
-All tuning strategies If a tuning strategy `TuningStrategy` supports a given selection 
 
 
 ### Implementation example: Search through an explicit list
@@ -618,7 +610,8 @@ heuristics can be modelled on the default heuristic
 `OptimizeAggregatedMeasure()` which simply chooses the model with the
 lowest (or highest) aggregated performance estimate, based on the
 first measure specified by the user in his `TunedModel` construction
-(she may specify more than one). 
+(she may specify more than one). The method which returns the best
+model is called `best`:
 
 ```julia
 struct OptimizeAggregatedMeasure <: MLJTuning.SelectionHeuristic end
@@ -641,7 +634,7 @@ strategies) we additionally define
 MLJTuning.supports_heuristic(::SpecialHeuristic, ::Any) = true
 ```
 
-For strategy-specific selection heuristics, see [above](#the-supports-heuristic-trait). 
+For strategy-specific selection heuristics, see [above](#the-supportsheuristic-trait). 
 
 
 
