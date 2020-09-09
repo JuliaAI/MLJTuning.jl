@@ -138,7 +138,7 @@ begin, on the basis of the specific strategy and a user-specified
 - An *evaluation* is the value returned by some call to the
   `evaluate!` method, when passed the resampling strategy (e.g.,
   `CV(nfolds=9)` and performance measures specified by the user when
-  specifying the tuning task (e.g., `cross_entropy`b,
+  specifying the tuning task (e.g., `cross_entropy`,
   `accuracy`). Recall that such a value is a named tuple of vectors
   with keys `measure`, `measurement`, `per_fold`, and
   `per_observation`. See [Evaluating Model
@@ -407,7 +407,7 @@ etc.
 #### The `models!` method: For generating model batches to evaluate
 
 ```julia
-MLJTuning.models!(tuning::MyTuningStrategy, model, history, state, verbosity)
+MLJTuning.models!(tuning::MyTuningStrategy, model, history, state, n_remaining, verbosity)
 ```
 
 This is the core method of a new implementation. Given the existing
