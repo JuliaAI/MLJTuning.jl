@@ -12,6 +12,7 @@ learning models.
  - [Who is this repo for?](#who-is-this-repo-for)
  - [What's provided here?](#what-is-provided-here)
  - [How do I implement a new tuning strategy?](#how-do-i-implement-a-new-tuning-strategy)
+ - [How do I implement a new selection heuristic?](#how-do-i-implement-a-new-selection-heuristic)
 
 *Note:* This component of the [MLJ
   stack](https://github.com/alan-turing-institute/MLJ.jl#the-mlj-universe)
@@ -116,15 +117,15 @@ other models as hyperparameters, and while the type of the prototype
 mutations is fixed, the types of the sub-models are allowed to vary.
 
 When all iterations of the algorithm are complete, the optimal model
-is selected based entirely on a *history* generated according to the
-specified *tuning strategy*. Iterations are generally performed in
-batches, which are evaluated in parallel (sequential tuning strategies
-degenerating into semi-sequential strategies, unless the batch size is
-one). At the beginning of each batch, both the history and an internal
-*state* object are consulted, and, on the basis of the tuning
-strategy, a new batch of models to be evaluated is generated. On the
-basis of these evaluations, and the strategy, the history and internal
-state are updated.
+is selected by applying a *selection_heuristic* to a *history*
+generated according to the specified *tuning strategy*. Iterations are
+generally performed in batches, which are evaluated in parallel
+(sequential tuning strategies degenerating into semi-sequential
+strategies, unless the batch size is one). At the beginning of each
+batch, both the history and an internal *state* object are consulted,
+and, on the basis of the tuning strategy, a new batch of models to be
+evaluated is generated. On the basis of these evaluations, and the
+strategy, the history and internal state are updated.
 
 The tuning algorithm initializes the state object before iterations
 begin, on the basis of the specific strategy and a user-specified
@@ -135,58 +136,78 @@ begin, on the basis of the specific strategy and a user-specified
   the model type (e.g., `DecisionTreeRegressor`). Models do not
   store learned parameters.
 
-- An *evaluation* is the value returned by some call to the
+- An *evaluation* is an object `E` returned by some call to the
   `evaluate!` method, when passed the resampling strategy (e.g.,
-  `CV(nfolds=9)` and performance measures specified by the user when
-  specifying the tuning task (e.g., `cross_entropy`,
-  `accuracy`). Recall that such a value is a named tuple of vectors
-  with keys `measure`, `measurement`, `per_fold`, and
-  `per_observation`. See [Evaluating Model
+  `CV(nfolds=9)` and a battery of user-specified performance measures
+  (e.g., [`cross_entropy`, `accuracy`]). An evaluation object `E`
+  contains a list of measures `E.measure` and a list of corresponding
+  measurements `E.measurement`, each of which is the aggregrate of
+  measurements for each resamplings of the data, which are stored in
+  `E.per_fold` (a vector of vectors). In the case of a measure that
+  reports a value for each individual observation (to obtain the
+  per-fold measurement, by aggregation) the per-observation values can
+  be retrieved from `E.per_observation`. This last object includes
+  `missing` entries for measures that do not report per-observation
+  values (`reports_per_observation(measure) = false`) such as
+  `auc`. See [Evaluating Model
   Performance](https://alan-turing-institute.github.io/MLJ.jl/dev/evaluating_model_performance/)
-  for details. Recall also that some measures in MLJ (e.g.,
-  `cross_entropy`) report a loss (or score) for each provided
-  observation, while others (e.g., `auc`) report only an aggregated
-  value (the `per_observation` entries being recorded as
-  `missing`). This and other behavior can be inspected using trait
-  functions. Do `info(rms)` to view the trait values for the `rms`
-  loss, for example, and see [Performance
+  for details. There is a trait for measures called `orientation`
+  which is `:loss` for measures you ordinarily want to minimize, and
+  `:score` for those you want to maximize. See [Performance
   measures](https://alan-turing-institute.github.io/MLJ.jl/dev/performance_measures/)
-  for details.
+  for further details.
 
-- The *history* is a vector of tuples of the form `(m, r)` generated
-  by the tuning algorithm - one tuple per iteration - where `m` is a
-  model instance that has been evaluated, and `r` (called the
-  *result*) contains three kinds of information: (i) whatever parts of
-  the evaluation needed to determine the optimal model; (ii)
-  additional user-inspectable statistics that may be of interest - for
-  example, evaluations of a measure (loss or score) different from one
-  being explicitly optimized; and (iii) any model "metadata" that a
-  tuning strategy implementation may need to be recorded for
-  generating the next batch of model candidates - for example an
-  implementation-specific representation of the model.
+- A *selection heuristic* is a rule describing how the outcomes of the
+  model evaluations will be used to select the *best (optimal)
+  model*. For example, the `OptimizeAggregatedMeasure()` heuristic
+  simply selects the model whose evaluation `e` has the smallest or
+  largest `e.measurement[1]` value, according to whether the metric
+  `e.measure[1]` is a `:loss` or `:score`. The heuristic is specified
+  independently of the tuning strategy, but some heuristics might only
+  be supported by certain tuning strategies. A selection heuristic
+  supported by a multi-objective tuning strategy must select *some*
+  "best" model (e.g., a random Pareto optimal solution). 
+
+- The *history* is a vector of tuples of the form `(m, e, x)` generated
+  by the tuning algorithm - one tuple per iteration - where:
+  
+  - `m` is a model instance that has been evaluated.
+
+  - `e` records the main parts of the evaluation `E` of
+    `m`. Specifically, `e.measure=E.measure`,
+    `e.measurement=E.measurement` and `e.per_fold=E.per_fold`.
+	
+  - `x` (called the *extras*) contains two kinds of other information:
+  (i) additional user-inspectable statistics that may be of interest -
+  (for example the temperature in simulated annhealing); and (ii) any
+  tuning strategy-specific information required to be recorded in the
+  history to be made available to `models!` for generating the next
+  batch of model candidates - for example an implementation-specific
+  representation of `model`.
 
 - A *tuning strategy* is an instance of some subtype `S <:
   TuningStrategy`, the name `S` (e.g., `Grid`) indicating the tuning
   algorithm to be applied. The fields of the tuning strategy - called
-  *tuning hyperparameters* - are those tuning parameters specific to the
-  strategy that **do not refer to specific models or specific model
-  hyperparameters**. So, for example, a default resolution to be used
-  in a grid search is a hyperparameter of `Grid`, but the resolution
-  to be applied to a *specific* hyperparameter (such as the maximum
-  depth of a decision tree) is **not**. This latter parameter would be
-  part of the user-specified range object.
+  *tuning hyperparameters* - are those tuning parameters specific to
+  the strategy that **do not refer to specific models or specific
+  model hyperparameters**. So, for example, a default resolution to be
+  used in a grid search is a hyperparameter of `Grid`, but the
+  resolution to be applied to a *specific* hyperparameter (such as the
+  maximum depth of a decision tree) is **not**. This latter parameter
+  would be part of the user-specified range object.
 
 - A *range* is any object whose specification completes the
   specification of the tuning task, after the prototype, tuning
-  strategy, resampling strategy, performance measure(s), and total
-  iteration count are given - and is essentially the space of models
-  to be searched. This definition is intentionally broad and the
-  interface places no restriction on the allowed types of this
-  object. It may be generally viewed as the "space" of models being
-  searched *plus* strategy-specific data explaining how models from
-  that space are actually to be generated (e.g.,
-  hyperparameter-specific grid resolutions or probability
-  distributions). For more on range types see [Range
+  strategy, resampling strategy, performance measure(s), selection
+  heuristic, and total iteration count are given. This definition is
+  intentionally broad and the interface places no restriction on the
+  allowed types of this object, although all strategies should support
+  the one-dimensional range objects defined in `MLJBase` (see
+  [below](#range-types). A range may be generally be understood as the
+  "space" of models being searched *plus* strategy-specific data
+  explaining how models from that space are actually to be generated
+  (e.g., grid resolutions or probability distributions specific to
+  particular hyper-parameters). For more on range types see [Range
   types](#range-types) below.
 
 
@@ -194,9 +215,10 @@ begin, on the basis of the specific strategy and a user-specified
 
 Recall, for context, that in MLJ tuning is implemented as a model
 wrapper. A model is tuned by *fitting* the wrapped model to data
-(which also trains the optimal model on all available data). To use
-the optimal model one *predicts* using the wrapped model. For more
-detail, see the [Tuning
+(which also trains the optimal model on all available data). This
+process determines the optimal model, as defined by the selection
+heuristic (see above). To use the optimal model one *predicts* using
+the wrapped model. For more detail, see the [Tuning
 Models](https://alan-turing-institute.github.io/MLJ.jl/dev/tuning_models/)
 section of the MLJ manual.
 
@@ -216,6 +238,9 @@ In setting up a tuning task, the user constructs an instance of the
 - `measure`: a measure (loss or score) or vector of measures available
   to the tuning algorithm, the first of which is optimized in the
   common case of single-objective tuning strategies
+  
+- `selection_heuristic`: some instance of `SelectionHeuristic`, such
+  as `OptimizeAggregatedMeasure()` (default)
 
 - `range`: as defined above - roughly, the space of models to be searched
 
@@ -244,9 +269,6 @@ Several functions are part of the tuning strategy API:
 
 - `models!`: for generating batches of new models and updating the
   state (compulsory)
-
-- `best`: for extracting the entry in the history corresponding to the
-  optimal model from the full history
 
 - `tuning_report`: for selecting what to report to the user apart from
   details on the optimal model
@@ -329,34 +351,19 @@ of the MLJ manual or doc-strings for more on these methods and the
 `Grid` and `RandomSearch` implementations.
 
 
-#### The `result` method: For building each entry of the history
+#### The `extras` method: For building each extras entry of the history
 
 ```julia
-MLJTuning.result(tuning::MyTuningStrategy, history, state, e, metadata)
+MLJTuning.extras(tuning::MyTuningStrategy, history, state, e, metadata)
 ```
 
-This method is for constructing the result object `r` in each tuple
-`(m, r)` written to the history. Here `e` is the evaluation of the
-model `m` (as returned by a call to `evaluation!`) and `metadata` is
-any metadata associated with `m` when this is included in the output
-of `models!` (see below), and `nothing` otherwise. The value of `r` is
-also allowed to depend on previous events in the history. The fallback
-is:
+This method is for constructing the extras object `x` in each tuple
+`(m, e, x)` written to the history (see above). Here `metadata` is any
+metadata associated with `m` when this is included in the output of
+`models!` (see below), and will be `nothing` otherwise. The value of
+`r` is also allowed to depend on previous events in the `history`.
 
-```julia
-MLJTuning.result(tuning, history, state, e, metadata) = (measure=e.measure, measurement=e.measurement)
-```
-
-Note in this case that the result is always a named tuple of
-*vectors*, since multiple measures can be specified (and singleton
-measures provided by the user are promoted to vectors with a
-single element).
-
-The history must contain everything needed for the `best` method to
-determine the optimal model, and everything needed by the
-`report_history` method, which generates a report on tuning to the
-user (for use in visualization, for example). These methods are
-detailed below.
+The fallback for `extras` returns `nothing`.
 
 
 #### The `setup` method: To initialize state
@@ -437,11 +444,11 @@ case).
 ##### Including model metadata
 
 If a tuning strategy implementation needs to pass additional
-"metadata" along with each model, to be passed to `result` for
+"metadata" along with each model, to be passed to `extras` for
 recording in the history, then instead of model instances, `models!`
 should returne a vector of *tuples* of the form `(m, metadata)`, where
 `m` is a model instance, and `metadata` the associated data. See the
-discussion above on `result`.
+discussion above on `extras`.
 
 If the tuning algorithm exhausts it's supply of new models (because,
 for example, there is only a finite supply) then `models!` should
@@ -469,7 +476,7 @@ Returns the entry `(best_model, r)` from the history corresponding to
 the optimal model `best_model`.
 
 A fallback whose definition is given below may be used, *provided the
-fallback for `result` detailed above has not been overloaded*. In this
+fallback for `extras` detailed above has not been overloaded*. In this
 fallback for `best`, the best model is the one optimizing performance
 estimates for the first measure in the `TunedModel` field `measure`:
 
@@ -492,27 +499,26 @@ user-accessible report. In the case of tuning, the report is
 constructed with this code:
 
 ```julia
-report = merge((best_model=best_model, best_result=best_result, best_report=best_report,),
+report = merge((best_model=best_model, 
+                best_result=best_result, 
+				best_report=best_report,
+				history=history,),
 				tuning_report(tuning, history, state))
 ```
 
 where:
 
-- `best_model` is the optimal model instance
+- `best_model` is the best model instance (as selected according to
+  the user-specified `selection heuristic`).
 
-- `best_result` is the corresponding "result" entry in the history (e.g., performance evaluation)
+- `best_result = (e, x)`, where `(m, e, x)` is the corresponding  entry in the history
 
-- `best_report` is the report generated by fitting the optimal
-model
+- `best_report` is the report generated by fitting the best model on all available data
 
 - `tuning_report(::MyTuningStrategy, ...)` is a method the implementer
-  may overload. It should return a named tuple with `history` as one
-  of the keys (the format up to the implementation.) The fallback is
-  to return the raw history:
+  may overload that should return a named tuple. The fallback returns
+  an empty named tuple.
 
-```julia
-MLJTuning.tuning_report(tuning, history, state) = (history=history,)
-```
 
 #### The `default_n` method: For declaring the default number of iterations
 
@@ -548,7 +554,7 @@ generated by some iterator, such iterators constituting the only kind
 of supported range. The models generated must all have a common type
 and, in th implementation below, the type information is conveyed by
 the specified prototype `model` (which is otherwise ignored).  The
-fallback implementations for `result`, `best` and `report_history`
+fallback implementations for `extras` and `report_history`
 suffice.
 
 ```julia
@@ -612,3 +618,33 @@ end
 
 For slightly less trivial example, see
 [/src/strategies/grid.jl](/src/strategies/grid.jl)
+
+
+## How do I implement a new selection heuristic?
+
+Recall that a *selection heuristic* is a rule which decides on the
+"best model" given the model evaluations in the tuning history. New
+heuristics can be modelled on the default heuristic
+`OptimizeAggregatedMeasure()` which simply chooses the model with the
+lowest (or highest) aggregated performance estimate, based on the
+first measure specified by the user in his `TunedModel` construction
+(she may specify more than one). There is just one struct and one
+method, `best`, to implement:
+
+```julia
+struct OptimizeAggregatedMeasure <: MLJTuning.SelectionHeuristic end
+
+function MLJTuning.best(heuristic::OptimizeAggregatedMeasure, history)
+   measurements = [h[2].measurement[1] for h in history]
+   measure = first(history)[2].measure[1]
+   if orientation(measure) == :score
+       measurements = -measurements
+   end
+   best_index = argmin(measurements)
+   return history[best_index]
+end
+```
+
+
+
+
