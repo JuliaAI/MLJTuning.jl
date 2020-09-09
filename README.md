@@ -142,7 +142,7 @@ begin, on the basis of the specific strategy and a user-specified
   (e.g., [`cross_entropy`, `accuracy`]). An evaluation object `E`
   contains a list of measures `E.measure` and a list of corresponding
   measurements `E.measurement`, each of which is the aggregrate of
-  measurements for each resamplings of the data, which are stored in
+  measurements for each resampling of the data, which are stored in
   `E.per_fold` (a vector of vectors). In the case of a measure that
   reports a value for each individual observation (to obtain the
   per-fold measurement, by aggregation) the per-observation values can
@@ -162,11 +162,11 @@ begin, on the basis of the specific strategy and a user-specified
   model*. For example, the `OptimizeAggregatedMeasure()` heuristic
   simply selects the model whose evaluation `e` has the smallest or
   largest `e.measurement[1]` value, according to whether the metric
-  `e.measure[1]` is a `:loss` or `:score`. The heuristic is specified
-  independently of the tuning strategy, but some heuristics might only
-  be supported by certain tuning strategies. A selection heuristic
-  supported by a multi-objective tuning strategy must select *some*
-  "best" model (e.g., a random Pareto optimal solution). 
+  `e.measure[1]` is a `:loss` or `:score`. Most heuristics are
+  *generic* and in the sense they will apply no matter what tuning
+  strategy is applied.  A selection heuristic supported by a
+  multi-objective tuning strategy must select *some* "best" model
+  (e.g., a random Pareto optimal solution).
 
 - The *history* is a vector of tuples of the form `(m, e, x)` generated
   by the tuning algorithm - one tuple per iteration - where:
@@ -265,16 +265,18 @@ Several functions are part of the tuning strategy API:
 
 - `setup`: for initialization of state (compulsory)
 
-- `result`: for building each element of the history
-
 - `models!`: for generating batches of new models and updating the
   state (compulsory)
 
-- `tuning_report`: for selecting what to report to the user apart from
-  details on the optimal model
+- `tuning_report`: for selecting strategy-specific statistics to
+  report to the user (optional)
 
 - `default_n`: to specify the total number of models to be evaluated when
   `n` is not specified by the user
+  
+- `supports_heuristic`: a trait used to encode which selection
+  heuristics are supported by the tuning strategy (only needed if you
+  define a strategy-specific heuristic)
 
 **Important note on the history.** The initialization and update of the
 history is carried out internally, i.e., is not the responsibility of
@@ -466,32 +468,6 @@ user when constructing his `TunedModel` instance, `tuned_model` (or
 `default_n(tuning, range)` if left unspecified).
 
 
-#### The `best` method: To define what constitutes the "optimal model"
-
-```julia
-MLJTuning.best(tuning::MyTuningStrategy, history)
-```
-
-Returns the entry `(best_model, r)` from the history corresponding to
-the optimal model `best_model`.
-
-A fallback whose definition is given below may be used, *provided the
-fallback for `extras` detailed above has not been overloaded*. In this
-fallback for `best`, the best model is the one optimizing performance
-estimates for the first measure in the `TunedModel` field `measure`:
-
-```julia
-function best(tuning::TuningStrategy, history)
-   measurements = [h[2].measurement[1] for h in history]
-   measure = first(history)[2].measure[1]
-   if orientation(measure) == :score
-	   measurements = -measurements
-   end
-   best_index = argmin(measurements)
-   return history[best_index]
-end
-```
-
 ####  The `tuning_report` method: To build the user-accessible report
 
 As with any model, fitting a `TunedModel` instance generates a
@@ -545,6 +521,20 @@ default_n(tuning::TuningStrategy, range) = DEFAULT_N
 
 where `DEFAULT_N` is a global constant. Do `using MLJTuning; 
 MLJTuning.DEFAULT_N` to see check the current value. 
+
+
+#### The `supports_heuristic` trait
+
+If you define a selection heuristic `SpecialHeuristic` that is
+specific to a tuning strategy `TuningStrategy` (see
+[below](#how-do-i-implement-a-new-selection-heuristic)) then you must
+define
+
+```julia
+MLJTuning.supports_heuristic(::SpecialHeuristic, ::TuningStrategy) = true
+```
+
+All tuning strategies If a tuning strategy `TuningStrategy` supports a given selection 
 
 
 ### Implementation example: Search through an explicit list
@@ -628,8 +618,7 @@ heuristics can be modelled on the default heuristic
 `OptimizeAggregatedMeasure()` which simply chooses the model with the
 lowest (or highest) aggregated performance estimate, based on the
 first measure specified by the user in his `TunedModel` construction
-(she may specify more than one). There is just one struct and one
-method, `best`, to implement:
+(she may specify more than one). 
 
 ```julia
 struct OptimizeAggregatedMeasure <: MLJTuning.SelectionHeuristic end
@@ -644,6 +633,19 @@ function MLJTuning.best(heuristic::OptimizeAggregatedMeasure, history)
    return history[best_index]
 end
 ```
+
+Because this selection heuristic is generic (applies to all tuning
+strategies) we additionally define
+
+```julia
+MLJTuning.supports_heuristic(::SpecialHeuristic, ::Any) = true
+```
+
+For strategy-specific selection heuristics, see [above](#the-supports-heuristic-trait). 
+
+
+
+
 
 
 
