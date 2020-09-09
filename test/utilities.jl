@@ -15,5 +15,7 @@
          2  "b"  "z"]
 end
 
+@test MLJTuning.delete((x=1, y=2, z=3), :x, :z) == (y=2,)
+
 true
 

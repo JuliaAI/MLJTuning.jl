@@ -160,14 +160,8 @@ MLJTuning.models!(tuning::Grid,
                   verbosity) =
                       state.models[_length(history) + 1:end]
 
-function tuning_report(tuning::Grid, history, state)
-
-    plotting = plotting_report(state.fields, state.parameter_scales, history)
-
-    # todo: remove collects?
-    return (history=history, plotting=plotting)
-
-end
+tuning_report(tuning::Grid, history, state) =
+    (plotting = plotting_report(state.fields, state.parameter_scales, history),)
 
 function default_n(tuning::Grid, user_range)
 

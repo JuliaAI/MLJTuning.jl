@@ -152,16 +152,18 @@ end
     tuned = machine(tuned_model, X, y)
 
     fit!(tuned, verbosity=0)
-    r = report(tuned)
+    r = MLJBase.report(tuned)
     @test :model in collect(keys(r.best_report))
     fit!(tuned, verbosity=0)
-    rep = report(tuned)
+    rep = MLJBase.report(tuned)
     fp = fitted_params(tuned)
     @test :model in collect(keys(fp.best_fitted_params))
     b = fp.best_model
     @test b isa SimpleDeterministicCompositeModel
 
-    measurements = map(x->x.measurement[1], last.(tuned.report.history))
+    measurements = map(MLJBase.report(tuned).history) do entry
+        entry.measurement[1]
+    end
     # should be all different:
     @test length(unique(measurements)) == length(measurements)
 
@@ -172,14 +174,14 @@ end
 
     # check this error has same order of magnitude as best measurement
     # during tuning:
-    e_training = tuned.report.best_result.measurement[1]
+    e_training = MLJBase.report(tuned).best_history_entry.measurement[1]
     ratio = e/e_training
     @test ratio < 10 && ratio > 0.1
 
     # test weights:
     tuned_model.weights = rand(length(y))
     fit!(tuned, verbosity=0)
-    @test e_training != tuned.report.best_result.measurement[1]
+    @test e_training != tuned.report.best_history_entry.measurement[1]
 
     # test plotting part of report:
     @test r.plotting.parameter_names ==

@@ -141,6 +141,6 @@ function tuning_report(tuning::RandomSearch, history, field_sampler_pairs)
 
     plotting = plotting_report(fields, parameter_scales, history)
 
-    return (history=history, plotting=plotting)
+    return (plotting=plotting,)
 
 end
