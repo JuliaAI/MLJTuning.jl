@@ -160,9 +160,9 @@ begin, on the basis of the specific strategy and a user-specified
 - A *selection heuristic* is a rule describing how the outcomes of the
   model evaluations will be used to select the *best (optimal)
   model*. For example, the `OptimizePrimaryAggregatedMeasurement()` heuristic
-  simply selects the model whose evaluation `e` has the smallest or
-  largest `e.measurement[1]` value, according to whether the metric
-  `e.measure[1]` is a `:loss` or `:score`. Most heuristics are
+  simply selects the model whose evaluation `E` has the smallest or
+  largest `E.measurement[1]` value, according to whether the metric
+  `E.measure[1]` is a `:loss` or `:score`. Most heuristics are
   *generic* in the sense they will apply no matter what tuning
   strategy is applied.  A selection heuristic supported by a
   multi-objective tuning strategy must select *some* "best" model
