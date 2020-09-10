@@ -629,9 +629,9 @@ heuristics are introduced by defining a new struct `SomeHeuristic` subtyping
 `SelectionHeuristic` and implementing a method
 
 ```julia
-MLJTuning.best(heuristic::SomeHeuristic, history) -> (m, e, x)
+MLJTuning.best(heuristic::SomeHeuristic, history) -> history_entry
 ```
-where `(m, e, x)` is the entry of the history corresponding to the model deemed "best". 
+where `history_entry` is the entry in the history corresponding to the model deemed "best". 
 
 
 Below is the code defining the default heuristic
