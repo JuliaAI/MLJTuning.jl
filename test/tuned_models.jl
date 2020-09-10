@@ -71,11 +71,11 @@ end
                     measures=[rms, l1], acceleration=accel)
     fitresult, meta_state, report = fit(tm, 1, X, y);
     history, _, state = meta_state;
-    results2 = map(event -> last(event).measurement[1], history)
+    results2 = map(event -> event.measurement[1], history)
     @test results2 ≈ results
     @test fitresult.model == collect(r)[best_index]
     @test report.best_model == collect(r)[best_index]
-    @test report.history == history
+    @test report.history[5] == MLJTuning.delete(history[5], :metadata)
 end
 
 @static if VERSION >= v"1.3.0-DEV.573"
@@ -87,7 +87,7 @@ end
                     acceleration_resampling=accel)
     fitresult, meta_state, report = fit(tm, 1, X, y);
     history, _, state = meta_state;
-    results3 = map(event -> last(event).measurement[1], history)
+    results3 = map(event -> event.measurement[1], history)
     @test results3 ≈ results
 end
 end
@@ -100,7 +100,7 @@ end
                     acceleration_resampling=accel)
     fitresult, meta_state, report = fit(tm, 1, X, y);
     history, _, state = meta_state;
-    results4 = map(event -> last(event).measurement[1], history)
+    results4 = map(event -> event.measurement[1], history)
     @test results4 ≈ results
 end
 
@@ -113,12 +113,12 @@ end
     mach = machine(tm, X, y)
     fit!(mach, verbosity=1)
     history = MLJBase.report(mach).history
-    @test map(event -> last(event).measurement[1], history) ≈ results[1:4]
+    @test map(event -> event.measurement[1], history) ≈ results[1:4]
 
     tm.n=100
     @test_logs (:info, r"Only 12") fit!(mach, verbosity=0)
     history = MLJBase.report(mach).history
-    @test map(event -> last(event).measurement[1], history) ≈ results
+    @test map(event -> event.measurement[1], history) ≈ results
 end)
 
 @everywhere begin
@@ -140,9 +140,6 @@ end)
         return  annotate.(state)[_length(history) + 1:end]
     end
 
-    MLJTuning.result(tuning::MockExplicit, history, state, e, metadata) =
-        (measure=e.measure, measurement=e.measurement, K=metadata)
-
     function default_n(tuning::Explicit, range)
         try
             length(range)
@@ -161,8 +158,8 @@ end
                                      measures=[rms, l1], acceleration=accel)
                      fitresult, meta_state, report = fit(tm, 0, X, y);
                      history, _, state = meta_state;
-                     for (m, r) in history
-                         @test m.K == r.K
+                     @test all(history) do event
+                         event.metadata == event.model.K
                      end
 end)
 

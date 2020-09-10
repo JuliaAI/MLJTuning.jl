@@ -9,6 +9,9 @@ export TunedModel
 # defined in strategies/:
 export Explicit, Grid, RandomSearch
 
+# defined in selection_heuristics/:
+export OptimizePrimaryAggregatedMeasurement
+
 # defined in learning_curves.jl:
 export learning_curve!, learning_curve
 
@@ -37,6 +40,7 @@ const DEFAULT_N = 10 # for when `default_n` is not implemented
 
 include("utilities.jl")
 include("tuning_strategy_interface.jl")
+include("selection_heuristics.jl")
 include("tuned_models.jl")
 include("range_methods.jl")
 include("strategies/explicit.jl")
