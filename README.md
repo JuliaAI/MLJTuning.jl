@@ -405,10 +405,13 @@ MLJTuning.extras(tuning::MyTuningStrategy, history, state, E)::NamedTuple
 ```
 
 This method should return any user-inspectable information to be
-included in a history entry that is in addition to the `model`,
+included in a new history entry, that is in addition to the `model`,
 `measures`, `measurement` and `per_fold` data. ***This method must
 return a named tuple***, human readable if possible. Each key of the
-returned named tuple becomes a key of each entry of the raw history.
+returned named tuple becomes a key of the new history entry.
+
+Here `E` is the full evalutation object for `model` and `history` the
+current history (before adding the new entry).
 
 The fallback for `extras` returns an empty named tuple. 
 
@@ -504,12 +507,6 @@ where:
   may overload that ***must return a named tuple, preferably human readable
   
 The fallback for `tuning_report` returns an empty named-tuple.
-
-```julia
-MLJTuning.tuning_report(tuning, history, state) = (history=history,)
-```
-
-but it may be preferable to return a more human-readable form.
 
 
 #### The `default_n` method: For declaring the default number of iterations
