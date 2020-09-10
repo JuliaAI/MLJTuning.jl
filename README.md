@@ -643,14 +643,14 @@ first measure specified by the user in his `TunedModel` construction
 ```julia
 struct OptimizePrimaryAggregatedMeasurement <: MLJTuning.SelectionHeuristic end
 
-function MLJTuning.best(heuristic::OptimizePrimaryAggregatedMeasurement, history)
-   measurements = [h[2].measurement[1] for h in history]
-   measure = first(history)[2].measure[1]
-   if orientation(measure) == :score
-       measurements = -measurements
-   end
-   best_index = argmin(measurements)
-   return history[best_index]
+function best(heuristic::OptimizePrimaryAggregatedMeasurement, history)
+    measurements = [h.measurement[1] for h in history]
+    measure = first(history).measure[1]
+    if orientation(measure) == :score
+        measurements = -measurements
+    end
+    best_index = argmin(measurements)
+    return history[best_index]
 end
 ```
 
