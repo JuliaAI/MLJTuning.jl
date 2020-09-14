@@ -2,14 +2,6 @@ abstract type SelectionHeuristic end
 
 ## HELPERS
 
-signature(measure) =
-    if orientation(measure) == :loss
-        1
-    elseif orientation(measure) == :score
-        -1
-    else
-        0
-    end
 measure_adjusted_weights(weights, measures) =
     if weights isa Nothing
         vcat([signature(measures[1]), ], zeros(length(measures) - 1))

@@ -300,7 +300,7 @@ function event(metamodel,
     verb = (verbosity >= 2 ? verbosity - 3 : verbosity - 1)
     fit!(resampling_machine, verbosity=verb)
     E = evaluate(resampling_machine)
-    entry0 = (model = model,
+    entry0 = (model       = model,
               measure     = E.measure,
               measurement = E.measurement,
               per_fold    = E.per_fold,

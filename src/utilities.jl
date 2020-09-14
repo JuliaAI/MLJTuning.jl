@@ -29,3 +29,14 @@ function delete(nt::NamedTuple, target_keys...)
     end
     return (; filtered...)
 end
+
+signature(measure) =
+    if orientation(measure) == :loss
+        1
+    elseif orientation(measure) == :score
+        -1
+    else
+        0
+    end
+
+
