@@ -14,7 +14,7 @@ extras(tuning::TuningStrategy, history, state, E) = NamedTuple()
 
 # for generating batches of new models and updating the state (but not
 # history):
-function models! end
+function models end
 
 # for adding to the default report:
 tuning_report(tuning::TuningStrategy, history, state) = NamedTuple()
