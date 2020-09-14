@@ -442,6 +442,9 @@ parallelization defined by the `acceleration` field of the
 `TunedModel` instance). ***An update of the history, performed
 automatically under the hood, only occurs after these evaluations.***
 
+If needed, extra metadata may be attached to each model returned; see
+[below](#including-model-metadata).
+
 Most sequential tuning strategies will want include the batch size as
 a hyperparameter, which we suggest they call `batch_size`, but this
 field is not part of the tuning interface. In tuning, whatever models
