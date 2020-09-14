@@ -131,14 +131,13 @@ end)
 
     _length(x) = length(x)
     _length(::Nothing) = 0
-    function MLJTuning.models!(tuning::MockExplicit,
-                               model,
-                               history,
-                               state,
-                               n_remaining,
-                               verbosity)
-        return  annotate.(state)[_length(history) + 1:end]
-    end
+    MLJTuning.models(tuning::MockExplicit,
+                     model,
+                     history,
+                     state,
+                     n_remaining,
+                     verbosity) =
+                         annotate.(state)[_length(history) + 1:end], state
 
     function default_n(tuning::Explicit, range)
         try

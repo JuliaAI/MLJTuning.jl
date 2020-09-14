@@ -64,7 +64,7 @@ end
     @test std(γ) == 3
 end
 
-@testset "models!" begin
+@testset "models" begin
     rng = StableRNGs.StableRNG(1234)
     N = 10000
     model = DummyModel(1, 1, 'k')
@@ -78,12 +78,12 @@ end
                              range=user_range,
                              measures=[rms,mae])
     state = MLJTuning.setup(tuning, model, user_range, 3)
-    my_models = MLJTuning.models!(tuning,
-                               model,
-                               nothing, # history
-                               state,
-                               N,       # n_remaining
-                               0)
+    my_models, state = MLJTuning.models(tuning,
+                                        model,
+                                        nothing, # history
+                                        state,
+                                        N,       # n_remaining
+                                        0)
 
     # check the samples of each hyperparam have expected distritution:
     lambdas = map(m -> m.lambda, my_models)

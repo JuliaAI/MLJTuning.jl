@@ -116,13 +116,13 @@ setup(tuning::RandomSearch, model, user_range, verbosity) =
                               tuning.positive_unbounded,
                               tuning.other) |> collect
 
-function MLJTuning.models!(tuning::RandomSearch,
-                           model,
-                           history,
-                           state, # tuple of (field, sampler) pairs
-                           n_remaining,
-                           verbosity)
-    return map(1:n_remaining) do _
+function MLJTuning.models(tuning::RandomSearch,
+                          model,
+                          history,
+                          state, # tuple of (field, sampler) pairs
+                          n_remaining,
+                          verbosity)
+    new_models = map(1:n_remaining) do _
         clone = deepcopy(model)
         Random.shuffle!(tuning.rng, state)
         for (fld, s) in state
@@ -130,6 +130,7 @@ function MLJTuning.models!(tuning::RandomSearch,
         end
         clone
     end
+    return new_models, state
 end
 
 function tuning_report(tuning::RandomSearch, history, field_sampler_pairs)

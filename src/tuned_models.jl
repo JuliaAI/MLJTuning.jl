@@ -313,7 +313,6 @@ function event(metamodel,
     if verbosity > 1
         println("result: $r")
     end
-
     return entry
 end
 
@@ -336,8 +335,8 @@ function assemble_events(metamodels,
 
     verbosity <1 || update!(p,0)
 
-    results = map(metamodels) do m
-        r= event(m, resampling_machine, verbosity, tuning, history, state)
+    entries = map(metamodels) do m
+        r = event(m, resampling_machine, verbosity, tuning, history, state)
         verbosity < 1 || begin
                   p.counter += 1
                   ProgressMeter.updateProgress!(p)
@@ -345,7 +344,7 @@ function assemble_events(metamodels,
         r
       end
 
-    return results
+    return entries
 end
 
 function assemble_events(metamodels,
@@ -358,7 +357,7 @@ function assemble_events(metamodels,
 
     n_metamodels = length(metamodels)
 
-    results = @sync begin
+    entries = @sync begin
         channel = RemoteChannel(()->Channel{Bool}(min(1000, n_metamodels)), 1)
         p = Progress(n_metamodels,
                      dt = 0,
@@ -388,7 +387,7 @@ function assemble_events(metamodels,
         ret
     end
 
-    return results
+    return entries
 end
 
 @static if VERSION >= v"1.3.0-DEV.573"
@@ -415,7 +414,7 @@ function assemble_events(metamodels,
     ntasks = acceleration.settings
     partitions = chunks(1:n_metamodels, ntasks)
     #tasks = Vector{Task}(undef, length(partitions))
-    results = Vector(undef, length(partitions))
+    entries = Vector(undef, length(partitions))
     p = Progress(n_metamodels,
          dt = 0,
          desc = "Evaluating over $(n_metamodels) metamodels: ",
@@ -448,7 +447,7 @@ function assemble_events(metamodels,
 
         @sync for (i, parts) in enumerate(partitions)
             Threads.@spawn begin
-                results[i] =  map(metamodels[parts]) do m
+                entries[i] =  map(metamodels[parts]) do m
                     r = event(m, machs[i],
                               verbosity, tuning, history, state)
                     verbosity < 1 || put!(ch, true)
@@ -458,7 +457,7 @@ function assemble_events(metamodels,
         end
         verbosity < 1 || put!(ch, false)
     end
-    reduce(vcat, results)
+    reduce(vcat, entries)
 end
 
 end # of if VERSION ...
@@ -483,12 +482,12 @@ function build(history,
     j = _length(history)
     models_exhausted = false
     while j < n && !models_exhausted
-        metamodels = models!(tuning,
-                             model,
-                             history,
-                             state,
-                             n - j,
-                             verbosity)
+        metamodels, state  = models(tuning,
+                                    model,
+                                    history,
+                                    state,
+                                    n - j,
+                                    verbosity)
         Δj = _length(metamodels)
         Δj == 0 && (models_exhausted = true)
         shortfall = n - Δj
@@ -509,7 +508,7 @@ function build(history,
                                    acceleration)
         history = _vcat(history, Δhistory)
     end
-    return history
+    return history, state
 end
 
 # given complete history, pick out best model, fit it on all data and
@@ -569,8 +568,8 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
                           repeats       = tuned_model.repeats,
                           acceleration  = tuned_model.acceleration_resampling)
     resampling_machine = machine(resampler, data...)
-    history = build(nothing, n, tuning, model, state,
-                    verbosity, acceleration, resampling_machine)
+    history, state = build(nothing, n, tuning, model, state,
+                           verbosity, acceleration, resampling_machine)
 
     rm = resampling_machine
     return finalize(tuned_model, history, state, verbosity, rm, data...)
@@ -602,8 +601,8 @@ function MLJBase.update(tuned_model::EitherTunedModel,
         verbosity < 1 || @info "Attempting to add $(n! - old_n!) models "*
         "to search, bringing total to $n!. "
 
-        history = build(history, n!, tuning, model, state,
-                        verbosity, acceleration, resampling_machine)
+        history, state = build(history, n!, tuning, model, state,
+                               verbosity, acceleration, resampling_machine)
 
         rm = resampling_machine
         return finalize(tuned_model, history, state, verbosity, rm, data...)

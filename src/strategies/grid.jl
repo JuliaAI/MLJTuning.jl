@@ -152,13 +152,13 @@ function setup(tuning::Grid, model, user_range, verbosity)
 
 end
 
-MLJTuning.models!(tuning::Grid,
-                  model,
-                  history,
-                  state,
-                  n_remaining,
-                  verbosity) =
-                      state.models[_length(history) + 1:end]
+MLJTuning.models(tuning::Grid,
+                 model,
+                 history,
+                 state,
+                 n_remaining,
+                 verbosity) =
+                     state.models[_length(history) + 1:end], state
 
 tuning_report(tuning::Grid, history, state) =
     (plotting = plotting_report(state.fields, state.parameter_scales, history),)

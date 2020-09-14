@@ -28,13 +28,13 @@ MLJ user. Rather, MLJTuning is a dependency of the
 [MLJ](https://github.com/alan-turing-institute/MLJ.jl) machine
 learning platform, which allows MLJ users to perform a variety of
 hyperparameter optimization tasks from there.
-  
+
 MLJTuning is the place for developers to integrate hyperparameter
 optimization algorithms (here called *tuning strategies*) into MLJ,
 either by adding code to [/src/strategies](/src/strategies), or by
 importing MLJTuning into a third-pary package and implementing
 MLJTuning's [tuning strategy interface](#how-do-i-implement-a-new-tuning-strategy).
-  
+
 MLJTuning is a component of the [MLJ
   stack](https://github.com/alan-turing-institute/MLJ.jl#the-mlj-universe)
   which does not have
@@ -65,11 +65,11 @@ This repository contains:
 	model2, ...]` (built-in `Explicit` strategy)
 
   - [x] grid search (built-in `Grid` strategy)
-  
+
   - [ ] Latin hypercubes
 
   - [x] random search (built-in `RandomSearch` strategy)
-  
+
   - [ ] bandit
 
   - [ ] simulated annealing
@@ -77,18 +77,18 @@ This repository contains:
   - [ ] Bayesian optimization using Gaussian processes
 
   - [x] structured tree Parzen estimators (`MLJTreeParzenTuning` from
-    [TreeParzen.jl](https://github.com/IQVIA-ML/TreeParzen.jl))
+	[TreeParzen.jl](https://github.com/IQVIA-ML/TreeParzen.jl))
 
   - [ ] multi-objective (Pareto) optimization
 
   - [ ] genetic algorithms
 
-  - [ ] AD-powered gradient descent methods 
+  - [ ] AD-powered gradient descent methods
 
 - a selection of **implementations** of the tuning strategy interface,
   currently all those accessible from
   [MLJ](https://github.com/alan-turing-institute/MLJ.jl) itself.
-  
+
 - the code defining the MLJ functions `learning_curves!` and `learning_curve` as
   these are essentially one-dimensional grid searches
 
@@ -172,7 +172,7 @@ begin, on the basis of the specific strategy and a user-specified
   consults the measurements of all `measures` specified by the user;
   otherwise only the **first** measure is consulted, although
   measurements for all measures are nevertheless reported.
-  
+
 - A *selection heuristic* is a rule describing how the outcomes of the
   model evaluations will be used to select the *best (optimal) model*,
   after all iterations of the optimizer have concluded. For example,
@@ -187,18 +187,18 @@ begin, on the basis of the specific strategy and a user-specified
 
 - The *history* is a vector of identically-keyed named tuples, one
   tuple per iteration. The tuple keys include:
-  
-  - `model`: for the model instance that has been evaluated
+
+  - `model`: for the MLJ model instance that has been evaluated
 
   - `measure`, `measurement`, `per_fold`: for storing the values of
-    `E.measure`, `E.measurement` and `E.per_fold`, where `E` is the corresponding
-    evaluation object.
-	
+	`E.measure`, `E.measurement` and `E.per_fold`, where `E` is the corresponding
+	evaluation object.
+
   - `metadata`: for any tuning strategy-specific information required
-     to be recorded in the history *but not intended to be reported to
-     the user* (for example an implementation-specific representation
-     of `model`).
-	 
+	 to be recorded in the history *but not intended to be reported to
+	 the user* (for example an implementation-specific representation
+	 of `model`).
+
   There may be additional keys for tuning-specific information that
   *is* to be reported to the user (such as temperature in
   simulated annhealing).
@@ -245,7 +245,7 @@ In setting up a tuning task, the user constructs an instance of the
 - `measure`: a measure (loss or score) or vector of measures available
   to the tuning algorithm, the first of which is optimized in the
   common case of single-objective tuning strategies
-  
+
 - `selection_heuristic`: some instance of `SelectionHeuristic`, such
   as `NaiveSelection()` (default)
 
@@ -273,18 +273,20 @@ Several functions are part of the tuning strategy API:
 
 - `setup`: for initialization of state (compulsory)
 
-- `extras`: for declaring and formatting additional user-inspectable information 
+- `extras`: for declaring and formatting additional user-inspectable information
   going into the history
 
 - `tuning_report`: for declaring any other strategy-specific information
   to report to the user (optional)
 
-- `models!`: for generating batches of new models and updating the
+- `models`: for generating batches of new models and updating the
   state (compulsory)
+
+- `update_metadata`: ;;;
 
 - `default_n`: to specify the total number of models to be evaluated when
   `n` is not specified by the user
-  
+
 - `supports_heuristic`: a trait used to encode which selection
   heuristics are supported by the tuning strategy (only needed if you
   define a strategy-specific heuristic)
@@ -331,15 +333,15 @@ recommended that every tuning strategy support at least these types:
 
 - one-dimensional ranges `r`, where `r` is a `MLJBase.ParamRange` instance
 
-- (optional) pairs of the form `(r, data)`, where `data` is metadata,
-  such as a resolution in a grid search, or a distribution in a random
-  search
+- (optional) pairs of the form `(r, data)`, where `data` is extra
+  hyper-parameter-specific information, such as a resolution in a grid
+  search, or a distribution in a random search
 
 - abstract vectors whose elements are of the above form
 
 Recall that `ParamRange` has two concrete subtypes `NumericRange` and
 `NominalRange`, whose instances are constructed with the `MLJBase`
-extension to the `range` function. 
+extension to the `range` function.
 
 Note in particular that a `NominalRange` has a `values` field, while
 `NumericRange` has the fields `upper`, `lower`, `scale`, `unit` and
@@ -371,12 +373,12 @@ state = setup(tuning::MyTuningStrategy, model, range, verbosity)
 ```
 
 The `setup` function is for initializing the `state` of the tuning
-algorithm (available to the `models!` method). Be sure to make this
-object mutable if it needs to be updated by the `models!` method. 
+algorithm (available to the `models` method). Be sure to make this
+object mutable if it needs to be updated by the `models` method.
 
 The `state` is a place to record the outcomes of any necessary
 intialization of the tuning algorithm (performed by `setup`) and a
-place for the `models!` method to save and read transient information
+place for the `models` method to save and read transient information
 that does not need to be recorded in the history.
 
 The `setup` function is called once only, when a `TunedModel` machine
@@ -412,63 +414,65 @@ MLJTuning.extras(tuning::MyTuningStrategy, history, state, E) -> named_tuple
 
 This method should return any user-inspectable information to be
 included in a new history entry, that is in addition to the `model`,
-`measures`, `measurement` and `per_fold` data. 
-***This method must return a named tuple***, 
+`measures`, `measurement` and `per_fold` data.
+***This method must return a named tuple***,
 human readable if possible. Each key of the
 returned named tuple becomes a key of the new history entry.
 
 Here `E` is the full evalutation object for `model` and `history` the
 current history (before adding the new entry).
 
-The fallback for `extras` returns an empty named tuple. 
+The fallback for `extras` returns an empty named tuple.
 
 
-#### The `models!` method: For generating model batches to evaluate
+#### The `models` method: For generating model batches to evaluate
 
 ```julia
-MLJTuning.models!(tuning::MyTuningStrategy, model, history, state, n_remaining, verbosity)
+MLJTuning.models(tuning::MyTuningStrategy, model, history, state, n_remaining, verbosity)
+	-> vector_of_models, new_state
 ```
 
 This is the core method of a new implementation. Given the existing
 `history` and `state`, it must return a vector ("batch") of *new*
-model instances to be evaluated. Any number of models can be returned
-(and this includes an empty vector or `nothing`, if models have been
-exhausted) and the evaluations will be performed in parallel (using
-the mode of parallelization defined by the `acceleration` field of the
+model instances `vector_of_models` to be evaluated, and the updated
+`state`. Any number of models can be returned (and this includes an
+empty vector or `nothing`, if models have been exhausted) and the
+evaluations will be performed in parallel (using the mode of
+parallelization defined by the `acceleration` field of the
 `TunedModel` instance). ***An update of the history, performed
 automatically under the hood, only occurs after these evaluations.***
 
 Most sequential tuning strategies will want include the batch size as
 a hyperparameter, which we suggest they call `batch_size`, but this
 field is not part of the tuning interface. In tuning, whatever models
-are returned by `models!` get evaluated in parallel.
+are returned by `models` get evaluated in parallel.
 
-In a `Grid` tuning strategy, for example, `models!` returns a random
-selection of `n_remaining = n - length(history)` models from the grid,
-so that `models!` is called only once (in each call to
+In a `Grid` tuning strategy, for example, `vector_of_models` is a
+random selection of `n_remaining = n - length(history)` models from
+the grid, so that `models` is called only once (in each call to
 `MLJBase.fit(::TunedModel, ...)` or `MLJBase.update(::TunedModel,
 ...)`). In a bona fide sequential method which is generating models
-non-deterministically (such as simulated annealing), `models!` might
-return a single model, or return a small batch of models to make use
-of parallelization (the method becoming "semi-sequential" in that
-case).
+non-deterministically (such as simulated annealing),
+`vector_of_models` might be a single model, or a small batch of models
+to make use of parallelization (the method becoming "semi-sequential"
+in that case).
 
 ##### Including model metadata
 
 If a tuning strategy implementation needs to record additional
 metadata in the history, for each model generated, then instead of
-model instances, `models!` should return a vector of *tuples* of the
+model instances, `vector_of_models` should be vector of *tuples* of the
 form `(m, metadata)`, where `m` is a model instance, and `metadata`
-the associated data. To access the metadata for the `j`th element of
-the existing history, use `history[j].metadata`.
+the associated data. ***To access the metadata for the `j`th element of
+the existing history, use `history[j].metadata`.***
 
 If the tuning algorithm exhausts it's supply of new models (because,
-for example, there is only a finite supply) then `models!` should
-return an empty vector or `nothing`. Under the hood, there is no fixed
-"batch-size" parameter, and the tuning algorithm is happy to receive
-any number of models. If `models!` returns a number of models
-exceeding the number needed to complete the history, the list returned
-is simply truncated.
+for example, there is only a finite supply) then `vector_of_models`
+should be an empty vector or `nothing`. Under the hood, there is no
+fixed "batch-size" parameter, and the tuning algorithm is happy to
+receive any number of models. If `vector_of_models` contains more
+models than required to complete all tuning iterations, then it is
+simply truncated.
 
 Some simple tuning strategies, such as `RandomSearch`, will want to
 return as many models as possible in one hit. The argument
@@ -491,10 +495,10 @@ constructed with this code:
 
 ```julia
 report1 = (best_model         = best_model,
-           best_history_entry = best_user_history_entry,
-           history            = user_history,
-           best_report        = best_report)
-		   
+		   best_history_entry = best_user_history_entry,
+		   history            = user_history,
+		   best_report        = best_report)
+
 report = merge(report1, tuning_report(tuning, history, state))
 ```
 
@@ -507,12 +511,12 @@ where:
 
 - `best_report` is the report generated when fitting the `best_model`
   on all available data.
-  
+
 - `user_history` is the full history with `metadata` entries removed.
 
 - `tuning_report(::MyTuningStrategy, ...)` is a method the implementer
   may overload that ***must return a named tuple, preferably human readable
-  
+
 The fallback for `tuning_report` returns an empty named-tuple.
 
 
@@ -522,8 +526,9 @@ The fallback for `tuning_report` returns an empty named-tuple.
 MLJTuning.default_n(tuning::MyTuningStrategy, range)
 ```
 
-The `models!` method (which is allowed to return multiple models) is
-called until one of the following occurs:
+The `models` method, which is allowed to return multiple models in
+it's first return value `vector_of_models`, is called until one of the
+following occurs:
 
 - The length of the history matches the number of iterations specified
 by the user, namely `tuned_model.n` where `tuned_model` is the user's
@@ -531,7 +536,7 @@ by the user, namely `tuned_model.n` where `tuned_model` is the user's
 user has not specified a value) then `default_n(tuning, range)` is
 used instead.
 
-- `models!` returns an empty list or `nothing`. 
+- `vector_of_models` is empty or `nothing`.
 
 The fallback is
 
@@ -539,8 +544,8 @@ The fallback is
 default_n(tuning::TuningStrategy, range) = DEFAULT_N
 ```
 
-where `DEFAULT_N` is a global constant. Do `using MLJTuning; 
-MLJTuning.DEFAULT_N` to see check the current value. 
+where `DEFAULT_N` is a global constant. Do `using MLJTuning;
+MLJTuning.DEFAULT_N` to see check the current value.
 
 
 #### The `supports_heuristic` trait
@@ -570,56 +575,56 @@ suffice.
 mutable struct Explicit <: TuningStrategy end
 
 mutable struct ExplicitState{R,N}
-    range::R
-    next::Union{Nothing,N} # to hold output of `iterate(range)`
+	range::R
+	next::Union{Nothing,N} # to hold output of `iterate(range)`
 end
 
 ExplicitState(r::R, ::Nothing) where R = ExplicitState{R,Nothing}(r,nothing)
 ExplictState(r::R, n::N) where {R,N} = ExplicitState{R,Union{Nothing,N}}(r,n)
 
 function MLJTuning.setup(tuning::Explicit, model, range, verbosity)
-    next = iterate(range)
-    return ExplicitState(range, next)
+	next = iterate(range)
+	return ExplicitState(range, next)
 end
 
-# models! returns all available models in the range at once:
-function MLJTuning.models!(tuning::Explicit,
-                           model,
-                           history,
-                           state,
-                           n_remaining,
-                           verbosity)
+# models returns all available models in the range at once:
+function MLJTuning.models(tuning::Explicit,
+                          model,
+                          history,
+                          state,
+                          n_remaining,
+						  verbosity)
 
-    range, next  = state.range, state.next
+	range, next  = state.range, state.next
 
-    next === nothing && return nothing
+	next === nothing && return nothing, state
 
-    m, s = next
-    models = [m, ]
+	m, s = next
+	vector_of_models = [m, ]
 
-    next = iterate(range, s)
+	next = iterate(range, s)
 
-    i = 1 # current length of `models`
-    while i < n_remaining
-        next === nothing && break
-        m, s = next
-        push!(models, m)
-        i += 1
-        next = iterate(range, s)
-    end
+	i = 1 # current length of `vector_of_models`
+	while i < n_remaining
+		next === nothing && break
+		m, s = next
+		push!(vector_of_models, m)
+		i += 1
+		next = iterate(range, s)
+	end
 
-    state.next = next
+    new_state = ExplicitState(range, next)
 
-    return models
+    return vector_of_models, new_state
 
 end
 
 function default_n(tuning::Explicit, range)
-    try
-        length(range)
-    catch MethodError
-        DEFAULT_N
-    end
+	try
+		length(range)
+	catch MethodError
+		DEFAULT_N
+	end
 end
 
 ```
@@ -638,25 +643,25 @@ heuristics are introduced by defining a new struct `SomeHeuristic` subtyping
 ```julia
 MLJTuning.best(heuristic::SomeHeuristic, history) -> history_entry
 ```
-where `history_entry` is the entry in the history corresponding to the model deemed "best". 
+where `history_entry` is the entry in the history corresponding to the model deemed "best".
 
 Below is a simplified version of [code](src/selection_heuristics.jl)
 defining the default heuristic `NaiveSelection()`
 which simply chooses the model with the lowest (or highest) aggregated
 performance estimate, based on the first measure specified by the user
-in his `TunedModel` construction (she may specify more than one). 
+in his `TunedModel` construction (she may specify more than one).
 
 ```julia
 struct NaiveSelection <: MLJTuning.SelectionHeuristic end
 
 function best(heuristic::NaiveSelection, history)
-    measurements = [h.measurement[1] for h in history]
-    measure = first(history).measure[1]
-    if orientation(measure) == :score
-        measurements = -measurements
-    end
-    best_index = argmin(measurements)
-    return history[best_index]
+	measurements = [h.measurement[1] for h in history]
+	measure = first(history).measure[1]
+	if orientation(measure) == :score
+		measurements = -measurements
+	end
+	best_index = argmin(measurements)
+	return history[best_index]
 end
 ```
 
@@ -669,11 +674,3 @@ MLJTuning.supports_heuristic(strategy, heuristic::NaiveSelection) = true
 
 For strategy-specific selection heuristics, see
 [above](#the-supportsheuristic-trait) on how to set this trait.
-
-
-
-
-
-
-
-
