@@ -1,6 +1,6 @@
 mutable struct Explicit <: TuningStrategy end
 
-mutable struct ExplicitState{R,N}
+struct ExplicitState{R,N}
     range::R               # a model-generating iterator
     next::Union{Nothing,N} # to hold output of `iterate(range)`
 end
@@ -14,7 +14,7 @@ function MLJTuning.setup(tuning::Explicit, model, range, verbosity)
 end
 
 # models! returns all available models in the range at once:
-function MLJTuning.models!(tuning::Explicit,
+function MLJTuning.models(tuning::Explicit,
                            model,
                            history,
                            state,
@@ -23,7 +23,7 @@ function MLJTuning.models!(tuning::Explicit,
 
     range, next  = state.range, state.next
 
-    next === nothing && return nothing
+    next === nothing && return nothing, state
 
     m, s = next
     models = [m, ]
@@ -39,9 +39,9 @@ function MLJTuning.models!(tuning::Explicit,
         next = iterate(range, s)
     end
 
-    state.next = next
+    new_state = ExplicitState(range, next)
 
-    return models
+    return models, new_state
 
 end
 

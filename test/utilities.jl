@@ -15,5 +15,12 @@
          2  "b"  "z"]
 end
 
+@test MLJTuning.delete((x=1, y=2, z=3), :x, :z) == (y=2,)
+
+@testset "signature of measure" begin
+    measures = [accuracy, confmat, misclassification_rate]
+    @test MLJTuning.signature.(measures) == [-1, 0, 1]
+end
+
 true
 
