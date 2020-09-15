@@ -9,9 +9,9 @@ function plotting_report(fields, scales, history)
     measurements = Vector{Float64}(undef, n_models)
 
     for j in eachindex(history)
-        m, r = history[j]
-        A[j,:] = [recursive_getproperty(m, fld) for fld in fields]
-        measurements[j] = last(r)[1]
+        entry = history[j]
+        A[j,:] = [recursive_getproperty(entry.model, fld) for fld in fields]
+        measurements[j] = entry.measurement[1]
     end
 
     return plotting=(parameter_names=string.(fields) |> collect,
@@ -20,3 +20,23 @@ function plotting_report(fields, scales, history)
                      measurements = measurements)
 
 end
+
+# return a named tuple with some keys removed:
+function delete(nt::NamedTuple, target_keys...)
+    zipped = tuple(zip(keys(nt), values(nt))...)
+    filtered = filter(zipped) do tup
+        !(tup[1] in target_keys)
+    end
+    return (; filtered...)
+end
+
+signature(measure) =
+    if orientation(measure) == :loss
+        1
+    elseif orientation(measure) == :score
+        -1
+    else
+        0
+    end
+
+

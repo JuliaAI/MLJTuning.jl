@@ -9,29 +9,18 @@ MLJBase.show_as_constructed(::Type{<:TuningStrategy}) = true
 # for initialization of state (compulsory)
 setup(tuning::TuningStrategy, model, range, verbosity) = range
 
-# for building each element of the history:
-result(tuning::TuningStrategy, history, state, e, metadata) =
-    (measure=e.measure, measurement=e.measurement)
+# for adding extra user-inspectable information to the history:
+extras(tuning::TuningStrategy, history, state, E) = NamedTuple()
 
 # for generating batches of new models and updating the state (but not
 # history):
-function models! end
+function models end
 
-# for extracting the optimal model (and its performance) from the
-# history:
-function best(tuning::TuningStrategy, history)
-   measurements = [h[2].measurement[1] for h in history]
-   measure = first(history)[2].measure[1]
-   if orientation(measure) == :score
-       measurements = -measurements
-   end
-   best_index = argmin(measurements)
-   return history[best_index]
-end
-
-# for selecting what to report to the user apart from the optimal
-# model:
-tuning_report(tuning::TuningStrategy, history, state) = (history=history,)
+# for adding to the default report:
+tuning_report(tuning::TuningStrategy, history, state) = NamedTuple()
 
 # for declaring the default number of models to evaluate:
 default_n(tuning::TuningStrategy, range) = DEFAULT_N
+
+# for encoding the selection_heuristics supported by given strategy:
+supports_heuristic(heuristic::Any, strategy::Any) = false

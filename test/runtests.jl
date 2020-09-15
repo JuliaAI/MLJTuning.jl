@@ -26,6 +26,10 @@ print("\r                                           \r")
     @test include("utilities.jl")
 end
 
+@testset "selection heuristics" begin
+    include("selection_heuristics.jl")
+end
+
 @testset "tuned_models.jl" begin
     @test include("tuned_models.jl")
 end
