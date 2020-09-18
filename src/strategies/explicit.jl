@@ -1,8 +1,8 @@
 mutable struct Explicit <: TuningStrategy end
 
 struct ExplicitState{R,N}
-    range::R               # a model-generating iterator
-    next::Union{Nothing,N} # to hold output of `iterate(range)`
+    range::R # a model-generating iterator
+    next::N # to hold output of `iterate(range)`
 end
 
 ExplicitState(r::R, ::Nothing) where R = ExplicitState{R,Nothing}(r,nothing)
