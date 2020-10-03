@@ -11,7 +11,7 @@ The optimization is run for nGenerations. The population size, number of samples
 selected, probability of selection, the inter sample weight of sampling and the
 norm can be choosen. There is also the possibility of using a periodic version
 of the Audze-Eglais which reduces clustering along the boundaries of the
-sampling plan. This feature can be specified by the periodic_ae variable.
+sampling plan. To enable this feature set `periodic_ae = true`.
 
 ### Supported ranges:
 
@@ -19,7 +19,8 @@ A single one-dimensional range or vector of one-dimensioinal ranges
 can be specified. Specifically, in `LatinHypercubeSampling` search,
 the `range` field of a `TunedModel` instance can be:
 
-- A single one-dimensional range - ie, `ParamRange` object - `r`,
+- A single one-dimensional range - ie, `ParamRange` object - `r`, constructed
+using the `range` method.
 
 - Any vector of objects of the above form
 
@@ -39,26 +40,21 @@ LatinHypercube(; nGenerations = 1, popSize = 100, nTournament = 2,
                ae_power = 2, periodic_ae = false) =
               LatinHypercube(nGenerations,popSize,nTournament,pTournament)
 
-function setup(tuning::LatinHypercube, model, user_range, verbosity)
+function setup(tuning::LatinHypercube, model, r, verbosity)
     d = length(user_range)
     dim_matrix = zeros(d,2)
     #need to take into account other types of ranges (Nominal)
-    for i = 1:d
+    bounds = map(dim_matrix) do r
         if isfinite(r[i].lower) && isfinite(r[i].upper)
-            dim_matrix[i,1] = r[i].lower
-            dim_matrix[i,2] = r[i].upper
+            (r.lower, r.upper)
         elseif !isfinite(r[i].lower) && isfinite(r[i].upper)
-            dim_matrix[i,1] = r[i].upper - 2*r.unit
-            dim_matrix[i,2] = r[i].upper
+            (r.upper - 2*r.unit, r.upper)
         elseif isfinite(r[i].lower) && !isfinite(r[i].upper)
-            dim_matrix[i,1] = r[i].lower
-            dim_matrix[i,2] = r[i].lower + 2*r.unit
+            (r.lower, r.lower + 2*r.unit)
         else
-            dim_matrix[i,1] = r.origin - r.unit
-            dim_matrix[i,2] = r.origin + r.unit
+            (r.origin - r.unit, r.origin + r.unit)
         end
     end
-    bounds = [Tuple(x[i,:]) for i = 1:d]
 
     plan, _ = LHCoptim(n,d,nGenerations,
                       popsize = popSize,
@@ -68,13 +64,12 @@ function setup(tuning::LatinHypercube, model, user_range, verbosity)
                       periodic_ae = periodic_ae,
                       ae_power = ae_power)
 
-    scaled_plan = scaleLHC(plan,bounds)
+    scaled_plan = scaleLHC(plan, bounds)
 
     ranges = user_range
     fields = map(r -> r.field, ranges)
-    fields = unique(fields)
 
-    models = makeLatinHypercube(model,fields,plan)
+    models = makeLatinHypercube(model, fields, plan)
     state = (models = models,
              fields = fields)
     return state
