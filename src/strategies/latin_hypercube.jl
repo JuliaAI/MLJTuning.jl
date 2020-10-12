@@ -41,19 +41,25 @@ LatinHypercube(; nGenerations = 1, popSize = 100, nTournament = 2,
               LatinHypercube(nGenerations,popSize,nTournament,pTournament)
 
 function setup(tuning::LatinHypercube, model, r, verbosity)
-    d = length(user_range)
+    d = length(r)
     dim_matrix = zeros(d,2)
     #need to take into account other types of ranges (Nominal)
     bounds = map(dim_matrix) do r
-        if isfinite(r[i].lower) && isfinite(r[i].upper)
-            (r.lower, r.upper)
-        elseif !isfinite(r[i].lower) && isfinite(r[i].upper)
-            (r.upper - 2*r.unit, r.upper)
-        elseif isfinite(r[i].lower) && !isfinite(r[i].upper)
-            (r.lower, r.lower + 2*r.unit)
+        if r isa NumericRange
+            if isfinite(r.lower) && isfinite(r.upper)
+                (r.lower, r.upper)
+            elseif !isfinite(r.lower) && isfinite(r.upper)
+                (r.upper - 2*r.unit, r.upper)
+            elseif isfinite(r.lower) && !isfinite(r.upper)
+                (r.lower, r.lower + 2*r.unit)
+            else
+                (r.origin - r.unit, r.origin + r.unit)
+            end
         else
-            (r.origin - r.unit, r.origin + r.unit)
+            #Nominal
+
         end
+
     end
 
     plan, _ = LHCoptim(n,d,nGenerations,
