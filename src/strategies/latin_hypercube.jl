@@ -33,6 +33,7 @@ mutable struct LatinHypercube <: TuningStrategy
     interSampleWeight::Number
     ae_power::Number
     periodic_ae::Bool
+    catWeight::Number
 end
 
 LatinHypercube(; nGenerations = 1, popSize = 100, nTournament = 2,
@@ -59,7 +60,7 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
             #Nominal
             #Question? How to find the two if binary, more if it's more
             #add another value parameter called catWeight
-            push!(Categorical(2,tuning.catWeigth))
+            push!(dims, Categorical(2,tuning.catWeight))
             (0,2) #two still example here
         end
 
