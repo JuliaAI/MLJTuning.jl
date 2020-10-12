@@ -43,9 +43,10 @@ LatinHypercube(; nGenerations = 1, popSize = 100, nTournament = 2,
 function setup(tuning::LatinHypercube, model, r, verbosity)
     d = length(r)
     dim_matrix = zeros(d,2)
-    #need to take into account other types of ranges (Nominal)
+    dims = []
     bounds = map(dim_matrix) do r
         if r isa NumericRange
+            push!(dims,Continuous())
             if isfinite(r.lower) && isfinite(r.upper)
                 (r.lower, r.upper)
             elseif !isfinite(r.lower) && isfinite(r.upper)
@@ -57,21 +58,22 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
             end
         else
             #Nominal
-
+            #Question? How to find the two if binary, more if it's more
+            #add another value parameter called catWeight
+            push!(Categorical(2,tuning.catWeigth))
+            (0,2) #two still example here 
         end
 
     end
-
-    plan, _ = LHCoptim(n,d,nGenerations,
-                      popsize = popSize,
-                      ntour = nTournament,
-                      ptour = pTournment,
-                      interSampleWeight = interSampleWeight,
-                      periodic_ae = periodic_ae,
-                      ae_power = ae_power)
+    plan = randomLHC(n,dims,nGenerations,
+                              popsize = popSize,
+                              ntour = nTournament,
+                              ptour = pTournment,
+                              interSampleWeight = interSampleWeight,
+                              periodic_ae = periodic_ae,
+                              ae_power = ae_power)
 
     scaled_plan = scaleLHC(plan, bounds)
-
     ranges = user_range
     fields = map(r -> r.field, ranges)
 
