@@ -41,7 +41,6 @@ LatinHypercube(; nGenerations = 1, popSize = 100, nTournament = 2,
               LatinHypercube(nGenerations,popSize,nTournament,pTournament)
 
 function setup(tuning::LatinHypercube, model, r, verbosity)
-    d = length(r)
     dim_matrix = zeros(d,2)
     dims = []
     bounds = map(dim_matrix) do r
@@ -61,7 +60,7 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
             #Question? How to find the two if binary, more if it's more
             #add another value parameter called catWeight
             push!(Categorical(2,tuning.catWeigth))
-            (0,2) #two still example here 
+            (0,2) #two still example here
         end
 
     end
