@@ -61,7 +61,7 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
                  transform(MLJBase.Scale,scale(r.scale),r.origin + r.unit))
             end
         else
-            push!(dims, Categorical(length(r.values),tuning.catWeight)) #to fix
+            push!(dims, Categorical(length(r.values)))
             (0,length(r.values))
         end
 
@@ -88,7 +88,6 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
             end
         end
     end
-    #apply r.scale to scaled_plan, show grid_research
     ranges = r
     fields = map(r -> r.field, ranges)
     models = makeLatinHypercube(model, fields, scaled_plan)
