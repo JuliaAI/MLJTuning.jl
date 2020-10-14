@@ -33,7 +33,6 @@ mutable struct LatinHypercube <: TuningStrategy
     interSampleWeight::Number
     ae_power::Number
     periodic_ae::Bool
-    catWeight::Number
 end
 
 LatinHypercube(; nGenerations = 1, popSize = 100, nTournament = 2,
@@ -42,42 +41,57 @@ LatinHypercube(; nGenerations = 1, popSize = 100, nTournament = 2,
               LatinHypercube(nGenerations,popSize,nTournament,pTournament)
 
 function setup(tuning::LatinHypercube, model, r, verbosity)
+    d = length(r)
     dim_matrix = zeros(d,2)
     dims = []
     bounds = map(dim_matrix) do r
         if r isa NumericRange
             push!(dims,Continuous())
             if isfinite(r.lower) && isfinite(r.upper)
-                (r.lower, r.upper)
+                (transform(MLJBase.Scale,scale(r.scale),r.lower),
+                 transform(MLJBase.Scale,scale(r.scale),r.upper))
             elseif !isfinite(r.lower) && isfinite(r.upper)
-                (r.upper - 2*r.unit, r.upper)
+                (transform(MLJBase.Scale,scale(r.scale),r.upper - 2*r.unit),
+                 transform(MLJBase.Scale,scale(r.scale),r.upper))
             elseif isfinite(r.lower) && !isfinite(r.upper)
-                (r.lower, r.lower + 2*r.unit)
+                (transform(MLJBase.Scale,scale(r.scale),r.lower),
+                 transform(MLJBase.Scale,scale(r.scale),r.lower + 2*r.unit))
             else
-                (r.origin - r.unit, r.origin + r.unit)
+                (transform(MLJBase.Scale,scale(r.scale),r.origin - r.unit),
+                 transform(MLJBase.Scale,scale(r.scale),r.origin + r.unit))
             end
         else
-            #Nominal
-            #Question? How to find the two if binary, more if it's more
-            #add another value parameter called catWeight
-            push!(dims, Categorical(2,tuning.catWeight))
-            (0,2) #two still example here
+            push!(dims, Categorical(length(r.values),tuning.catWeight)) #to fix
+            (0,length(r.values))
         end
 
     end
-    plan = randomLHC(n,dims,nGenerations,
+    initial_plan = randomLHC(n,dims,nGenerations,
                               popsize = popSize,
                               ntour = nTournament,
                               ptour = pTournment,
                               interSampleWeight = interSampleWeight,
                               periodic_ae = periodic_ae,
                               ae_power = ae_power)
+    scaled_plan = scaleLHC(initial_plan, bounds)
 
-    scaled_plan = scaleLHC(plan, bounds)
-    ranges = user_range
+    #inverse_transforming the values in case the dims is continuous,
+    #mapping to right symbol in case it is nominal
+    @inbounds for i = 1:size(scaled_plan,1)
+        for j = 1:size(scaled_plan,2)
+            if dims[j] isa LatinHypercubeSampling.Continuous
+                scaled_plan[i][j] = inverse_transform(MLJBase.Scale,
+                                                      scale(r[j].scale),
+                                                      scaled_plan[i][j])
+            else
+                scaled_plan[i][j] = r[j].values[scaled_plan[i][j]]
+            end
+        end
+    end
+    #apply r.scale to scaled_plan, show grid_research
+    ranges = r
     fields = map(r -> r.field, ranges)
-
-    models = makeLatinHypercube(model, fields, plan)
+    models = makeLatinHypercube(model, fields, scaled_plan)
     state = (models = models,
              fields = fields)
     return state
