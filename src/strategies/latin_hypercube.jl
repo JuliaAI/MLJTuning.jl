@@ -47,7 +47,7 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
     bounds = map(dim_matrix) do r
         if r isa NumericRange
             if !(r.scale isa Symbol)
-                throw("callable scale not supported in LatinHyperCube tuning.")
+                error("callable scale not supported in LatinHyperCube tuning.")
             end
             push!(dims,Continuous())
             if isfinite(r.lower) && isfinite(r.upper)
