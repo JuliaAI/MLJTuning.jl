@@ -282,8 +282,6 @@ Several functions are part of the tuning strategy API:
 - `models`: for generating batches of new models and updating the
   state (compulsory)
 
-- `update_metadata`: ;;;
-
 - `default_n`: to specify the total number of models to be evaluated when
   `n` is not specified by the user
 
