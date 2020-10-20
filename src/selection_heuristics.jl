@@ -39,9 +39,13 @@ with measures that are neither `:loss` nor `:score` are reset to zero.
 struct NaiveSelection <: SelectionHeuristic
     weights::Union{Nothing, Vector{Real}}
 end
-NaiveSelection(; weights=nothing) =
-    NaiveSelection(weights)
-
+function NaiveSelection(; weights=nothing)
+    if weights isa Vector
+        all(x -> x >= 0, weights) ||
+            error("`weights` must be non-negative. ")
+        end
+    return NaiveSelection(weights)
+end
 
 function best(heuristic::NaiveSelection, history)
     first_entry = history[1]
@@ -49,10 +53,6 @@ function best(heuristic::NaiveSelection, history)
     weights = measure_adjusted_weights(heuristic.weights, measures)
     measurements = [weights'*(h.measurement) for h in history]
     measure = first(history).measure[1]
-    if orientation(measure) == :score
-                               measurements = -measurements
-
-    end
     best_index = argmin(measurements)
     return history[best_index]
 end
