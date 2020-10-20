@@ -52,7 +52,6 @@ function best(heuristic::NaiveSelection, history)
     measures = first_entry.measure
     weights = measure_adjusted_weights(heuristic.weights, measures)
     measurements = [weights'*(h.measurement) for h in history]
-    measure = first(history).measure[1]
     best_index = argmin(measurements)
     return history[best_index]
 end
