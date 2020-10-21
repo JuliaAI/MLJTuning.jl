@@ -40,8 +40,7 @@ LatinHypercube(; nGenerations = 1, popSize = 100, nTournament = 2,
                ae_power = 2, periodic_ae = false) =
               LatinHypercube(nGenerations,popSize,nTournament,pTournament)
 
-function setup(tuning::LatinHypercube, model, r, verbosity)
-    d = length(r)
+function _create_bounds_and_dims(d,r)
     dim_matrix = zeros(d,2)
     dims = []
     bounds = map(dim_matrix) do r
@@ -67,8 +66,14 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
             push!(dims, Categorical(length(r.values)))
             (0,length(r.values))
         end
-
     end
+
+end
+
+function setup(tuning::LatinHypercube, model, r, verbosity)
+
+    d = length(r)
+    bounds, dims = _create_bounds_and_dims(d, r)
     initial_plan = randomLHC(n,dims,nGenerations,
                               popsize = popSize,
                               ntour = nTournament,
