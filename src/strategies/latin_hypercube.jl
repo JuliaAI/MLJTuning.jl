@@ -41,37 +41,36 @@ LatinHypercube(; nGenerations = 1, popSize = 100, nTournament = 2,
               LatinHypercube(nGenerations,popSize,nTournament,pTournament)
 
 function _create_bounds_and_dims(d,r)
-    dim_matrix = zeros(d,2)
+    bounds = []
     dims = []
-    bounds = map(dim_matrix) do r
-        if r isa NumericRange
-            if !(r.scale isa Symbol)
-                error("callable scale not supported in LatinHyperCube tuning.")
+    for i = 1:d
+        if r[i] isa NumericRange
+            if !(r[i].scale isa Symbol)
+                error("Callable scale not supported in LatinHyperCube tuning.")
             end
             push!(dims,Continuous())
-            if isfinite(r.lower) && isfinite(r.upper)
-                (transform(MLJBase.Scale,scale(r.scale),r.lower),
-                 transform(MLJBase.Scale,scale(r.scale),r.upper))
+            if isfinite(r[i].lower) && isfinite(r[i].upper)
+                push!(bounds,(transform(MLJBase.Scale,scale(r[i].scale),r[i].lower),
+                 transform(MLJBase.Scale,scale(r[i].scale),r[i].upper)))
             elseif !isfinite(r.lower) && isfinite(r.upper)
-                (transform(MLJBase.Scale,scale(r.scale),r.upper - 2*r.unit),
-                 transform(MLJBase.Scale,scale(r.scale),r.upper))
+                push!(bounds,(transform(MLJBase.Scale,scale(r[i].scale),r[i].upper - 2*r[i].unit),
+                 transform(MLJBase.Scale,scale(r[i].scale),r[i].upper)))
             elseif isfinite(r.lower) && !isfinite(r.upper)
-                (transform(MLJBase.Scale,scale(r.scale),r.lower),
-                 transform(MLJBase.Scale,scale(r.scale),r.lower + 2*r.unit))
+                push!(bounds,(transform(MLJBase.Scale,scale(r[i].scale),r[i].lower),
+                 transform(MLJBase.Scale,scale(r[i].scale),r[i].lower + 2*r[i].unit)))
             else
-                (transform(MLJBase.Scale,scale(r.scale),r.origin - r.unit),
-                 transform(MLJBase.Scale,scale(r.scale),r.origin + r.unit))
+                push!(bounds,(transform(MLJBase.Scale,scale(r[i].scale),r[i].origin - r[i].unit),
+                 transform(MLJBase.Scale,scale(r[i].scale),r[i].origin + r[i].unit)))
             end
         else
-            push!(dims, Categorical(length(r.values)))
-            (0,length(r.values))
+            push!(dims, Categorical(length(r[i].values), 1.0))
+            push!(bounds,(0,length(r[i].values)))
         end
     end
-
+    return bounds, dims
 end
 
 function setup(tuning::LatinHypercube, model, r, verbosity)
-
     d = length(r)
     bounds, dims = _create_bounds_and_dims(d, r)
     initial_plan = randomLHC(n,dims,nGenerations,
@@ -82,9 +81,6 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
                               periodic_ae = periodic_ae,
                               ae_power = ae_power)
     scaled_plan = scaleLHC(initial_plan, bounds)
-
-    #inverse_transforming the values in case the dims is continuous,
-    #mapping to right symbol in case it is nominal
     @inbounds for i = 1:size(scaled_plan,1)
         for j = 1:size(scaled_plan,2)
             if dims[j] isa LatinHypercubeSampling.Continuous
