@@ -4,11 +4,12 @@ using Test
 using MLJBase
 using MLJTuning
 using ..Models
+import Random
 using StableRNGs
-
 rng=StableRNGs.StableRNG(1234)
 
 @testset "Two ranges with scale" begin
+rng = StableRNGs.StableRNG(1234)
 x1 = rand(rng, 100);
 x2 = rand(rng, 100);
 x3 = rand(rng, 100)
@@ -20,7 +21,7 @@ forest_model = EnsembleModel(atom=tree_model)
 
 r1 = range(forest_model, :(atom.n_subfeatures), lower=1, upper=9);
 r2 = range(forest_model, :bagging_fraction, lower=0.4, upper=1.0, scale=:log);
-my_latin = LatinHypercube(nGenerations=2,popSize= 120)
+my_latin = LatinHypercube(nGenerations=2,popSize= 120, rng = rng)
 self_tuning_forest_model = TunedModel(model=forest_model,
                                              tuning=my_latin,
                                              resampling=CV(nfolds=6),
@@ -29,6 +30,7 @@ self_tuning_forest_model = TunedModel(model=forest_model,
 end
 
 @testset "Range with infinity"
+rng = StableRNGs.StableRNG(1234)
 x1 = rand(rng, 100);
 x2 = rand(rng, 100);
 x3 = rand(rng, 100)
@@ -41,7 +43,7 @@ forest_model = EnsembleModel(atom=tree_model)
 r1 = range(forest_model, :(atom.n_subfeatures), lower=1, upper=9);
 r2 = range(forest_model, :bagging_fraction,
            lower=0, upper=Inf, origin=2, unit=3, scale = :log);
-my_latin = LatinHypercube(nGenerations=2,popSize= 120)
+my_latin = LatinHypercube(nGenerations=2,popSize= 120, rng = rng)
 self_tuning_forest_model = TunedModel(model=forest_model,
                                              tuning=my_latin,
                                              resampling=CV(nfolds=6),
@@ -51,6 +53,7 @@ end
 
 
 @testset "Full features of latin hypercube" begin
+rng = StableRNGs.StableRNG(1234)
 x1 = rand(rng, 100);
 x2 = rand(rng, 100);
 x3 = rand(rng, 100)
@@ -64,7 +67,7 @@ r1 = range(forest_model, :(atom.n_subfeatures), lower=1, upper=9);
 r2 = range(forest_model, :bagging_fraction, lower=0.4, upper=1.5);
 my_latin = LatinHypercube(nGenerations=4,popSize=100, nTournament = 2,
                           pTournment=0.3, interSampleWeight = 1.5,
-                          ae_power = 1.7, periodic_ae = true)
+                          ae_power = 1.7, periodic_ae = true, rng = rng)
 
 self_tuning_forest_model = TunedModel(model=forest_model,
                                              tuning=my_latin,
@@ -74,27 +77,28 @@ self_tuning_forest_model = TunedModel(model=forest_model,
 end
 
 @testset "setup" begin
+    rng = StableRNGs.StableRNG(1234)
     tree_model = DecisionTreeRegressor()
     forest_model = EnsembleModel(atom=tree_model)
     r1 = range(forest_model, :(atom.n_subfeatures), lower=1, upper=9)
     r2 = range(forest_model, :bagging_fraction, lower=0.4, upper=1.5);
-    my_latin = LatinHypercube(nGenerations=2,popSize= 120)
+    my_latin = LatinHypercube(nGenerations=2,popSize= 120, rng = rng)
     setup(tuning::LatinHypercube, model=forest_model,r=[r1,r2], verbosity)
 end
 
 @testset "Scale not a symbol" begin
+rng = StableRNGs.StableRNG(1234)
 tree_model = DecisionTreeRegressor()
 forest_model = EnsembleModel(atom=tree_model)
 r1 = range(forest_model, :(atom.n_subfeatures), lower=1, upper=9,
            scale = x->10^x)
 r2 = range(forest_model, :bagging_fraction, lower=0.4, upper=1.5);
-my_latin = LatinHypercube(nGenerations=2,popSize= 120)
+my_latin = LatinHypercube(nGenerations=2,popSize= 120, rng = rng)
 @test_throws ErrorException setup(tuning::LatinHypercube, model=forest_model,
                                   r=[r1,r2], verbosity)
 end
 
 @testset "Return value for ranges" begin
-
     tree_model = DecisionTreeRegressor()
     forest_model = EnsembleModel(atom=tree_model)
     d = 2

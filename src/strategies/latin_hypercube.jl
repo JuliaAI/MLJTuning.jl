@@ -33,12 +33,21 @@ mutable struct LatinHypercube <: TuningStrategy
     interSampleWeight::Number
     ae_power::Number
     periodic_ae::Bool
+    rng::Random.AbstractRNG
 end
 
-LatinHypercube(; nGenerations = 1, popSize = 100, nTournament = 2,
-               pTournament = 0.8, interSampleWeight = 1.0,
-               ae_power = 2, periodic_ae = false) =
-              LatinHypercube(nGenerations,popSize,nTournament,pTournament)
+function LatinHypercube(; nGenerations = 1, popSize = 100, nTournament = 2,
+                        pTournament = 0.8, interSampleWeight = 1.0,
+                        ae_power = 2, periodic_ae = false,
+                        rng=Random.GLOBAL_RNG)
+
+               _rng = rng isa Integer ? Random.MersenneTwister(rng) : rng
+
+              return LatinHypercube(nGenerations,popSize,nTournament,
+                                    pTournament, interSampleWeight, ae_power,
+                                    periodic_ae, _rng)
+
+end
 
 function _create_bounds_and_dims(d,r)
     bounds = []
@@ -74,12 +83,13 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
     d = length(r)
     bounds, dims = _create_bounds_and_dims(d, r)
     initial_plan = randomLHC(n,dims,nGenerations,
-                              popsize = popSize,
-                              ntour = nTournament,
-                              ptour = pTournment,
-                              interSampleWeight = interSampleWeight,
-                              periodic_ae = periodic_ae,
-                              ae_power = ae_power)
+                              popsize = tuning.popSize,
+                              ntour = tuning.nTournament,
+                              ptour = tuning.pTournment,
+                              interSampleWeight = tuning.interSampleWeight,
+                              periodic_ae = tuning.periodic_ae,
+                              ae_power = tuning.ae_power,
+                              rng = tuning.rng)
     scaled_plan = scaleLHC(initial_plan, bounds)
     @inbounds for i = 1:size(scaled_plan,1)
         for j = 1:size(scaled_plan,2)
