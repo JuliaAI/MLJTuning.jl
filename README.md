@@ -66,7 +66,10 @@ This repository contains:
 
   - [x] grid search (built-in `Grid` strategy)
 
-  - [ ] Latin hypercubes
+  - [x] Latin hypercubes (built-in `LatinHypercube` strategy,
+    interfacing the
+    [LatinHypercubeSampling](https://github.com/MrUrq/LatinHypercubeSampling.jl)
+    package)
 
   - [x] random search (built-in `RandomSearch` strategy)
 

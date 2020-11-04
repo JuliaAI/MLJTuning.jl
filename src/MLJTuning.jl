@@ -7,7 +7,7 @@ module MLJTuning
 export TunedModel
 
 # defined in strategies/:
-export Explicit, Grid, RandomSearch
+export Explicit, Grid, RandomSearch, LatinHypercube
 
 # defined in selection_heuristics/:
 export NaiveSelection
@@ -29,6 +29,7 @@ import ComputationalResources: CPU1, CPUProcesses,
     CPUThreads, AbstractResource
 using Random
 using ProgressMeter
+using LatinHypercubeSampling
 
 
 ## CONSTANTS
@@ -49,4 +50,3 @@ include("plotrecipes.jl")
 include("learning_curves.jl")
 
 end
-
