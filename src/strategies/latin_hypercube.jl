@@ -57,7 +57,7 @@ function _create_bounds_and_dims(d,r)
             if !(r[i].scale isa Symbol)
                 error("Callable scale not supported in LatinHyperCube tuning.")
             end
-            push!(dims,Continuous())
+            push!(dims,LatinHypercubeSampling.Continuous())
             if isfinite(r[i].lower) && isfinite(r[i].upper)
                 push!(bounds,(transform(MLJBase.Scale,scale(r[i].scale),r[i].lower),
                  transform(MLJBase.Scale,scale(r[i].scale),r[i].upper)))
@@ -82,14 +82,14 @@ end
 function setup(tuning::LatinHypercube, model, r, verbosity)
     d = length(r)
     bounds, dims = _create_bounds_and_dims(d, r)
-    initial_plan = randomLHC(n,dims,nGenerations,
-                              popsize = tuning.popSize,
-                              ntour = tuning.nTournament,
-                              ptour = tuning.pTournment,
-                              interSampleWeight = tuning.interSampleWeight,
-                              periodic_ae = tuning.periodic_ae,
-                              ae_power = tuning.ae_power,
-                              rng = tuning.rng)
+    initial_plan = randomLHC(n, dims, nGenerations,
+                             popsize = tuning.popSize,
+                             ntour = tuning.nTournament,
+                             ptour = tuning.pTournament,
+                             interSampleWeight = tuning.interSampleWeight,
+                             periodic_ae = tuning.periodic_ae,
+                             ae_power = tuning.ae_power,
+                             rng = tuning.rng)
     scaled_plan = scaleLHC(initial_plan, bounds)
     @inbounds for i = 1:size(scaled_plan,1)
         for j = 1:size(scaled_plan,2)
