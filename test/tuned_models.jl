@@ -69,7 +69,8 @@ end
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
                     measures=[rms, l1], acceleration=accel)
-    fitresult, meta_state, report = fit(tm, 1, X, y);
+    verbosity = accel isa CPU1 ? 2 : 1
+    fitresult, meta_state, report = fit(tm, verbosity, X, y);
     history, _, state = meta_state;
     results2 = map(event -> event.measurement[1], history)
     @test results2 ≈ results

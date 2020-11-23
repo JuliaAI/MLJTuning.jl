@@ -311,7 +311,7 @@ function event(metamodel,
     end
 
     if verbosity > 1
-        println("result: $r")
+        println("measurement: $(E.measurement[1])")
     end
     return entry
 end
@@ -333,7 +333,7 @@ function assemble_events(metamodels,
          barlen = 25,
          color = :yellow)
 
-    verbosity <1 || update!(p,0)
+    verbosity !=1 || update!(p,0)
 
     entries = map(metamodels) do m
         r = event(m, resampling_machine, verbosity, tuning, history, state)
