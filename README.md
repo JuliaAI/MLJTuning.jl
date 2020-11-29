@@ -4,7 +4,7 @@ Hyperparameter optimization for
 [MLJ](https://github.com/alan-turing-institute/MLJ.jl) machine
 learning models.
 
-[![Build Status](https://travis-ci.com/alan-turing-institute/MLJTuning.jl.svg?branch=master)](https://travis-ci.com/alan-turing-institute/MLJTuning.jl)
+[![Build Status](https://github.com/alan-turing-institute/MLJTuning.jl/workflows/CI/badge.svg)](https://github.com/alan-turing-institute/MLJTuning.jl/actions)
 [![Coverage Status](https://coveralls.io/repos/github/alan-turing-institute/MLJTuning.jl/badge.svg?branch=master)](https://coveralls.io/github/alan-turing-institute/MLJTuning.jl?branch=master)
 
 ### Contents
