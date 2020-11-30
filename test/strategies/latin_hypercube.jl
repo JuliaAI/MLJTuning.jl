@@ -128,7 +128,7 @@ end
     @test all(bounds[1] .≈ (1.0,9.0))
     @test all(bounds[2] .≈ (0.4,1.5))
     @test all(dims .== [LatinHypercubeSampling.Continuous(),
-                       LatinHypercubeSampling.Continuous()])
+                        LatinHypercubeSampling.Continuous()])
 
     r3 = range(model, :lambda, lower=1., upper=9,scale =:log);
     r4 = range(model, :alpha, lower=0.4, upper=1.5);
@@ -136,7 +136,7 @@ end
     @test all(bounds[1] .≈ (0.0, 2.1972245773362196))
     @test all(bounds[2] .≈ (0.4,1.5))
     @test all(dims .== [LatinHypercubeSampling.Continuous(),
-                       LatinHypercubeSampling.Continuous()])
+                        LatinHypercubeSampling.Continuous()])
 
     r5 = range(model, :kernel, values=collect("abc"))
     r6 = range(model, :lambda, lower=-Inf, upper=+Inf,
@@ -144,7 +144,8 @@ end
     bounds, dims = MLJTuning._create_bounds_and_dims(d,[r5,r6])
     @test all(bounds[1] .≈ (0,3))
     @test all(bounds[2] .≈ (-3.0, 3.0))
-    @test all(dims .== [LatinHypercubeSampling.Categorical(3,1.0),Continuous()])
+    @test all(dims .== [LatinHypercubeSampling.Categorical(3,1.0),
+                        LatinHypercubeSampling.Continuous()])
 
     r7 = range(model, :lambda, lower=0., upper=1.0)
     r8 = range(model, :alpha, lower = -Inf, upper = 15.,
