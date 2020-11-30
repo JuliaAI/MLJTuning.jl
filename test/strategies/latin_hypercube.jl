@@ -57,8 +57,8 @@ end
 @testset "Range with infinity" begin
     #ok this works
     model = DummyModel(1, 9, 'k')
-    r1 = range(super_model, :lambda, lower=1, upper=9);
-    r2 = range(super_model, :alpha, lower=0, upper=Inf, origin=2,
+    r1 = range(model, :lambda, lower=1, upper=9);
+    r2 = range(model, :alpha, lower=0, upper=Inf, origin=2,
                unit=3, scale = :log);
     my_latin = LatinHypercube(nGenerations=2,popSize= 120, rng = rng)
     self_tuning_model = TunedModel(model=model,
