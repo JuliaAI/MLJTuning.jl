@@ -30,14 +30,16 @@ mutable struct SuperModel <: Deterministic
     model2::DummyModel
 end
 
+#=
 MLJBase.fit(::DummyModel, verbosity::Int, X, y) = mean(y), nothing, nothing
 MLJBase.predict(::DummyModel, fitresult, Xnew) =
     fill(fitresult, schema(Xnew).nrows)
+=#
 
 dummy_model = DummyModel(1, 9, 'k')
 super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))
 
-
+#=
 @testset "Two ranges with scale" begin
     model = DummyModel(1,1,'k')
     r1 = range(model, :lambda, lower=1, upper=9);
@@ -49,9 +51,9 @@ super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))
                                    range=[r1, r2],
                                    measure=rms);
 end
+=#
 
-
-
+#=
 @testset "Range with infinity" begin
     model = DummyModel(1, 9, 'k')
     r1 = range(model, :lambda, lower=1, upper=9);
@@ -65,7 +67,7 @@ end
                                    measure=rms);
 
 end
-
+=#
 
 #=
 @testset "Full features of latin hypercube" begin
