@@ -149,7 +149,7 @@ end
     #@test all(bounds[1] .≈ (0,3))
     #@test all(bounds[2] .≈ (-3.0, 3.0))
     #@test all(dims .== [LatinHypercubeSampling.Categorical(3,1.0),
-                        LatinHypercubeSampling.Continuous()])
+        #                LatinHypercubeSampling.Continuous()])
 
     print("Fourth test")
     r7 = range(model, :lambda, lower=0., upper=1.0)
