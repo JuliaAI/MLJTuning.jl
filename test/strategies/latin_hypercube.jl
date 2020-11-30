@@ -41,8 +41,8 @@ r0 = range(super_model, :(model1.kernel), values=['c', 'd'])
 r1 = range(super_model, :(model1.lambda), lower=1, upper=3)
 r2 = range(super_model, :K, lower=0, upper=Inf, origin=2, unit=3)
 
+#=
 @testset "Two ranges with scale" begin
-    #ok this works
     model = DummyModel(1,1,'k')
     r1 = range(model, :lambda, lower=1, upper=9);
     r2 = range(model, :alpha, lower=0.4, upper=1.0, scale=:log);
@@ -53,10 +53,10 @@ r2 = range(super_model, :K, lower=0, upper=Inf, origin=2, unit=3)
                                    range=[r1, r2],
                                    measure=rms);
 end
+=#
 
-
+#=
 @testset "Range with infinity" begin
-    #ok this works
     model = DummyModel(1, 9, 'k')
     r1 = range(model, :lambda, lower=1, upper=9);
     r2 = range(model, :alpha, lower=0, upper=Inf, origin=2,
@@ -69,10 +69,10 @@ end
                                    measure=rms);
 
 end
+=#
 
-
+#=
 @testset "Full features of latin hypercube" begin
-    #ok this works
     model = DummyModel(1, 9, 'k')
     supermodel = SuperModel(4, model, deepcopy(model))
 
@@ -89,6 +89,7 @@ end
                                           range=[r1, r2],
                                           measure=rms);
 end
+=#
 
 #=
 problem with dimension n, cannot call setup outside of
@@ -125,11 +126,14 @@ end
     r1 = range(model, :alpha, lower=1., upper=9.);
     r2 = range(model, :lambda, lower=0.4, upper=1.5);
     bounds, dims = MLJTuning._create_bounds_and_dims(d,[r1,r2])
+    print("First test")
     @test all(bounds[1] .≈ (1.0,9.0))
     @test all(bounds[2] .≈ (0.4,1.5))
     @test all(dims .== [LatinHypercubeSampling.Continuous(),
                         LatinHypercubeSampling.Continuous()])
 
+
+    print("Second test")
     r3 = range(model, :lambda, lower=1., upper=9,scale =:log);
     r4 = range(model, :alpha, lower=0.4, upper=1.5);
     bounds, dims = MLJTuning._create_bounds_and_dims(d,[r3,r4])
@@ -137,7 +141,7 @@ end
     @test all(bounds[2] .≈ (0.4,1.5))
     @test all(dims .== [LatinHypercubeSampling.Continuous(),
                         LatinHypercubeSampling.Continuous()])
-
+    print("Third test")
     r5 = range(model, :kernel, values=collect("abc"))
     r6 = range(model, :lambda, lower=-Inf, upper=+Inf,
                origin = 0., unit = 3.)
@@ -147,6 +151,7 @@ end
     @test all(dims .== [LatinHypercubeSampling.Categorical(3,1.0),
                         LatinHypercubeSampling.Continuous()])
 
+    print("Fourth test")
     r7 = range(model, :lambda, lower=0., upper=1.0)
     r8 = range(model, :alpha, lower = -Inf, upper = 15.,
                origin = 4., unit = 10., scale =:linear)
@@ -157,6 +162,7 @@ end
                        LatinHypercubeSampling.Continuous()])
 
 
+    print("Fifth test")
     r9 = range(model, :alpha, lower=-Inf, upper=+Inf,
                origin = 5.0, unit = 1.0, scale = :log2)
     r10 = range(model, :lambda, lower = 5.0, upper = +Inf,
