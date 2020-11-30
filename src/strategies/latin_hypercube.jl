@@ -26,6 +26,7 @@ using the `range` method.
 
 """
 mutable struct LatinHypercube <: TuningStrategy
+    n_max::Int
     nGenerations::Int
     popSize::Int
     nTournament::Int
@@ -36,16 +37,24 @@ mutable struct LatinHypercube <: TuningStrategy
     rng::Random.AbstractRNG
 end
 
-function LatinHypercube(; nGenerations = 1, popSize = 100, nTournament = 2,
-                        pTournament = 0.8, interSampleWeight = 1.0,
-                        ae_power = 2, periodic_ae = false,
-                        rng=Random.GLOBAL_RNG)
+function default_n(tuning::Explicit, range)
+    try
+        length(range)
+    catch MethodError
+        DEFAULT_N
+    end
+end
 
-               _rng = rng isa Integer ? Random.MersenneTwister(rng) : rng
+function LatinHypercube(; n_max = DEFAULT_N, nGenerations = 1,
+                        popSize = 100, nTournament = 2, pTournament = 0.8,
+                        interSampleWeight = 1.0,ae_power = 2,
+                        periodic_ae = false,rng=Random.GLOBAL_RNG)
 
-              return LatinHypercube(nGenerations,popSize,nTournament,
-                                    pTournament, interSampleWeight, ae_power,
-                                    periodic_ae, _rng)
+    _rng = rng isa Integer ? Random.MersenneTwister(rng) : rng
+
+    return LatinHypercube(n_max, nGenerations, popSize, nTournament,
+                          pTournament, interSampleWeight, ae_power,
+                          periodic_ae, _rng)
 
 end
 
@@ -82,7 +91,7 @@ end
 function setup(tuning::LatinHypercube, model, r, verbosity)
     d = length(r)
     bounds, dims = _create_bounds_and_dims(d, r)
-    plan = LHCoptim(n,d,tuning.nGenerations,
+    plan = LHCoptim(tuning.n_max, d, tuning.nGenerations,
                     rng = tuning.rng,
                     popsize = tuning.popSize,
                     ntour = tuning.nTournament,

@@ -77,9 +77,10 @@ end
 
     r1 = range(supermodel, :(model1.lambda), lower=1, upper=9);
     r2 = range(supermodel, :K, lower=0.4, upper=1.5);
-    my_latin = LatinHypercube(nGenerations=4,popSize=100, nTournament = 2,
-                              pTournament=0.3, interSampleWeight = 1.5,
-                              ae_power = 1.7, periodic_ae = true, rng = rng)
+    my_latin = LatinHypercube(n_max = 11, nGenerations=4,popSize=100,
+                              nTournament = 2, pTournament=0.3,
+                              interSampleWeight = 1.5, ae_power = 1.7,
+                              periodic_ae = true, rng = rng)
 
     self_tuning_forest_model = TunedModel(model=supermodel,
                                           tuning=my_latin,
