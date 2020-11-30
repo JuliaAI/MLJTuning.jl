@@ -1,13 +1,14 @@
 """
-LatinHypercube(nGenerations = 1, popSize = 100, nTournament = 2,
-                pTournament = 0.8. interSampleWeight = 1.0,
-                ae_power = 2, periodic_ae = false)
+LatinHypercube(n_max = DEFAULT_N, nGenerations = 1, popSize = 100,
+               nTournament = 2, pTournament = 0.8.,interSampleWeight = 1.0,
+                ae_power = 2, periodic_ae = false, rng=Random.GLOBAL_RNG)
 
 Instantiate  grid-based hyperparameter tuning strategy using the library
 LatinHypercubeSampling.jl. The optimised Latin Hypercube sampling plan is
 created using a genetic based optimization algorithm based on the inverse of the
 Audze-Eglais function.
-The optimization is run for nGenerations. The population size, number of samples
+The optimization is run for nGenerations and creates a maximum number of n_max
+points for evaluation. The population size, number of samples
 selected, probability of selection, the inter sample weight of sampling and the
 norm can be choosen. There is also the possibility of using a periodic version
 of the Audze-Eglais which reduces clustering along the boundaries of the
@@ -37,13 +38,6 @@ mutable struct LatinHypercube <: TuningStrategy
     rng::Random.AbstractRNG
 end
 
-function default_n(tuning::Explicit, range)
-    try
-        length(range)
-    catch MethodError
-        DEFAULT_N
-    end
-end
 
 function LatinHypercube(; n_max = DEFAULT_N, nGenerations = 1,
                         popSize = 100, nTournament = 2, pTournament = 0.8,
@@ -101,7 +95,7 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
                     periodic_ae = tuning.periodic_ae,
                     ae_power = tuning.ae_power)
     scaled_plan = scaleLHC(plan, bounds)
-    @inbounds for i = 1:size(scaled_plan,1)
+    for i = 1:size(scaled_plan,1)
         for j = 1:size(scaled_plan,2)
             if dims[j] isa LatinHypercubeSampling.Continuous
                 scaled_plan[i][j] = inverse_transform(MLJBase.Scale,

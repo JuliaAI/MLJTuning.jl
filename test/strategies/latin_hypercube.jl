@@ -37,11 +37,7 @@ MLJBase.predict(::DummyModel, fitresult, Xnew) =
 dummy_model = DummyModel(1, 9, 'k')
 super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))
 
-r0 = range(super_model, :(model1.kernel), values=['c', 'd'])
-r1 = range(super_model, :(model1.lambda), lower=1, upper=3)
-r2 = range(super_model, :K, lower=0, upper=Inf, origin=2, unit=3)
 
-#=
 @testset "Two ranges with scale" begin
     model = DummyModel(1,1,'k')
     r1 = range(model, :lambda, lower=1, upper=9);
@@ -53,9 +49,9 @@ r2 = range(super_model, :K, lower=0, upper=Inf, origin=2, unit=3)
                                    range=[r1, r2],
                                    measure=rms);
 end
-=#
 
-#=
+
+
 @testset "Range with infinity" begin
     model = DummyModel(1, 9, 'k')
     r1 = range(model, :lambda, lower=1, upper=9);
@@ -69,7 +65,7 @@ end
                                    measure=rms);
 
 end
-=#
+
 
 #=
 @testset "Full features of latin hypercube" begin
@@ -119,8 +115,8 @@ end
 end
 =#
 
+#=
 @testset "Return value for ranges" begin
-    #ok this works
     model = DummyModel(1,9,'k')
     d = 2
     r1 = range(model, :alpha, lower=1., upper=9.);
@@ -146,10 +142,10 @@ end
     r6 = range(model, :lambda, lower=-Inf, upper=+Inf,
                origin = 0., unit = 3.)
     bounds, dims = MLJTuning._create_bounds_and_dims(d,[r5,r6])
-    #@test all(bounds[1] .≈ (0,3))
-    #@test all(bounds[2] .≈ (-3.0, 3.0))
-    #@test all(dims .== [LatinHypercubeSampling.Categorical(3,1.0),
-        #                LatinHypercubeSampling.Continuous()])
+    @test all(bounds[1] .≈ (0,3))
+    @test all(bounds[2] .≈ (-3.0, 3.0))
+    @test all(dims .== [LatinHypercubeSampling.Categorical(3,1.0),
+                       LatinHypercubeSampling.Continuous()])
 
     print("Fourth test")
     r7 = range(model, :lambda, lower=0., upper=1.0)
@@ -172,6 +168,9 @@ end
     @test all(bounds[2] .≈ (5.0, 25.0))
     @test all(dims .== [LatinHypercubeSampling.Continuous(),
                         LatinHypercubeSampling.Continuous()])
+
 end
+
+=#
 
 end
