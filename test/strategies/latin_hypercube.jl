@@ -40,6 +40,7 @@ super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))
 
 
 @testset "Two ranges with scale" begin
+    #ok this works
     model = DummyModel(1,1,'k')
     r1 = range(model, :lambda, lower=1, upper=9);
     r2 = range(model, :alpha, lower=0.4, upper=1.0, scale=:log);
@@ -52,6 +53,7 @@ super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))
 end
 
 @testset "Range with infinity" begin
+    #ok this works
     model = DummyModel(1, 9, 'k')
     r1 = range(model, :lambda, lower=1, upper=9);
     r2 = range(model, :alpha, lower=0, upper=Inf, origin=2,
@@ -102,7 +104,7 @@ problem with dimension n, cannot call setup outside of
 end
 =#
 
-#=
+
 @testset "Scale not a symbol" begin
     model = DummyModel(1,9,'k')
     r1 = range(model, :lambda, lower=1, upper=9,scale = x->10^x)
@@ -111,10 +113,11 @@ end
     @test_throws ErrorException MLJTuning.setup(my_latin, model=model,
                                         r=[r1,r2])
 end
-=#
+
 
 
 @testset "Return value for ranges" begin
+    #ok this works
     model = DummyModel(1,9,'k')
     d = 2
     r1 = range(model, :alpha, lower=1., upper=9.);
