@@ -67,7 +67,7 @@ end
 
 end
 
-
+#=
 @testset "Full features of latin hypercube" begin
     model = DummyModel(1, 9, 'k')
     supermodel = SuperModel(4, model, deepcopy(model))
@@ -84,10 +84,9 @@ end
                                    range=[r1, r2],
                                    measure=rms);
 end
+=#
 
 
-
-#=
 @testset "setup" begin
     model = DummyModel(1, 9, 'k')
     r1 = range(model, :lambda, lower=1, upper=9)
@@ -95,7 +94,6 @@ end
     my_latin = LatinHypercube(rng=StableRNGs.StableRNG(1))
     MLJTuning.setup(my_latin, model, [r1,r2], 1)
 end
-=#
 
 
 
