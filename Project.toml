@@ -17,7 +17,7 @@ RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 [compat]
 ComputationalResources = "^0.3"
 Distributions = "^0.22,^0.23,^0.24"
-LatinHypercubeSampling = "^1.7.2"
+LatinHypercubeSampling = ">=1.7.2"
 MLJBase = "^0.15"
 MLJModelInterface = "^0.3"
 ProgressMeter = "^1.3"
