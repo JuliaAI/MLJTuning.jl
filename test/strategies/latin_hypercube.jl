@@ -110,8 +110,8 @@ end
     r1 = range(model, :lambda, lower=1, upper=9,scale = x->10^x)
     r2 = range(model, :alpha, lower=0.4, upper=1.5);
     my_latin = LatinHypercube(nGenerations=2,popSize= 120, rng = rng)
-    @test_throws MethodError MLJTuning.setup(my_latin, model=model,
-                                        r=[r1,r2])
+    @test_throws ErrorException("Callable scale not supported.")
+                 MLJTuning.setup(my_latin, model=model,r=[r1,r2])
 end
 
 

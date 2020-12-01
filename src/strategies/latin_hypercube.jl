@@ -58,7 +58,7 @@ function _create_bounds_and_dims(d,r)
     for i = 1:d
         if r[i] isa NumericRange
             if !(r[i].scale isa Symbol)
-                error("Callable scale not supported in LatinHyperCube tuning.")
+                error("Callable scale not supported.")
             end
             push!(dims,LatinHypercubeSampling.Continuous())
             if isfinite(r[i].lower) && isfinite(r[i].upper)
