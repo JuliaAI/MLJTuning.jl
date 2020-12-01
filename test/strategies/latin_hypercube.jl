@@ -38,7 +38,7 @@ MLJBase.predict(::DummyModel, fitresult, Xnew) =
 dummy_model = DummyModel(1, 9, 'k')
 super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))
 
-#=
+
 @testset "Two ranges with scale" begin
     model = DummyModel(1,1,'k')
     r1 = range(model, :lambda, lower=1, upper=9);
@@ -50,7 +50,6 @@ super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))
                                    range=[r1, r2],
                                    measure=rms);
 end
-=#
 
 #=
 @testset "Range with infinity" begin
