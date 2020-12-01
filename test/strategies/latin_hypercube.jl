@@ -30,11 +30,10 @@ mutable struct SuperModel <: Deterministic
     model2::DummyModel
 end
 
-#=
+
 MLJBase.fit(::DummyModel, verbosity::Int, X, y) = mean(y), nothing, nothing
 MLJBase.predict(::DummyModel, fitresult, Xnew) =
     fill(fitresult, schema(Xnew).nrows)
-=#
 
 dummy_model = DummyModel(1, 9, 'k')
 super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))
@@ -117,7 +116,7 @@ end
 end
 =#
 
-#=
+
 @testset "Return value for ranges" begin
     model = DummyModel(1,9,'k')
     d = 2
@@ -173,6 +172,6 @@ end
 
 end
 
-=#
 
 end
+true
