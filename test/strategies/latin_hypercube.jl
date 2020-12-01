@@ -109,7 +109,7 @@ end
     model = DummyModel(1,9,'k')
     r1 = range(model, :lambda, lower=1, upper=9,scale = x->10^x)
     r2 = range(model, :alpha, lower=0.4, upper=1.5);
-    @test_throws ErrorException("Callable scale not supported.") MLJTuning._create_bounds_and_dims(d,[r1,r2])
+    @test_throws ErrorException MLJTuning._create_bounds_and_dims(d,[r1,r2])
 end
 
 
