@@ -110,7 +110,7 @@ end
     r1 = range(model, :lambda, lower=1, upper=9,scale = x->10^x)
     r2 = range(model, :alpha, lower=0.4, upper=1.5);
     my_latin = LatinHypercube(nGenerations=2,popSize= 120, rng = rng)
-    @test_throws ErrorException MLJTuning.setup(my_latin, model=model,
+    @test_throws MethodError MLJTuning.setup(my_latin, model=model,
                                         r=[r1,r2])
 end
 
@@ -123,14 +123,12 @@ end
     r1 = range(model, :alpha, lower=1., upper=9.);
     r2 = range(model, :lambda, lower=0.4, upper=1.5);
     bounds, dims = MLJTuning._create_bounds_and_dims(d,[r1,r2])
-    print("First test")
     @test all(bounds[1] .≈ (1.0,9.0))
     @test all(bounds[2] .≈ (0.4,1.5))
     @test all(dims .== [LatinHypercubeSampling.Continuous(),
                         LatinHypercubeSampling.Continuous()])
 
 
-    print("Second test")
     r3 = range(model, :lambda, lower=1., upper=9,scale =:log);
     r4 = range(model, :alpha, lower=0.4, upper=1.5);
     bounds, dims = MLJTuning._create_bounds_and_dims(d,[r3,r4])
@@ -138,7 +136,7 @@ end
     @test all(bounds[2] .≈ (0.4,1.5))
     @test all(dims .== [LatinHypercubeSampling.Continuous(),
                         LatinHypercubeSampling.Continuous()])
-    print("Third test")
+
     r5 = range(model, :kernel, values=collect("abc"))
     r6 = range(model, :lambda, lower=-Inf, upper=+Inf,
                origin = 0., unit = 3.)
@@ -148,7 +146,6 @@ end
     @test all(dims .== [LatinHypercubeSampling.Categorical(3,1.0),
                        LatinHypercubeSampling.Continuous()])
 
-    print("Fourth test")
     r7 = range(model, :lambda, lower=0., upper=1.0)
     r8 = range(model, :alpha, lower = -Inf, upper = 15.,
                origin = 4., unit = 10., scale =:linear)
@@ -158,8 +155,6 @@ end
     @test all(dims .== [LatinHypercubeSampling.Continuous(),
                         LatinHypercubeSampling.Continuous()])
 
-
-    print("Fifth test")
     r9 = range(model, :alpha, lower=-Inf, upper=+Inf,
                origin = 5.0, unit = 1.0, scale = :log2)
     r10 = range(model, :lambda, lower = 5.0, upper = +Inf,
