@@ -51,7 +51,6 @@ super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))
                                    measure=rms);
 end
 
-#=
 @testset "Range with infinity" begin
     model = DummyModel(1, 9, 'k')
     r1 = range(model, :lambda, lower=1, upper=9);
@@ -65,7 +64,6 @@ end
                                    measure=rms);
 
 end
-=#
 
 #=
 @testset "Full features of latin hypercube" begin
