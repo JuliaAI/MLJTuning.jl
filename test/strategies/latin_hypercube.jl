@@ -67,7 +67,6 @@ end
 
 end
 
-#=
 @testset "Full features of latin hypercube" begin
     model = DummyModel(1, 9, 'k')
     supermodel = SuperModel(4, model, deepcopy(model))
@@ -85,7 +84,6 @@ end
                                           range=[r1, r2],
                                           measure=rms);
 end
-=#
 
 #=
 problem with dimension n, cannot call setup outside of
