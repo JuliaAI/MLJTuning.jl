@@ -85,22 +85,17 @@ end
                                           measure=rms);
 end
 
-#=
-problem with dimension n, cannot call setup outside of
 @testset "setup" begin
     model = DummyModel(1, 9, 'k')
-    N = 100
     r1 = range(model, :lambda, lower=1, upper=9)
     r2 = range(model, :alpha, lower=0.4, upper=1.5);
     my_latin = LatinHypercube(nGenerations=2,popSize= 120, rng = rng)
     tuned_model = TunedModel(model=model,
                              tuning=tuning,
-                             n=N,
                              range=[r1,r2],
                              measures=[rms,mae])
     MLJTuning.setup(my_latin, model, [r1,r2], 1)
 end
-=#
 
 
 @testset "Scale not a symbol" begin
