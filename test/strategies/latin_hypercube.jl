@@ -91,7 +91,7 @@ end
     r2 = range(model, :alpha, lower=0.4, upper=1.5);
     my_latin = LatinHypercube(nGenerations=2,popSize= 120, rng = rng)
     tuned_model = TunedModel(model=model,
-                             tuning=tuning,
+                             tuning=my_latin,
                              range=[r1,r2],
                              measures=[rms,mae])
     MLJTuning.setup(my_latin, model, [r1,r2], 1)
