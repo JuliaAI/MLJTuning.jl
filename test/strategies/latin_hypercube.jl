@@ -138,7 +138,7 @@ end
     r6 = range(model, :lambda, lower=-Inf, upper=+Inf,
                origin = 0., unit = 3.)
     bounds, dims = MLJTuning._create_bounds_and_dims(d,[r5,r6])
-    @test all(bounds[1] .≈ (0,3))
+    @test all(bounds[1] .≈ (1,3))
     @test all(bounds[2] .≈ (-3.0, 3.0))
     @test all(dims .== [LatinHypercubeSampling.Categorical(3,1.0),
                        LatinHypercubeSampling.Continuous()])
