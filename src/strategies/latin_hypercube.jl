@@ -62,24 +62,24 @@ function _create_bounds_and_dims(d,r)
             end
             push!(dims,LatinHypercubeSampling.Continuous())
             if isfinite(r[i].lower) && isfinite(r[i].upper)
-                push!(bounds,(transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].lower),
-                 transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].upper)))
+                push!(bounds,Float64.([transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].lower),
+                 transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].upper)]))
             elseif !isfinite(r[i].lower) && isfinite(r[i].upper)
-                push!(bounds,(transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].upper - 2*r[i].unit),
-                 transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].upper)))
+                push!(bounds,Float64.([transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].upper - 2*r[i].unit),
+                 transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].upper)]))
             elseif isfinite(r[i].lower) && !isfinite(r[i].upper)
-                push!(bounds,(transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].lower),
-                 transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].lower + 2*r[i].unit)))
+                push!(bounds,Float64.([transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].lower),
+                 transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].lower + 2*r[i].unit)]))
             else
-                push!(bounds,(transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].origin - r[i].unit),
-                 transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].origin + r[i].unit)))
+                push!(bounds,Float64.([transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].origin - r[i].unit),
+                 transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].origin + r[i].unit)]))
             end
         else
             push!(dims, LatinHypercubeSampling.Categorical(length(r[i].values), 1.0))
-            push!(bounds,(0,length(r[i].values)))
+            push!(bounds,Float64.([0,length(r[i].values)]))
         end
     end
-    return bounds, dims
+    return Tuple.(bounds), dims
 end
 
 function setup(tuning::LatinHypercube, model, r, verbosity)
