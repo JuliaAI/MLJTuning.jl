@@ -130,7 +130,7 @@ function makeLatinHypercube(prototype::Model,fields,plan)
     map(1:N) do i
         clone = deepcopy(prototype)
         for k in eachindex(fields)
-            recursive_setproperty(clone,fields[k],plan[i,k])
+            recursive_setproperty!(clone,fields[k],plan[i,k])
         end
         clone
     end
