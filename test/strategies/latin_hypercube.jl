@@ -93,7 +93,10 @@ end
     model = DummyModel(1, 9, 'k')
     r1 = range(model, :lambda, lower=1, upper=9)
     r2 = range(model, :alpha, lower=0.4, upper=1.5);
-    my_latin = LatinHypercube(nGenerations=2,popSize= 120, rng = rng)
+    my_latin = LatinHypercube(n_max = 11, nGenerations=4,popSize=100,
+                              nTournament = 2, pTournament=0.3,
+                              interSampleWeight = 0.5, ae_power = 1.7,
+                              periodic_ae = true, rng = rng)
     MLJTuning.setup(my_latin, model, [r1,r2], 1)
 end
 

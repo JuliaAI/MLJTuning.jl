@@ -85,7 +85,7 @@ end
 function setup(tuning::LatinHypercube, model, r, verbosity)
     d = length(r)
     bounds, dims = _create_bounds_and_dims(d, r)
-    plan, _ = LHCoptim(tuning.n_max, d, tuning.nGenerations,
+    plan, _ = LatinHypercubeSampling.LHCoptim(tuning.n_max, d, tuning.nGenerations,
                     rng = tuning.rng,
                     popsize = tuning.popSize,
                     ntour = tuning.nTournament,
@@ -94,7 +94,7 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
                     interSampleWeight = tuning.interSampleWeight,
                     periodic_ae = tuning.periodic_ae,
                     ae_power = tuning.ae_power)
-    scaled_plan = scaleLHC(plan, bounds)
+    scaled_plan = LatinHypercubeSampling.scaleLHC(plan, bounds)
     for i = 1:size(scaled_plan,1)
         for j = 1:size(scaled_plan,2)
             if dims[j] isa LatinHypercubeSampling.Continuous
