@@ -39,7 +39,7 @@ dummy_model = DummyModel(1, 9, 'k')
 super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))
 
 
-#=
+
 @testset "Two ranges with scale" begin
     #ok this works
     model = DummyModel(1,1,'k')
@@ -90,7 +90,6 @@ end
                                           measure=rms);
 end
 
-=#
 
 @testset "setup" begin
     model = DummyModel(1, 9, 'k')
@@ -103,7 +102,7 @@ end
     MLJTuning.setup(my_latin, model, [r1,r2], 1)
 end
 
-#=
+
 @testset "Scale not a symbol" begin
     #ok this works
     model = DummyModel(1,9,'k')
@@ -165,6 +164,5 @@ end
 
 end
 
-=#
 end
 true
