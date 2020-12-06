@@ -95,14 +95,16 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
                     periodic_ae = tuning.periodic_ae,
                     ae_power = tuning.ae_power)
     scaled_plan = LatinHypercubeSampling.scaleLHC(plan, bounds)
+    println(scaled_plan)
     for i = 1:size(scaled_plan,1)
         for j = 1:size(scaled_plan,2)
+            println(i,j)
             if dims[j] isa LatinHypercubeSampling.Continuous
                 scaled_plan[i,j] = inverse_transform(MLJBase.Scale,
                                                       MLJBase.scale(r[j].scale),
-                                                      scaled_plan[i][j])
+                                                      scaled_plan[i,j])
             else
-                scaled_plan[i,j] = r[j].values[scaled_plan[i][j]]
+                scaled_plan[i,j] = r[j].values[Int(scaled_plan[i,j])]
             end
         end
     end
