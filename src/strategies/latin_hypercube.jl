@@ -76,7 +76,7 @@ function _create_bounds_and_dims(d,r)
             end
         else
             push!(dims, LatinHypercubeSampling.Categorical(length(r[i].values), 1.0))
-            push!(bounds,Float64.([0,length(r[i].values)]))
+            push!(bounds,Float64.([1,length(r[i].values)]))
         end
     end
     return Tuple.(bounds), dims
