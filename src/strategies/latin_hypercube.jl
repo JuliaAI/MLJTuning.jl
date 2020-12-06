@@ -75,6 +75,7 @@ function _create_bounds_and_dims(d,r)
                  transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].origin + r[i].unit)]))
             end
         else
+            print("Qui")
             push!(dims, LatinHypercubeSampling.Categorical(length(r[i].values), 1.0))
             push!(bounds,Float64.([0,length(r[i].values)]))
         end
