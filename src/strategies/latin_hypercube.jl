@@ -54,7 +54,7 @@ end
 
 function _create_bounds_and_dims(d,r)
     bounds = []
-    dims = []
+    dims = Array{LatinHypercubeSampling.LHCDimension}(undef,0)
     for i = 1:d
         if r[i] isa NumericRange
             if !(r[i].scale isa Symbol)
