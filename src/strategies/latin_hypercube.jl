@@ -85,7 +85,7 @@ end
 function setup(tuning::LatinHypercube, model, r, verbosity)
     d = length(r)
     bounds, dims = _create_bounds_and_dims(d, r)
-    plan = LHCoptim(tuning.n_max, d, tuning.nGenerations,
+    plan, _ = LHCoptim(tuning.n_max, d, tuning.nGenerations,
                     rng = tuning.rng,
                     popsize = tuning.popSize,
                     ntour = tuning.nTournament,
