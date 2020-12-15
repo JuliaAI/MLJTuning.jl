@@ -97,7 +97,7 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
     scaled_plan = LatinHypercubeSampling.scaleLHC(plan, bounds)
     for i = 1:size(scaled_plan,1)
         for j = 1:size(scaled_plan,2)
-            if dims[j] isa LatinHypercubeSampling.Continuous
+            if dims_type[j] isa LatinHypercubeSampling.Continuous
                 if r[j] isa MLJBase.NumericRange{Int,MLJBase.Bounded,Symbol}
                     scaled_plan[i,j] = Int(floor(inverse_transform(MLJBase.Scale,
                                                       MLJBase.scale(r[j].scale),
