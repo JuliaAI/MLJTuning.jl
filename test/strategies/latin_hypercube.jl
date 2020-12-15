@@ -90,7 +90,6 @@ end
                                           measure=rms);
 end
 
-#=
 @testset "setup" begin
     model = DummyModel(1, 9, 'k')
     r1 = range(model, :lambda, lower=1, upper=9)
@@ -101,7 +100,6 @@ end
                               periodic_ae = true, rng = rng)
     MLJTuning.setup(my_latin, model, [r1,r2], 1)
 end
-=#
 
 @testset "Scale not a symbol" begin
     #ok this works
