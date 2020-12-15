@@ -52,15 +52,15 @@ function LatinHypercube(; n_max = DEFAULT_N, nGenerations = 1,
 
 end
 
-function _create_bounds_and_dims(d,r)
+function _create_bounds_and_dims_type(d,r)
     bounds = []
-    dims = Array{LatinHypercubeSampling.LHCDimension}(undef,0)
+    dims_type = Array{LatinHypercubeSampling.LHCDimension}(undef,0)
     for i = 1:d
         if r[i] isa NumericRange
             if !(r[i].scale isa Symbol)
                 error("Callable scale not supported.")
             end
-            push!(dims,LatinHypercubeSampling.Continuous())
+            push!(dims_type,LatinHypercubeSampling.Continuous())
             if isfinite(r[i].lower) && isfinite(r[i].upper)
                 push!(bounds,Float64.([transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].lower),
                  transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].upper)]))
@@ -75,22 +75,22 @@ function _create_bounds_and_dims(d,r)
                  transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].origin + r[i].unit)]))
             end
         else
-            push!(dims, LatinHypercubeSampling.Categorical(length(r[i].values), 1.0))
+            push!(dims_type, LatinHypercubeSampling.Categorical(length(r[i].values), 1.0))
             push!(bounds,Float64.([1,length(r[i].values)]))
         end
     end
-    return Tuple.(bounds), dims
+    return Tuple.(bounds), dims_type
 end
 
 function setup(tuning::LatinHypercube, model, r, verbosity)
     d = length(r)
-    bounds, dims = _create_bounds_and_dims(d, r)
+    bounds, dims_type = _create_bounds_and_dims_type(d, r)
     plan, _ = LatinHypercubeSampling.LHCoptim(tuning.n_max, d, tuning.nGenerations,
                     rng = tuning.rng,
                     popsize = tuning.popSize,
                     ntour = tuning.nTournament,
                     ptour = tuning.pTournament,
-                    dims = dims,
+                    dims = dims_type,
                     interSampleWeight = tuning.interSampleWeight,
                     periodic_ae = tuning.periodic_ae,
                     ae_power = tuning.ae_power)
@@ -98,9 +98,11 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
     for i = 1:size(scaled_plan,1)
         for j = 1:size(scaled_plan,2)
             if dims[j] isa LatinHypercubeSampling.Continuous
-                scaled_plan[i,j] = inverse_transform(MLJBase.Scale,
+                if r[j] isa MLJBase.NumericRange{Int,MLJBase.Bounded,Symbol}
+                    scaled_plan[i,j] = Int(floor(inverse_transform(MLJBase.Scale,
                                                       MLJBase.scale(r[j].scale),
-                                                      scaled_plan[i,j])
+                                                      scaled_plan[i,j])))
+                end
             else
                 scaled_plan[i,j] = r[j].values[Int(scaled_plan[i,j])]
             end
