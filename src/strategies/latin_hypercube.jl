@@ -118,7 +118,7 @@ end
 
 function MLJTuning.models(tuning::LatinHypercube,
                           model,
-                          hystory,
+                          history,
                           state,
                           n_remaining,
                           verbosity)
