@@ -62,20 +62,40 @@ function _create_bounds_and_dims_type(d,r)
             end
             push!(dims_type,LatinHypercubeSampling.Continuous())
             if isfinite(r[i].lower) && isfinite(r[i].upper)
-                push!(bounds,Float64.([transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].lower),
-                 transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].upper)]))
+                push!(bounds,
+                      Float64.([transform(MLJBase.Scale,
+                                          MLJBase.scale(r[i].scale),
+                                          r[i].lower),
+                                transform(MLJBase.Scale,
+                                          MLJBase.scale(r[i].scale),
+                                          r[i].upper)]))
             elseif !isfinite(r[i].lower) && isfinite(r[i].upper)
-                push!(bounds,Float64.([transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].upper - 2*r[i].unit),
-                 transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].upper)]))
+                push!(bounds,
+                      Float64.([transform(MLJBase.Scale,
+                                          MLJBase.scale(r[i].scale),
+                                          r[i].upper - 2*r[i].unit),
+                                transform(MLJBase.Scale,
+                                          MLJBase.scale(r[i].scale),
+                                          r[i].upper)]))
             elseif isfinite(r[i].lower) && !isfinite(r[i].upper)
-                push!(bounds,Float64.([transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].lower),
-                 transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].lower + 2*r[i].unit)]))
+                push!(bounds,Float64.([transform(MLJBase.Scale,
+                                                 MLJBase.scale(r[i].scale),
+                                                 r[i].lower),
+                                       transform(MLJBase.Scale,
+                                                 MLJBase.scale(r[i].scale),
+                                                 r[i].lower + 2*r[i].unit)]))
             else
-                push!(bounds,Float64.([transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].origin - r[i].unit),
-                 transform(MLJBase.Scale,MLJBase.scale(r[i].scale),r[i].origin + r[i].unit)]))
+                push!(bounds,Float64.([transform(MLJBase.Scale,
+                                                 MLJBase.scale(r[i].scale),
+                                                 r[i].origin - r[i].unit),
+                                       transform(MLJBase.Scale,
+                                                 MLJBase.scale(r[i].scale),
+                                                 r[i].origin + r[i].unit)]))
             end
         else
-            push!(dims_type, LatinHypercubeSampling.Categorical(length(r[i].values), 1.0))
+            push!(dims_type,
+                  LatinHypercubeSampling.Categorical(length(r[i].values),
+                                                     1.0))
             push!(bounds,Float64.([1,length(r[i].values)]))
         end
     end
@@ -85,23 +105,26 @@ end
 function setup(tuning::LatinHypercube, model, r, verbosity)
     d = length(r)
     bounds, dims_type = _create_bounds_and_dims_type(d, r)
-    plan, _ = LatinHypercubeSampling.LHCoptim(tuning.n_max, d, tuning.nGenerations,
-                    rng = tuning.rng,
-                    popsize = tuning.popSize,
-                    ntour = tuning.nTournament,
-                    ptour = tuning.pTournament,
-                    dims = dims_type,
-                    interSampleWeight = tuning.interSampleWeight,
-                    periodic_ae = tuning.periodic_ae,
-                    ae_power = tuning.ae_power)
+    plan, _ = LatinHypercubeSampling.LHCoptim(tuning.n_max,
+                                              d,
+                                              tuning.nGenerations,
+                                              rng = tuning.rng,
+                                              popsize = tuning.popSize,
+                                              ntour = tuning.nTournament,
+                                              ptour = tuning.pTournament,
+                                              dims = dims_type,
+                                              interSampleWeight = tuning.interSampleWeight,
+                                              periodic_ae = tuning.periodic_ae,
+                                              ae_power = tuning.ae_power)
     scaled_plan = LatinHypercubeSampling.scaleLHC(plan, bounds)
     for i = 1:size(scaled_plan,1)
         for j = 1:size(scaled_plan,2)
             if dims_type[j] isa LatinHypercubeSampling.Continuous
                 if r[j] isa MLJBase.NumericRange{Int,MLJBase.Bounded,Symbol}
-                    scaled_plan[i,j] = Int(floor(inverse_transform(MLJBase.Scale,
-                                                      MLJBase.scale(r[j].scale),
-                                                      scaled_plan[i,j])))
+                    scaled_plan[i,j] =
+                        Int(floor(inverse_transform(MLJBase.Scale,
+                                                    MLJBase.scale(r[j].scale),
+                                                    scaled_plan[i,j])))
                 end
             else
                 scaled_plan[i,j] = r[j].values[Int(scaled_plan[i,j])]
