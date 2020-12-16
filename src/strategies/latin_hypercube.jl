@@ -1,18 +1,25 @@
 """
-LatinHypercube(n_max = DEFAULT_N, nGenerations = 1, popSize = 100,
-               nTournament = 2, pTournament = 0.8.,interSampleWeight = 1.0,
-                ae_power = 2, periodic_ae = false, rng=Random.GLOBAL_RNG)
+LatinHypercube(n_max = MLJTuning.DEFAULT_N,
+               nGenerations = 1,
+               popSize = 100,
+               nTournament = 2,
+               pTournament = 0.8.,
+               interSampleWeight = 1.0,
+               ae_power = 2,
+               periodic_ae = false,
+               rng=Random.GLOBAL_RNG)
 
-Instantiate  grid-based hyperparameter tuning strategy using the library
-LatinHypercubeSampling.jl. The optimised Latin Hypercube sampling plan is
-created using a genetic based optimization algorithm based on the inverse of the
-Audze-Eglais function.
-The optimization is run for nGenerations and creates a maximum number of n_max
-points for evaluation. The population size, number of samples
-selected, probability of selection, the inter sample weight of sampling and the
-norm can be choosen. There is also the possibility of using a periodic version
-of the Audze-Eglais which reduces clustering along the boundaries of the
-sampling plan. To enable this feature set `periodic_ae = true`.
+Instantiate grid-based hyperparameter tuning strategy using the
+library [LatinHypercubeSampling.jl](https://github.com/MrUrq/LatinHypercubeSampling.jl). 
+
+An optimised Latin Hypercube sampling plan is created using a genetic
+based optimization algorithm based on the inverse of the Audze-Eglais
+function.  The optimization is run for `nGenerations` and creates a
+maximum number of `n_max` points for evaluation (A `TunedModel`
+instance can specify any `n < n_max`).
+
+To use a periodic version of the Audze-Eglais function (to reduce
+clustering along the boundaries) specify `periodic_ae = true`.
 
 ### Supported ranges:
 
@@ -133,9 +140,11 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
     end
     ranges = r
     fields = map(r -> r.field, ranges)
+    parameter_scales = scale.(r)
     models = makeLatinHypercube(model, fields, scaled_plan)
-    state = (models = models,
-             fields = fields)
+    state = (models=models,
+             fields=fields,
+             parameter_scales=parameter_scales)
     return state
 end
 
@@ -147,6 +156,9 @@ function MLJTuning.models(tuning::LatinHypercube,
                           verbosity)
      return state.models[_length(history) + 1:end], state
 end
+
+tuning_report(tuning::LatinHypercube, history, state) =
+    (plotting = plotting_report(state.fields, state.parameter_scales, history),)
 
 function makeLatinHypercube(prototype::Model,fields,plan)
     N = size(plan,1)
