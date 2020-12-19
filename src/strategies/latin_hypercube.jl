@@ -1,6 +1,6 @@
 """
-LatinHypercube(n_max = DEFAULT_N, nGenerations = 1, popSize = 100,
-               nTournament = 2, pTournament = 0.8.,interSampleWeight = 1.0,
+LatinHypercube(n_max = DEFAULT_N, gens = 1, popsize = 100,
+               ptour = 2, ptour = 0.8.,interSampleWeight = 1.0,
                 ae_power = 2, periodic_ae = false, rng=Random.GLOBAL_RNG)
 
 Instantiate  grid-based hyperparameter tuning strategy using the library
@@ -28,10 +28,10 @@ using the `range` method.
 """
 mutable struct LatinHypercube <: TuningStrategy
     n_max::Int
-    nGenerations::Int
-    popSize::Int
-    nTournament::Int
-    pTournament::Number
+    gens::Int
+    popsize::Int
+    ntour::Int
+    ptour::Number
     interSampleWeight::Number
     ae_power::Number
     periodic_ae::Bool
@@ -39,15 +39,15 @@ mutable struct LatinHypercube <: TuningStrategy
 end
 
 
-function LatinHypercube(; n_max = DEFAULT_N, nGenerations = 1,
-                        popSize = 100, nTournament = 2, pTournament = 0.8,
-                        interSampleWeight = 1.0,ae_power = 2,
+function LatinHypercube(; n_max = DEFAULT_N, gens = 1,
+                        popsize = 100, ntour = 2, ptour = 0.8,
+                        interSampleWeight = 1.0, ae_power = 2,
                         periodic_ae = false,rng=Random.GLOBAL_RNG)
 
     _rng = rng isa Integer ? Random.MersenneTwister(rng) : rng
 
-    return LatinHypercube(n_max, nGenerations, popSize, nTournament,
-                          pTournament, interSampleWeight, ae_power,
+    return LatinHypercube(n_max, gens, popsize, ntour,
+                          ptour, interSampleWeight, ae_power,
                           periodic_ae, _rng)
 
 end
@@ -85,11 +85,11 @@ end
 function setup(tuning::LatinHypercube, model, r, verbosity)
     d = length(r)
     bounds, dims_type = _create_bounds_and_dims_type(d, r)
-    plan, _ = LatinHypercubeSampling.LHCoptim(tuning.n_max, d, tuning.nGenerations,
+    plan, _ = LatinHypercubeSampling.LHCoptim(tuning.n_max, d, tuning.gens,
                     rng = tuning.rng,
-                    popsize = tuning.popSize,
-                    ntour = tuning.nTournament,
-                    ptour = tuning.pTournament,
+                    popsize = tuning.popsize,
+                    ntour = tuning.ntour,
+                    ptour = tuning.ptour,
                     dims = dims_type,
                     interSampleWeight = tuning.interSampleWeight,
                     periodic_ae = tuning.periodic_ae,
