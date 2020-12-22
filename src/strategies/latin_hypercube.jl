@@ -1,9 +1,9 @@
 """
 LatinHypercube(n_max = MLJTuning.DEFAULT_N,
-               nGenerations = 1,
-               popSize = 100,
-               nTournament = 2,
-               pTournament = 0.8.,
+               gens = 1,
+               popsize = 100,
+               ntour = 2,
+               ptour = 0.8.,
                interSampleWeight = 1.0,
                ae_power = 2,
                periodic_ae = false,

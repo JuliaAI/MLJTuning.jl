@@ -45,7 +45,7 @@ super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))
     model = DummyModel(1,1,'k')
     r1 = range(model, :lambda, lower=1, upper=9);
     r2 = range(model, :alpha, lower=0.4, upper=1.0, scale=:log);
-    my_latin = LatinHypercube(nGenerations=2,popSize= 120, rng = rng)
+    my_latin = LatinHypercube(gens=2, popsize= 120, rng = rng)
     self_tuning_model = TunedModel(model=model,
                                    tuning=my_latin,
                                    resampling=CV(nfolds=6),
@@ -59,10 +59,10 @@ end
     r1 = range(model, :lambda, lower=1, upper=9);
     r2 = range(model, :alpha, lower=0, upper=Inf, origin=2,
                unit=3, scale = :log);
-    my_latin = LatinHypercube(n_max = 11, nGenerations=4, popSize=100,
-                              nTournament = 2, pTournament=0.3,
-                              interSampleWeight = 0.8, ae_power = 2,
-                              periodic_ae = false, rng = rng)
+    my_latin = LatinHypercube(n_max=11, gens=4, popsize=100,
+                              ntour=2, ptour=0.3,
+                              interSampleWeight=0.8, ae_power=2,
+                              periodic_ae=false, rng=rng)
     self_tuning_model = TunedModel(model=model,
                                    tuning=my_latin,
                                    resampling=CV(nfolds=6),
@@ -78,10 +78,10 @@ end
 
     r1 = range(supermodel, :(model1.lambda), lower=1, upper=9);
     r2 = range(supermodel, :K, lower=0.4, upper=1.5);
-    my_latin = LatinHypercube(n_max = 11, nGenerations=4,popSize=100,
-                              nTournament = 2, pTournament=0.3,
-                              interSampleWeight = 0.5, ae_power = 1.7,
-                              periodic_ae = true, rng = rng)
+    my_latin = LatinHypercube(n_max=11, gens=4, popsize=100,
+                              ntour=2, ptour=0.3,
+                              interSampleWeight=0.5, ae_power=1.7,
+                              periodic_ae=true, rng=rng)
 
     self_tuning_forest_model = TunedModel(model=supermodel,
                                           tuning=my_latin,
@@ -94,10 +94,10 @@ end
     model = DummyModel(1, 9, 'k')
     r1 = range(model, :lambda, lower=1, upper=9)
     r2 = range(model, :alpha, lower=0.4, upper=1.5);
-    my_latin = LatinHypercube(n_max = 11, nGenerations=4,popSize=100,
-                              nTournament = 2, pTournament=0.3,
-                              interSampleWeight = 0.5, ae_power = 1.7,
-                              periodic_ae = true, rng = rng)
+    my_latin = LatinHypercube(n_max=11, gens=4, popsize=100,
+                              ntour=2, ptour=0.3,
+                              interSampleWeight=0.5, ae_power=1.7,
+                              periodic_ae=true, rng=rng)
     MLJTuning.setup(my_latin, model, [r1,r2], 1)
 end
 
