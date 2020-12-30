@@ -162,5 +162,30 @@ end
 
 end
 
+@testset "tuned model" begin
+
+    model = DummyModel(1, 9, 'k')
+    supermodel = SuperModel(4, model, deepcopy(model))
+
+    r1 = range(supermodel, :(model1.lambda), lower=2, upper=12);
+    r2 = range(supermodel, :K, lower=0.1, upper=1.1);
+    my_latin = LatinHypercube(n_max = 10)
+    r = [r1,r2]
+    holdout = Holdout(fraction_train=0.8)
+    self_tuning_forest_model = TunedModel(model=supermodel,
+                                          tuning=my_latin,
+                                          resampling=holdout,
+                                          range=r,
+                                          measure=rms);
+
+    MLJBase.info_dict(tuned_model)
+
+    tuned = machine(tuned_model, X, y)
+
+    fit!(tuned, verbosity=0)
+    r = MLJBase.report(tuned)
+    rep = MLJBase.report(tuned)
+    fp = fitted_params(tuned)
+    
 end
 true
