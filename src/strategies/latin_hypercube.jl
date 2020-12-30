@@ -109,6 +109,9 @@ function _create_bounds_and_dims_type(d,r)
     return Tuple.(bounds), dims_type
 end
 
+_round(val,::Type) = val
+_round(val,::Type{<:Int}) = round(T,val)
+
 function setup(tuning::LatinHypercube, model, r, verbosity)
     d = length(r)
     bounds, dims_type = _create_bounds_and_dims_type(d, r)
@@ -125,12 +128,9 @@ function setup(tuning::LatinHypercube, model, r, verbosity)
     for i = 1:size(scaled_plan,1)
         for j = 1:size(scaled_plan,2)
             if dims_type[j] isa LatinHypercubeSampling.Continuous
-                if r[j] isa MLJBase.NumericRange{Int,MLJBase.Bounded,Symbol}
-                    scaled_plan[i,j] =
-                        Int(floor(inverse_transform(MLJBase.Scale,
-                                                    MLJBase.scale(r[j].scale),
-                                                    scaled_plan[i,j])))
-                end
+                scaled_plan = _round(inverse_transform(MLJBase.Scale,
+                                            MLJBase.scale(r[j].scale),
+                                            scaled_plan[i,j]))
             else
                 scaled_plan[i,j] = r[j].values[Int(scaled_plan[i,j])]
             end
