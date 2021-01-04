@@ -16,6 +16,7 @@ mutable struct DeterministicTunedModel{T,M<:Deterministic} <: MLJBase.Determinis
     acceleration::AbstractResource
     acceleration_resampling::AbstractResource
     check_measure::Bool
+    cache::Bool
 end
 
 mutable struct ProbabilisticTunedModel{T,M<:Probabilistic} <: MLJBase.Probabilistic
@@ -33,6 +34,7 @@ mutable struct ProbabilisticTunedModel{T,M<:Probabilistic} <: MLJBase.Probabilis
     acceleration::AbstractResource
     acceleration_resampling::AbstractResource
     check_measure::Bool
+    cache::Bool
 end
 
 const EitherTunedModel{T,M} =
@@ -55,7 +57,8 @@ MLJBase.is_wrapper(::Type{<:EitherTunedModel}) = true
                              train_best=true,
                              acceleration=default_resource(),
                              acceleration_resampling=CPU1(),
-                             check_measure=true)
+                             check_measure=true,
+                             cache=true)
 
 Construct a model wrapper for hyperparameter optimization of a
 supervised learner.
@@ -171,8 +174,12 @@ plus other key/value pairs specific to the `tuning` strategy.
 - `acceleration_resampling=CPU1()`: mode of parallelization for
   resampling
 
-- `check_measure`: whether to check `measure` is compatible with the
+- `check_measure=true`: whether to check `measure` is compatible with the
   specified `model` and `operation`)
+
+- `cache=true`: whether to cache model-specific representations of
+  user-suplied data; set to `false` to conserve memory. Speed gains
+  likely limited to the case `resampling isa Holdout`.
 
 """
 function TunedModel(; model=nothing,
@@ -190,7 +197,8 @@ function TunedModel(; model=nothing,
                     n=nothing,
                     acceleration=default_resource(),
                     acceleration_resampling=CPU1(),
-                    check_measure=true)
+                    check_measure=true,
+                    cache=true)
 
     range === nothing && error("You need to specify `range=...`.")
     model == nothing && error("You need to specify model=... .\n"*
@@ -204,7 +212,8 @@ function TunedModel(; model=nothing,
                                               train_best, repeats, n,
                                               acceleration,
                                               acceleration_resampling,
-                                              check_measure)
+                                              check_measure,
+                                              cache)
     elseif model isa Probabilistic
         tuned_model = ProbabilisticTunedModel(model, tuning, resampling,
                                               measure, weights, operation,
@@ -212,7 +221,8 @@ function TunedModel(; model=nothing,
                                               train_best, repeats, n,
                                               acceleration,
                                               acceleration_resampling,
-                                              check_measure)
+                                              check_measure,
+                                              cache)
     else
         error("Only `Deterministic` and `Probabilistic` "*
               "model types supported.")
@@ -432,7 +442,7 @@ function assemble_events(metamodels,
                 ProgressMeter.updateProgress!(p)
             end
         end
-        # One tresampling_machine per task
+        # One resampling_machine per task
          machs = [resampling_machine,
                  [machine(Resampler(
                      model= resampling_machine.model.model,
@@ -442,8 +452,9 @@ function assemble_events(metamodels,
                      operation     = resampling_machine.model.operation,
                      check_measure = resampling_machine.model.check_measure,
                      repeats       = resampling_machine.model.repeats,
-                     acceleration  = resampling_machine.model.acceleration),
-                          resampling_machine.args...) for _ in 2:length(partitions)]...]
+                     acceleration  = resampling_machine.model.acceleration,
+                     cache         = resampling_machine.model.cache),
+                  resampling_machine.args...) for _ in 2:length(partitions)]...]
 
         @sync for (i, parts) in enumerate(partitions)
             Threads.@spawn begin
@@ -566,7 +577,8 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
                           operation     = tuned_model.operation,
                           check_measure = tuned_model.check_measure,
                           repeats       = tuned_model.repeats,
-                          acceleration  = tuned_model.acceleration_resampling)
+                          acceleration  = tuned_model.acceleration_resampling,
+                          cache         = tuned_model.cache)
     resampling_machine = machine(resampler, data...)
     history, state = build(nothing, n, tuning, model, state,
                            verbosity, acceleration, resampling_machine)
