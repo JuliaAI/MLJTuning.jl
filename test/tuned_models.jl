@@ -47,7 +47,10 @@ results = [(evaluate(model, X, y,
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
                     measures=cross_entropy)
-    @test_throws ArgumentError fit(tm, 0, X, y)
+    @test_logs((:error, r"Problem"),
+               (:info, r""),
+               (:info, r""),
+               @test_throws ArgumentError fit(tm, 0, X, y))
 end
 
 @testset_accelerated "basic fit (CPU1)" accel begin
