@@ -46,6 +46,10 @@ end
     @test include("strategies/random_search.jl")
 end
 
+@testset "Latin hypercube" begin
+    @test include("strategies/latin_hypercube.jl")
+end
+
 @testset "learning curves" begin
         @test include("learning_curves.jl")
 end

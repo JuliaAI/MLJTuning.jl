@@ -1,17 +1,25 @@
 """
-LatinHypercube(nGenerations = 1, popSize = 100, nTournament = 2,
-                pTournament = 0.8. interSampleWeight = 1.0,
-                ae_power = 2, periodic_ae = false)
+LatinHypercube(n_max = MLJTuning.DEFAULT_N,
+               gens = 1,
+               popsize = 100,
+               ntour = 2,
+               ptour = 0.8.,
+               interSampleWeight = 1.0,
+               ae_power = 2,
+               periodic_ae = false,
+               rng=Random.GLOBAL_RNG)
 
-Instantiate  grid-based hyperparameter tuning strategy using the library
-LatinHypercubeSampling.jl. The optimised Latin Hypercube sampling plan is
-created using a genetic based optimization algorithm based on the inverse of the
-Audze-Eglais function.
-The optimization is run for nGenerations. The population size, number of samples
-selected, probability of selection, the inter sample weight of sampling and the
-norm can be choosen. There is also the possibility of using a periodic version
-of the Audze-Eglais which reduces clustering along the boundaries of the
-sampling plan. To enable this feature set `periodic_ae = true`.
+Instantiate grid-based hyperparameter tuning strategy using the
+library [LatinHypercubeSampling.jl](https://github.com/MrUrq/LatinHypercubeSampling.jl).
+
+An optimised Latin Hypercube sampling plan is created using a genetic
+based optimization algorithm based on the inverse of the Audze-Eglais
+function.  The optimization is run for `nGenerations` and creates a
+maximum number of `n_max` points for evaluation (A `TunedModel`
+instance can specify any `n < n_max`).
+
+To use a periodic version of the Audze-Eglais function (to reduce
+clustering along the boundaries) specify `periodic_ae = true`.
 
 ### Supported ranges:
 
@@ -26,105 +34,139 @@ using the `range` method.
 
 """
 mutable struct LatinHypercube <: TuningStrategy
-    nGenerations::Int
-    popSize::Int
-    nTournament::Int
-    pTournament::Number
+    n_max::Int
+    gens::Int
+    popsize::Int
+    ntour::Int
+    ptour::Number
     interSampleWeight::Number
     ae_power::Number
     periodic_ae::Bool
     rng::Random.AbstractRNG
 end
 
-function LatinHypercube(; nGenerations = 1, popSize = 100, nTournament = 2,
-                        pTournament = 0.8, interSampleWeight = 1.0,
-                        ae_power = 2, periodic_ae = false,
-                        rng=Random.GLOBAL_RNG)
 
-               _rng = rng isa Integer ? Random.MersenneTwister(rng) : rng
+function LatinHypercube(; n_max = DEFAULT_N, gens = 1,
+                        popsize = 100, ntour = 2, ptour = 0.8,
+                        interSampleWeight = 1.0, ae_power = 2,
+                        periodic_ae = false,rng=Random.GLOBAL_RNG)
 
-              return LatinHypercube(nGenerations,popSize,nTournament,
-                                    pTournament, interSampleWeight, ae_power,
-                                    periodic_ae, _rng)
+    _rng = rng isa Integer ? Random.MersenneTwister(rng) : rng
+
+    return LatinHypercube(n_max, gens, popsize, ntour,
+                          ptour, interSampleWeight, ae_power,
+                          periodic_ae, _rng)
 
 end
 
-function _create_bounds_and_dims(d,r)
+function _create_bounds_and_dims_type(d,r)
     bounds = []
-    dims = []
+    dims_type = Array{LatinHypercubeSampling.LHCDimension}(undef,0)
     for i = 1:d
         if r[i] isa NumericRange
             if !(r[i].scale isa Symbol)
-                error("Callable scale not supported in LatinHyperCube tuning.")
+                throw(ArgumentError("Callable scale not supported."))
             end
-            push!(dims,Continuous())
+            push!(dims_type,LatinHypercubeSampling.Continuous())
             if isfinite(r[i].lower) && isfinite(r[i].upper)
-                push!(bounds,(transform(MLJBase.Scale,scale(r[i].scale),r[i].lower),
-                 transform(MLJBase.Scale,scale(r[i].scale),r[i].upper)))
-            elseif !isfinite(r.lower) && isfinite(r.upper)
-                push!(bounds,(transform(MLJBase.Scale,scale(r[i].scale),r[i].upper - 2*r[i].unit),
-                 transform(MLJBase.Scale,scale(r[i].scale),r[i].upper)))
-            elseif isfinite(r.lower) && !isfinite(r.upper)
-                push!(bounds,(transform(MLJBase.Scale,scale(r[i].scale),r[i].lower),
-                 transform(MLJBase.Scale,scale(r[i].scale),r[i].lower + 2*r[i].unit)))
+                push!(bounds,
+                      Float64.([transform(MLJBase.Scale,
+                                          MLJBase.scale(r[i].scale),
+                                          r[i].lower),
+                                transform(MLJBase.Scale,
+                                          MLJBase.scale(r[i].scale),
+                                          r[i].upper)]))
+            elseif !isfinite(r[i].lower) && isfinite(r[i].upper)
+                push!(bounds,
+                      Float64.([transform(MLJBase.Scale,
+                                          MLJBase.scale(r[i].scale),
+                                          r[i].upper - 2*r[i].unit),
+                                transform(MLJBase.Scale,
+                                          MLJBase.scale(r[i].scale),
+                                          r[i].upper)]))
+            elseif isfinite(r[i].lower) && !isfinite(r[i].upper)
+                push!(bounds, Float64.([transform(MLJBase.Scale,
+                                                 MLJBase.scale(r[i].scale),
+                                                 r[i].lower),
+                                       transform(MLJBase.Scale,
+                                                 MLJBase.scale(r[i].scale),
+                                                 r[i].lower + 2*r[i].unit)]))
             else
-                push!(bounds,(transform(MLJBase.Scale,scale(r[i].scale),r[i].origin - r[i].unit),
-                 transform(MLJBase.Scale,scale(r[i].scale),r[i].origin + r[i].unit)))
+                push!(bounds, Float64.([transform(MLJBase.Scale,
+                                                 MLJBase.scale(r[i].scale),
+                                                 r[i].origin - r[i].unit),
+                                       transform(MLJBase.Scale,
+                                                 MLJBase.scale(r[i].scale),
+                                                 r[i].origin + r[i].unit)]))
             end
         else
-            push!(dims, Categorical(length(r[i].values), 1.0))
-            push!(bounds,(0,length(r[i].values)))
+            push!(dims_type,
+                  LatinHypercubeSampling.Categorical(length(r[i].values),
+                                                     1.0))
+            push!(bounds,Float64.([1,length(r[i].values)]))
         end
     end
-    return bounds, dims
+    return Tuple.(bounds), dims_type
 end
 
-function setup(tuning::LatinHypercube, model, r, verbosity)
-    d = length(r)
-    bounds, dims = _create_bounds_and_dims(d, r)
-    initial_plan = randomLHC(n,dims,nGenerations,
-                              popsize = tuning.popSize,
-                              ntour = tuning.nTournament,
-                              ptour = tuning.pTournment,
-                              interSampleWeight = tuning.interSampleWeight,
-                              periodic_ae = tuning.periodic_ae,
-                              ae_power = tuning.ae_power,
-                              rng = tuning.rng)
-    scaled_plan = scaleLHC(initial_plan, bounds)
-    @inbounds for i = 1:size(scaled_plan,1)
-        for j = 1:size(scaled_plan,2)
-            if dims[j] isa LatinHypercubeSampling.Continuous
-                scaled_plan[i][j] = inverse_transform(MLJBase.Scale,
-                                                      scale(r[j].scale),
-                                                      scaled_plan[i][j])
-            else
-                scaled_plan[i][j] = r[j].values[scaled_plan[i][j]]
-            end
-        end
+# Hyper-param values generated by LatinHypercubeSampling library need
+# further rescalings, and possibly rounding, depending on range type
+
+# nominal ranges:
+_transform(r::NominalRange, x) = r.values[round(Int, x)]
+
+# numeric ranges:
+_transform_noround(r, x) =
+    inverse_transform(MLJBase.Scale, MLJBase.scale(r.scale), x)
+_transform(r::NumericRange, x) = _transform_noround(r, x)
+_transform(r::NumericRange{T}, x) where T<:Integer =
+    round(T, _transform_noround(r, x))
+
+function setup(tuning::LatinHypercube, model, range, verbosity)
+    ranges = range isa AbstractVector ? range : [range, ]
+    d = length(ranges)
+    bounds, dims_type = _create_bounds_and_dims_type(d, ranges)
+    plan, _ = LatinHypercubeSampling.LHCoptim(tuning.n_max, d, tuning.gens,
+                    rng = tuning.rng,
+                    popsize = tuning.popsize,
+                    ntour = tuning.ntour,
+                    ptour = tuning.ptour,
+                    dims = dims_type,
+                    interSampleWeight = tuning.interSampleWeight,
+                    periodic_ae = tuning.periodic_ae,
+                    ae_power = tuning.ae_power)
+    scaled_plan = LatinHypercubeSampling.scaleLHC(plan, bounds)
+    rescaled_plan = map(tuple(1:d...)) do k
+        broadcast(x -> _transform(ranges[k], x), scaled_plan[:,k])
     end
-    ranges = r
+
     fields = map(r -> r.field, ranges)
-    models = makeLatinHypercube(model, fields, scaled_plan)
-    state = (models = models,
-             fields = fields)
+    parameter_scales = scale.(ranges)
+    models = makeLatinHypercube(model, fields, rescaled_plan)
+    state = (models=models,
+             fields=fields,
+             parameter_scales=parameter_scales)
     return state
 end
 
 function MLJTuning.models(tuning::LatinHypercube,
                           model,
-                          hystory,
+                          history,
                           state,
                           n_remaining,
                           verbosity)
      return state.models[_length(history) + 1:end], state
 end
 
-function makeLatinHypercube(prototype::Model,fields,plan)
-    N = size(plan,1)
+tuning_report(tuning::LatinHypercube, history, state) =
+    (plotting = plotting_report(state.fields, state.parameter_scales, history),)
+
+function makeLatinHypercube(prototype::Model, fields, plan)
+    N = length(first(plan))
     map(1:N) do i
         clone = deepcopy(prototype)
         for k in eachindex(fields)
-            recursive_setproperty(clone,fields[k],plan[i,k])
+            recursive_setproperty!(clone,fields[k], plan[k][i])
         end
         clone
     end
