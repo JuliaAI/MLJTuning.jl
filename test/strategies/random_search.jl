@@ -53,7 +53,7 @@ end
 
     @test MLJTuning.default_n(tuning, user_range) == MLJTuning.DEFAULT_N
 
-    p0, p1, p2 = MLJTuning.setup(tuning, super_model, user_range, 3)
+    p0, p1, p2 = MLJTuning.setup(tuning, super_model, user_range, 4, 3)
     @test first.([p0, p1, p2]) == [:(model1.kernel), :(model1.lambda), :K]
 
     s0, s1, s2 = last.([p0, p1, p2])
@@ -77,7 +77,7 @@ end
                              n=N,
                              range=user_range,
                              measures=[rms,mae])
-    state = MLJTuning.setup(tuning, model, user_range, 3)
+    state = MLJTuning.setup(tuning, model, user_range, 4, 3)
     my_models, state = MLJTuning.models(tuning,
                                         model,
                                         nothing, # history

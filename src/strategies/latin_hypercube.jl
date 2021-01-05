@@ -1,6 +1,5 @@
 """
-LatinHypercube(n_max = MLJTuning.DEFAULT_N,
-               gens = 1,
+LatinHypercube(gens = 1,
                popsize = 100,
                ntour = 2,
                ptour = 0.8.,
@@ -14,9 +13,17 @@ library [LatinHypercubeSampling.jl](https://github.com/MrUrq/LatinHypercubeSampl
 
 An optimised Latin Hypercube sampling plan is created using a genetic
 based optimization algorithm based on the inverse of the Audze-Eglais
-function.  The optimization is run for `nGenerations` and creates a
-maximum number of `n_max` points for evaluation (A `TunedModel`
-instance can specify any `n < n_max`).
+function.  The optimization is run for `nGenerations` and creates `n`
+models for evaluation, where `n` is specified by a corresponding `TunedModel`
+instance, as in
+
+    tuned_model = TunedModel(model=...,
+                             tuning=LatinHypercube(...),
+                             range=...,
+                             measures=...,
+                             n=...)
+
+(See [`TunedModel`](@ref) for complete options.)
 
 To use a periodic version of the Audze-Eglais function (to reduce
 clustering along the boundaries) specify `periodic_ae = true`.
@@ -32,9 +39,12 @@ using the `range` method.
 
 - Any vector of objects of the above form
 
+Both `NumericRange`s and `NominalRange`s are supported, and
+hyper-parameter values are sampled on a scale specified by the range
+(eg, `r.scale = :log`).
+
 """
 mutable struct LatinHypercube <: TuningStrategy
-    n_max::Int
     gens::Int
     popsize::Int
     ntour::Int
@@ -46,14 +56,18 @@ mutable struct LatinHypercube <: TuningStrategy
 end
 
 
-function LatinHypercube(; n_max = DEFAULT_N, gens = 1,
-                        popsize = 100, ntour = 2, ptour = 0.8,
-                        interSampleWeight = 1.0, ae_power = 2,
-                        periodic_ae = false,rng=Random.GLOBAL_RNG)
+function LatinHypercube(; gens = 1,
+                        popsize = 100,
+                        ntour = 2,
+                        ptour = 0.8,
+                        interSampleWeight = 1.0,
+                        ae_power = 2,
+                        periodic_ae = false,
+                        rng=Random.GLOBAL_RNG)
 
     _rng = rng isa Integer ? Random.MersenneTwister(rng) : rng
 
-    return LatinHypercube(n_max, gens, popsize, ntour,
+    return LatinHypercube(gens, popsize, ntour,
                           ptour, interSampleWeight, ae_power,
                           periodic_ae, _rng)
 
@@ -122,11 +136,11 @@ _transform(r::NumericRange, x) = _transform_noround(r, x)
 _transform(r::NumericRange{T}, x) where T<:Integer =
     round(T, _transform_noround(r, x))
 
-function setup(tuning::LatinHypercube, model, range, verbosity)
+function setup(tuning::LatinHypercube, model, range, n, verbosity)
     ranges = range isa AbstractVector ? range : [range, ]
     d = length(ranges)
     bounds, dims_type = _create_bounds_and_dims_type(d, ranges)
-    plan, _ = LatinHypercubeSampling.LHCoptim(tuning.n_max, d, tuning.gens,
+    plan, _ = LatinHypercubeSampling.LHCoptim(n, d, tuning.gens,
                     rng = tuning.rng,
                     popsize = tuning.popsize,
                     ntour = tuning.ntour,

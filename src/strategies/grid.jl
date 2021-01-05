@@ -129,7 +129,7 @@ function fields_iterators_and_scales(ranges, resolutions)
 
 end
 
-function setup(tuning::Grid, model, user_range, verbosity)
+function setup(tuning::Grid, model, user_range, n, verbosity)
     ranges, resolutions =
         process_grid_range(user_range, tuning.resolution, verbosity)
 

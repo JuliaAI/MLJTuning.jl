@@ -7,7 +7,7 @@ MLJBase.show_as_constructed(::Type{<:TuningStrategy}) = true
 ## METHODS TO BE IMPLEMENTED
 
 # for initialization of state (compulsory)
-setup(tuning::TuningStrategy, model, range, verbosity) = range
+setup(tuning::TuningStrategy, model, range, n, verbosity) = range
 
 # for adding extra user-inspectable information to the history:
 extras(tuning::TuningStrategy, history, state, E) = NamedTuple()

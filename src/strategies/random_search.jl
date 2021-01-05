@@ -110,7 +110,7 @@ end
 
 # `state` consists of a tuple of (field, sampler) pairs (that gets
 # shuffled each iteration):
-setup(tuning::RandomSearch, model, user_range, verbosity) =
+setup(tuning::RandomSearch, model, user_range, n, verbosity) =
     process_random_range(user_range,
                               tuning.bounded,
                               tuning.positive_unbounded,

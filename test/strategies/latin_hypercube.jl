@@ -61,7 +61,7 @@ end
     r1 = range(model, :lambda, lower=1, upper=9);
     r2 = range(model, :alpha, lower=0, upper=Inf, origin=2,
                unit=3, scale = :log);
-    my_latin = LatinHypercube(n_max=11, gens=4, popsize=100,
+    my_latin = LatinHypercube(gens=4, popsize=100,
                               ntour=2, ptour=0.3,
                               interSampleWeight=0.8, ae_power=2,
                               periodic_ae=false, rng=rng)
@@ -79,7 +79,7 @@ end
 
     r1 = range(supermodel, :(model1.lambda), lower=1, upper=9);
     r2 = range(supermodel, :K, lower=0.4, upper=1.5);
-    my_latin = LatinHypercube(n_max=11, gens=4, popsize=100,
+    my_latin = LatinHypercube(gens=4, popsize=100,
                               ntour=2, ptour=0.3,
                               interSampleWeight=0.5, ae_power=1.7,
                               periodic_ae=true, rng=rng)
@@ -104,11 +104,11 @@ end
     model = DummyModel(1, 9, 'k')
     r1 = range(model, :lambda, lower=1, upper=9)
     r2 = range(model, :alpha, lower=1, upper=100, scale=:log10);
-    my_latin = LatinHypercube(n_max=11, gens=4, popsize=100,
+    my_latin = LatinHypercube(gens=4, popsize=100,
                               ntour=2, ptour=0.3,
                               interSampleWeight=0.5, ae_power=1.7,
                               periodic_ae=true, rng=rng)
-    state = MLJTuning.setup(my_latin, model, [r1,r2], 1)
+    state = MLJTuning.setup(my_latin, model, [r1,r2], 11, 1)
     models = state.models
     @test length(models) == 11
     @test all(models) do model
@@ -184,7 +184,7 @@ end
 
     r2 = range(supermodel, :K, lower=10, upper=100, scale=:log10)
     r3 = range(supermodel, :(model2.kernel), values = collect("abcdefghijk"))
-    tuning = LatinHypercube(n_max = 5)
+    tuning = LatinHypercube()
     r = [r2, r3]
     holdout = Holdout(fraction_train=0.8)
     tuned_model = TunedModel(n =5,
@@ -214,7 +214,7 @@ end
     r = range(model, :min_samples_split, lower=2, upper=20)
 
     # latin:
-    tuning = LatinHypercube(n_max=100, rng=rng)
+    tuning = LatinHypercube(rng=rng)
     tuned_model = TunedModel(model=model,
                              tuning=tuning,
                              resampling=Holdout(),

@@ -370,12 +370,15 @@ of the MLJ manual or doc-strings for more on these methods and the
 #### The `setup` method: To initialize state
 
 ```julia
-state = setup(tuning::MyTuningStrategy, model, range, verbosity)
+state = setup(tuning::MyTuningStrategy, model, range, n, verbosity)
 ```
 
 The `setup` function is for initializing the `state` of the tuning
 algorithm (available to the `models` method). Be sure to make this
-object mutable if it needs to be updated by the `models` method.
+object mutable if it needs to be updated by the `models` method. The
+arguments `model` and `n` are what the user has specified in their
+`TunedModel` instance; recall `model` is the prototype to be cloned
+and mutated, and `n` the total number of mutations to be generated.
 
 The `state` is a place to record the outcomes of any necessary
 intialization of the tuning algorithm (performed by `setup`) and a
@@ -394,15 +397,15 @@ silent.
 The fallback for `setup` is:
 
 ```julia
-setup(tuning::TuningStrategy, model, range, verbosity) = range
+setup(tuning::TuningStrategy, model, range, n, verbosity) = range
 ```
 
 However, a tuning strategy will generally want to implement a `setup`
 method for each range type it is going to support:
 
 ```julia
-MLJTuning.setup(tuning::MyTuningStrategy, model, range::RangeType1, verbosity) = ...
-MLJTuning.setup(tuning::MyTuningStrategy, model, range::RangeType2, verbosity) = ...
+MLJTuning.setup(tuning::MyTuningStrategy, model, range::RangeType1, n, verbosity) = ...
+MLJTuning.setup(tuning::MyTuningStrategy, model, range::RangeType2, n, verbosity) = ...
 etc.
 ```
 
