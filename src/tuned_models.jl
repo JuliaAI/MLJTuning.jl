@@ -566,7 +566,7 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
 
     acceleration = tuned_model.acceleration
 
-    state = setup(tuning, model, range, verbosity)
+    state = setup(tuning, model, range, tuned_model.n, verbosity)
 
     # instantiate resampler (`model` to be replaced with mutated
     # clones during iteration below):

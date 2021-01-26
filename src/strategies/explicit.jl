@@ -7,7 +7,7 @@ end
 
 ExplictState(r::R, n::N) where {R,N} = ExplicitState{R, Union{Nothing, N}}(r, n)
 
-function MLJTuning.setup(tuning::Explicit, model, range, verbosity)
+function MLJTuning.setup(tuning::Explicit, model, range, n, verbosity)
     next = iterate(range)
     return ExplicitState(range, next)
 end
