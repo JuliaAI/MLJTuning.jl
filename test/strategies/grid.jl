@@ -147,8 +147,6 @@ end
                              resampling=holdout, measure=rms,
                              range=r)
 
-    MLJBase.info_dict(tuned_model)
-
     tuned = machine(tuned_model, X, y)
 
     fit!(tuned, verbosity=0)
