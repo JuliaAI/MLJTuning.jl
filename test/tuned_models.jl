@@ -47,7 +47,10 @@ results = [(evaluate(model, X, y,
     tm = TunedModel(model=first(r), tuning=Explicit(),
                     range=r, resampling=CV(nfolds=2),
                     measures=cross_entropy)
-    @test_throws ArgumentError fit(tm, 0, X, y)
+    @test_logs((:error, r"Problem"),
+               (:info, r""),
+               (:info, r""),
+               @test_throws ArgumentError fit(tm, 0, X, y))
 end
 
 @testset_accelerated "basic fit (CPU1)" accel begin
@@ -149,6 +152,62 @@ end
                          event.metadata == event.model.K
                      end
                      end)
+
+
+
+@testset "data caching" begin
+    X = (x1= ones(5),);
+    y = coerce(collect("abcaa"), Multiclass);
+
+    m(b) = ConstantClassifier(testing=true, bogus=b)
+    r = [m(b) for b in 1:5]
+
+    tuned_model = TunedModel(model=first(r), tuning=Explicit(),
+                             range=r, resampling=Holdout(fraction_train=0.8),
+                             measure=log_loss, cache=true)
+
+    # There is reformatting and resampling of X and y for training of
+    # first model, and then resampling on the prediction side only
+    # thereafter. Then, finally, for training on all supplied data, there
+    # is reformatting and resampling again:
+    @test_logs(
+        (:info, "reformatting X, y"), # fit 1
+        (:info, "resampling X, y"),   # fit 1
+        (:info, "resampling X"),      # predict 1
+        (:info, "resampling X"),      # predict 2
+        (:info, "resampling X"),      # predict 3
+        (:info, "resampling X"),      # predict 4
+        (:info, "resampling X"),      # predict 5
+        (:info, "reformatting X, y"), # fit on all data
+        (:info, "resampling X, y"),   # fit one all data
+        fit(tuned_model, 0, X, y)
+    );
+
+    # Otherwise, resampling and reformatting happen for every model
+    # trained, and we get a reformat on the prediction side every
+    # time:
+    tuned_model.cache = false
+    @test_logs(
+        (:info, "reformatting X, y"), # fit 1
+        (:info, "resampling X, y"),   # fit 1
+        (:info, "reformatting X"),    # predict 1
+        (:info, "reformatting X, y"), # fit 2
+        (:info, "resampling X, y"),   # fit 2
+        (:info, "reformatting X"),    # predict 2
+        (:info, "reformatting X, y"), # fit 3
+        (:info, "resampling X, y"),   # fit 3
+        (:info, "reformatting X"),    # predict 3
+        (:info, "reformatting X, y"), # fit 4
+        (:info, "resampling X, y"),   # fit 4
+        (:info, "reformatting X"),    # predict 4
+        (:info, "reformatting X, y"), # fit 5
+        (:info, "resampling X, y"),   # fit 5
+        (:info, "reformatting X"),    # predict 5
+        (:info, "reformatting X, y"), # fit on all data
+        (:info, "resampling X, y"),   # fit on all data
+        fit(tuned_model, 0, X, y)
+    );
+end
 
 
 

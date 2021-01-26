@@ -4,7 +4,7 @@ using MLJScientificTypes
 
 using CategoricalArrays
 
-import DecisionTree 
+import DecisionTree
 
 ## DESCRIPTIONS
 
@@ -50,7 +50,7 @@ from the DecisionTree.jl algorithm).
 
 For post-fit pruning, set `post-prune=true` and set
 `min_purity_threshold` appropriately. Other hyperparameters as per
-package documentation cited above. 
+package documentation cited above.
 
 
 """
@@ -214,4 +214,3 @@ metadata_model(DecisionTreeRegressor,
                target=AbstractVector{MLJBase.Continuous},
                weights=false,
                descr=DTR_DESCR)
-
