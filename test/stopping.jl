@@ -45,19 +45,25 @@ end
     @test TimeLimit(t=Day(2)).t == Millisecond(48*3_600_000)
 end
 
-@testset "TimeLimit - integration test" begin
-    model = FooBarRegressor() # baby ridge regressor
-    r = range(model, :lambda, lower=0.0001, upper = 10)
-    tuned_model = TunedModel(model=model,
-                             tuning=Grid(shuffle=false, resolution=1e5),
-                             stopping=TimeLimit(t=Second(1)),
-                             range=r,
-                             measure=mae)
-    mach = machine(tuned_model, X, y)
-    @test_logs (:info, r"Stopping early") fit!(mach, verbosity=0, force=true)
-    tuned_model.stopping = TimeLimit(t=Second(5))
-    t = @elapsed fit!(mach, verbosity=-1, force=true)
-    @test abs(t - 5)/5 < 0.3 # wait within 30% of requested
+@testset "GeneralizationLoss" begin
+    # constructor:
+    @test_throws ArgumentError GeneralizationLoss(alpha=0)
+    @test GeneralizationLoss(alpha=1).alpha === 1.0
+
+    # _GL:
+    by_hand = [0, 0, 1, 2, 3, 4, 4, 5, 6, 7, 8, 9, 8] .* 100 ./8
+    by_code = map(eachindex(history)) do t
+        MLJTuning._GL(history[1:t])
+    end
+
+    # stopping times:
+    @test by_hand ≈ by_code
+    @test stopping_time(GeneralizationLoss(alpha=12), history) == 3
+    @test stopping_time(GeneralizationLoss(alpha=20), history) == 4
+    @test stopping_time(GeneralizationLoss(alpha=40), history) == 6
+    @test stopping_time(GeneralizationLoss(alpha=90), history) == 11
+    @test stopping_time(GeneralizationLoss(alpha=110), history) == 12
+    @test stopping_time(GeneralizationLoss(alpha=1000), history) === nothing
 end
 
 @testset "_UP" begin
@@ -78,45 +84,76 @@ end
     @test stopping_time(Patience(n=1), history) == 3
 end
 
+
+## INTEGRATION TESTS
+
+model = KNNRegressor()
+r = range(model, :K, lower=1, upper=10)
+
+# next commented-out section shows mean absolute error for model
+# on 30% holdout set, as a function of the parameter `K` (all
+# other parameters taking on default values):
+
+# _, _, k_values, errors =
+#     learning_curve(model, X, y, range=r, measure=mae, resolution=100)
+# zip(k_values, errors) |> collect
+# 10-element Array{Tuple{Int64,Float64},1}:
+#  (1, 5.625657894736842)  #       GL=0
+#  (2, 5.383552631578948)  # down  GL=0
+#  (3, 5.525877192982458)  # up    GL=2.6
+#  (4, 5.441118421052633)  # down  GL=1.1
+#  (5, 5.382105263157899)  # down  GL=0
+#  (6, 5.480921052631575)  # up    GL=1.9
+#  (7, 5.5624060150375945) # up    GL=3.4
+#  (8, 5.737499999999999)  # up    GL=6.60
+#  (9, 5.745833333333332)  # up    GL=6.76
+#  (10, 5.7358552631578945) # down GL=6.57
+
+function stopping_time(criterion)
+    tuned_model = TunedModel(model=model,
+                             tuning=Grid(resolution=100, shuffle=false),
+                             stopping=criterion,
+                             range=r,
+                             measure=mae)
+    mach = machine(tuned_model, X, y)
+    fit!(mach, verbosity=0)
+    report(mach).history |> length
+end
+
+@testset "TimeLimit - integration test" begin
+    model = FooBarRegressor() # baby ridge regressor
+    r = range(model, :lambda, lower=0.0001, upper = 10)
+    tuned_model = TunedModel(model=model,
+                             tuning=Grid(shuffle=false, resolution=1e5),
+                             stopping=TimeLimit(t=Second(1)),
+                             range=r,
+                             measure=mae)
+    mach = machine(tuned_model, X, y)
+    @test_logs (:info, r"Stopping early") fit!(mach, verbosity=0, force=true)
+    tuned_model.stopping = TimeLimit(t=Second(5))
+    t = @elapsed fit!(mach, verbosity=-1, force=true)
+    @test abs(t - 5)/5 < 0.5 # wait within 50% of requested
+end
+
+@testset "GeneralizationLoss - integration test" begin
+    @test_logs((:info, r"Stopping early after 3"),
+               @test stopping_time(GeneralizationLoss(1)) == 3)
+    @test stopping_time(GeneralizationLoss(1)) == 3
+    @test stopping_time(GeneralizationLoss(2)) == 3
+    @test stopping_time(GeneralizationLoss(3)) == 7
+    @test stopping_time(GeneralizationLoss(6)) == 8
+    @test stopping_time(GeneralizationLoss(6.65)) == 9
+    @test stopping_time(GeneralizationLoss(6.8)) == 10
+end
+
 @testset "Patience - integration test" begin
-    model = KNNRegressor()
-    r = range(model, :K, lower=1, upper=10)
-
-    # next commented-out section shows mean absolute error for model
-    # on 30% holdout set, as a function of the parameter `K` (all
-    # other parameters taking on default values):
-
-    # _, _, k_values, errors =
-    #     learning_curve(model, X, y, range=r, measure=mae, resolution=100)
-    # zip(k_values, errors) |> collect
-    # 10-element Array{Tuple{Int64,Float64},1}:
-    #  (1, 5.625657894736842)
-    #  (2, 5.383552631578948)  # down
-    #  (3, 5.525877192982458)  # up
-    #  (4, 5.441118421052633)  # down
-    #  (5, 5.382105263157899)  # down
-    #  (6, 5.480921052631575)  # up
-    #  (7, 5.5624060150375945) # up
-    #  (8, 5.737499999999999)  # up
-    #  (9, 5.745833333333332)  # up
-    #  (10, 5.7358552631578945) # down
-
-    function stopping_time(n)
-        tuned_model = TunedModel(model=model,
-                                 tuning=Grid(resolution=100, shuffle=false),
-                                 stopping=Patience(n=n),
-                                 range=r,
-                                 measure=mae)
-        mach = machine(tuned_model, X, y)
-        fit!(mach, verbosity=0)
-        return report(mach).history |> length
-    end
-    @test_logs (:info, r"Stopping early after 3") @test stopping_time(1) == 3
-    @test stopping_time(2) == 7
-    @test stopping_time(3) == 8
-    @test stopping_time(4) == 9
-    @test stopping_time(5) == 10
-    @test stopping_time(6) == 10
+    @test_logs((:info, r"Stopping early after 3"),
+               @test stopping_time(Patience(1)) == 3)
+    @test stopping_time(Patience(2)) == 7
+    @test stopping_time(Patience(3)) == 8
+    @test stopping_time(Patience(4)) == 9
+    @test stopping_time(Patience(5)) == 10
+    @test stopping_time(Patience(6)) == 10
 end
 
 end

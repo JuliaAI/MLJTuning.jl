@@ -40,13 +40,13 @@ stopping_early(::StoppingCriterion, history) = false
 struct Never <: StoppingCriterion end
 
 
-## WAIT
+## TIME LIMIT
 
 struct TimeLimit <: StoppingCriterion
     t::Millisecond
     function TimeLimit(t::Millisecond)
         t > Millisecond(0) ||
-            throw(ArgumentError("Wating time `t` must be positive. "))
+            throw(ArgumentError("Time limit `t` must be positive. "))
         return new(t)
     end
 end
@@ -61,7 +61,33 @@ function stopping_early(criterion::TimeLimit, history)
     history[end].stopping_data - history[1].stopping_data > criterion.t
 end
 
-## PATIENCE (or UP_s)
+
+## GENERALIZATION LOSS
+
+# This is GL_α in Prechelt 1998
+
+struct GeneralizationLoss <: StoppingCriterion
+    alpha::Float64
+    function GeneralizationLoss(alpha)
+        alpha > 0 ||
+            throw(ArgumentError("Threshold `alpha` must be positive. "))
+        return new(alpha)
+    end
+end
+GeneralizationLoss(; alpha=2.0) = GeneralizationLoss(alpha)
+
+_E_opt(history) = minimum(map(history) do entry
+                          _loss(entry)
+                          end)
+_GL(history) = 100*(_loss(last(history))/abs(_E_opt(history)) - 1)
+
+stopping_early(criterion::GeneralizationLoss, history) =
+    _GL(history) > criterion.alpha
+
+
+## PATIENCE
+
+# This is UP_s in Prechelt 1998
 
 """
     Patience(; n=5)

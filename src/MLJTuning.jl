@@ -4,7 +4,8 @@ module MLJTuning
 ## METHOD EXPORT
 
 # defined in stopping.jl:
-export StoppingCriterion, Never, TimeLimit, Patience
+export StoppingCriterion, Never, TimeLimit, Patience,
+    GeneralizationLoss
 
 # defined in tuned_models.jl:
 export TunedModel
