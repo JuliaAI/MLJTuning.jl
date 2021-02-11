@@ -15,6 +15,14 @@
 # `Never()`
 # `TimeLimit(t=...)`
 
+const PRECHELT_REF = "[Prechelt, Lutz (1998): \"Early Stopping"*
+    "- But When?\", in *Neural Networks: Tricks of the Trade*, "*
+    "ed. G. Orr, Springer.](https://link.springer.com/chapter"*
+    "/10.1007%2F3-540-49430-8_3)"
+
+const STOPPING_DOC = "A stopping crieterion for use in tuning "*
+    "and in training iterative models."
+
 ## HELPERS
 
 # extract a loss from a history entry (reversing sign if first
@@ -37,11 +45,34 @@ stopping_early(::StoppingCriterion, history) = false
 
 ## NEVER
 
+"""
+    Never()
+
+$STOPPING_DOC
+
+Indicates early stopping is to be disabled.
+
+"""
 struct Never <: StoppingCriterion end
 
 
 ## TIME LIMIT
 
+"""
+    TimeLimit(; t=0.5)
+
+$STOPPING_DOC
+
+Stopping is triggered after `t` hours have elapsed, as measured between
+timestamps written to the model evaluation history immediately after
+each model performance evaluation (generally lower than the true
+elapsed wall clock time).
+
+Any Julia built-in `Real` type can be used for `t`, which is always
+rounded to nearest millisecond internally. Subtypes of `Period` may
+also be used, as in `TimeLimit(t=Minute(30))`.
+
+"""
 struct TimeLimit <: StoppingCriterion
     t::Millisecond
     function TimeLimit(t::Millisecond)
@@ -66,6 +97,23 @@ end
 
 # This is GL_α in Prechelt 1998
 
+"""
+    GeneralizationLoss(; alpha=2.0)
+
+$STOPPING_DOC
+
+A stop is triggered when the *generalization loss* exceeds
+the threshold `alpha`. The generalization loss for a sequence `E_1,
+E_2, ..., E_t` of out-of-sample estimates of the loss is
+
+`` GL = 100*(E_t - E_opt)/|E_opt|``
+
+where `E_opt` is the minimum value of the sequence. In the case that
+scores are estimated, their signs are reversed.
+
+Denoted "GL_α" in $PRECHELT_REF.
+
+"""
 struct GeneralizationLoss <: StoppingCriterion
     alpha::Float64
     function GeneralizationLoss(alpha)
@@ -92,10 +140,12 @@ stopping_early(criterion::GeneralizationLoss, history) =
 """
     Patience(; n=5)
 
-A stopping crieterion for use with iterative models.
+$STOPPING_DOC
 
-A stop is triggered by `n` consecutive deteriorations in out-of-sample
+A stop is triggered by `n` consecutive deteriorations in the out-of-sample
 performance.
+
+Denoted "_UP_s" in $PRECHELT_REF.
 
 """
 mutable struct Patience <: StoppingCriterion
