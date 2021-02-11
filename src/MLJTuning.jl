@@ -3,6 +3,9 @@ module MLJTuning
 
 ## METHOD EXPORT
 
+# defined in stopping.jl:
+export StoppingCriterion, Never, TimeLimit, Patience
+
 # defined in tuned_models.jl:
 export TunedModel
 
@@ -30,6 +33,7 @@ import ComputationalResources: CPU1, CPUProcesses,
 using Random
 using ProgressMeter
 using LatinHypercubeSampling
+using Dates
 
 
 ## CONSTANTS
@@ -39,6 +43,7 @@ const DEFAULT_N = 10 # for when `default_n` is not implemented
 ## INCLUDE FILES
 
 include("utilities.jl")
+include("stopping.jl")
 include("tuning_strategy_interface.jl")
 include("selection_heuristics.jl")
 include("strategies/explicit.jl")

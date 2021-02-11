@@ -5,6 +5,7 @@ mutable struct DeterministicTunedModel{T,M<:Deterministic} <: MLJBase.Determinis
     model::M
     tuning::T  # tuning strategy
     resampling # resampling strategy
+    stopping   # early stopping strategy
     measure
     weights::Union{Nothing,Vector{<:Real}}
     operation
@@ -23,6 +24,7 @@ mutable struct ProbabilisticTunedModel{T,M<:Probabilistic} <: MLJBase.Probabilis
     model::M
     tuning::T  # tuning strategy
     resampling # resampling strategy
+    stopping   # early stopping strategy
     measure
     weights::Union{Nothing,AbstractVector{<:Real}}
     operation
@@ -47,6 +49,7 @@ MLJBase.is_wrapper(::Type{<:EitherTunedModel}) = true
     tuned_model = TunedModel(; model=nothing,
                              tuning=Grid(),
                              resampling=Holdout(),
+                             stopping=Never(),
                              measure=nothing,
                              weights=nothing,
                              repeats=1,
@@ -134,8 +137,15 @@ plus other key/value pairs specific to the `tuning` strategy.
 
 - `tuning=Grid()`: tuning strategy to be applied (eg, `RandomSearch()`)
 
-- `resampling=Holdout()`: resampling strategy (eg, `Holdout()`, `CV()`),
-  `StratifiedCV()`) to be applied in performance evaluations
+- `resampling=Holdout()`: resampling strategy (eg, `Holdout()`,
+  `CV()`), `StratifiedCV()`) to be applied in performance
+  evaluations. Do `subtypes(ResamplingStrategy)` to list resampling
+  strategy types.
+
+- `stopping=Never()`: criterion for early stopping eg, `Patience(n=3)`
+  or `TimeLimit(t=Minute(30))`. Do `subtypes(StoppingCriterion)` to list
+  stopping strategy types. Only valid if `acceleration isa CPU1` (the
+  default).
 
 - `measure`: measure or measures to be applied in performance
   evaluations; only the first used in optimization (unless the
@@ -185,6 +195,7 @@ plus other key/value pairs specific to the `tuning` strategy.
 function TunedModel(; model=nothing,
                     tuning=Grid(),
                     resampling=MLJBase.Holdout(),
+                    stopping=Never(),
                     measures=nothing,
                     measure=measures,
                     weights=nothing,
@@ -207,6 +218,7 @@ function TunedModel(; model=nothing,
 
     if model isa Deterministic
         tuned_model = DeterministicTunedModel(model, tuning, resampling,
+                                              stopping,
                                               measure, weights, operation,
                                               range, selection_heuristic,
                                               train_best, repeats, n,
@@ -216,6 +228,7 @@ function TunedModel(; model=nothing,
                                               cache)
     elseif model isa Probabilistic
         tuned_model = ProbabilisticTunedModel(model, tuning, resampling,
+                                              stopping,
                                               measure, weights, operation,
                                               range, selection_heuristic,
                                               train_best, repeats, n,
@@ -253,6 +266,13 @@ function MLJBase.clean!(tuned_model::EitherTunedModel)
         "is not supported by $(tuned_model.tuning). Resetting to "*
         "`NaiveSelectionment()`."
         tuned_model.selection_heuristic = NaiveSelection()
+    end
+
+    if !(tuned_model.acceleration isa CPU1) && !(tuned_model.stopping isa Never)
+         message*=
+         "Early stopping criterion can only be applied in serial mode. "*
+         "Setting `acceleration=CPU1()`. "
+         tuned_model.acceleration = CPU1()
     end
 
     if (tuned_model.acceleration isa CPUProcesses &&
@@ -297,11 +317,12 @@ _last(m::MLJBase.Model) = nothing
 _first(m::Tuple{Model,Any}) = first(m)
 _last(m::Tuple{Model,Any}) = last(m)
 
-# returns a (model, result) pair for the history:
+# returns a new `entry` for history:
 function event(metamodel,
                resampling_machine,
                verbosity,
                tuning,
+               stopping,
                history,
                state)
     model = _first(metamodel)
@@ -310,11 +331,16 @@ function event(metamodel,
     verb = (verbosity >= 2 ? verbosity - 3 : verbosity - 1)
     fit!(resampling_machine, verbosity=verb)
     E = evaluate(resampling_machine)
-    entry0 = (model       = model,
-              measure     = E.measure,
-              measurement = E.measurement,
-              per_fold    = E.per_fold,
-              metadata    = metadata)
+    stopping_data = for_history(stopping,
+                                E.fitted_params_per_fold,
+                                E.report_per_fold,
+                                history)
+    entry0 = (model         = model,
+              measure       = E.measure,
+              measurement   = E.measurement,
+              per_fold      = E.per_fold,
+              metadata      = metadata,
+              stopping_data = stopping_data)
     entry = merge(entry0, extras(tuning, history, state, E))
     if verbosity > 2
         println("hyperparameters: $(params(model))")
@@ -326,48 +352,94 @@ function event(metamodel,
     return entry
 end
 
+# orchestrate the events on CPU1() and return a new updated history:
 function assemble_events(metamodels,
                          resampling_machine,
                          verbosity,
                          tuning,
+                         stopping,
                          history,
                          state,
                          acceleration::CPU1)
 
-     n_metamodels = length(metamodels)
+    n_metamodels = length(metamodels)
 
-     p = Progress(n_metamodels,
-         dt = 0,
-         desc = "Evaluating over $(n_metamodels) metamodels: ",
-         barglyphs = BarGlyphs("[=> ]"),
-         barlen = 25,
-         color = :yellow)
+    p = Progress(n_metamodels,
+                 dt = 0,
+                 desc = "Evaluating over $(n_metamodels) metamodels: ",
+                 barglyphs = BarGlyphs("[=> ]"),
+                 barlen = 25,
+                 color = :yellow)
 
     verbosity !=1 || update!(p,0)
 
-    entries = map(metamodels) do m
-        r = event(m, resampling_machine, verbosity, tuning, history, state)
+    first_entry = event(metamodels[1],
+                        resampling_machine,
+                        verbosity,
+                        tuning,
+                        stopping,
+                        history,
+                        state)
+
+    t = _length(history) + 1
+    t_stop = 0 # meaning no stop yet triggered
+
+    if t == 1
+        new_history = Vector{typeof(first_entry)}(undef, n_metamodels)
+    else
+        new_history = vcat(history, similar(history, n_metamodels))
+    end
+
+    j = 1
+
+    while j <= n_metamodels && t_stop == 0
+        if j == 1
+            new_history[t] = first_entry
+        else
+            new_history[t] = event(metamodels[j],
+                                   resampling_machine,
+                                   verbosity,
+                                   tuning,
+                                   stopping,
+                                   history,
+                                   state)
+        end
+        if stopping_early(stopping, view(new_history, 1:t))
+            t_stop = t
+        end
+        j += 1
+        t += 1
         verbosity < 1 || begin
                   p.counter += 1
                   ProgressMeter.updateProgress!(p)
-                end
-        r
-      end
+        end
+    end
 
-    return entries
+    if t_stop == 0
+        return new_history
+    else
+        if verbosity > 0
+            p.counter = n_metamodels
+            ProgressMeter.updateProgress!(p)
+        end
+        verbosity < 0 || @info "Stopping early after $t_stop iterations. "
+        return new_history[1:t_stop]
+    end
+
 end
 
 function assemble_events(metamodels,
                          resampling_machine,
                          verbosity,
                          tuning,
+                         stopping,
                          history,
                          state,
                          acceleration::CPUProcesses)
 
     n_metamodels = length(metamodels)
 
-    entries = @sync begin
+    Δhistory = @sync begin
         channel = RemoteChannel(()->Channel{Bool}(min(1000, n_metamodels)), 1)
         p = Progress(n_metamodels,
                      dt = 0,
@@ -387,7 +459,13 @@ function assemble_events(metamodels,
 
 
         ret = @distributed vcat for m in metamodels
-            r = event(m, resampling_machine, verbosity, tuning, history, state)
+            r = event(m,
+                      resampling_machine,
+                      verbosity,
+                      tuning,
+                      stopping,
+                      history,
+                      state)
             verbosity < 1 || begin
                 put!(channel, true)
             end
@@ -397,7 +475,7 @@ function assemble_events(metamodels,
         ret
     end
 
-    return entries
+    return _vcat(history, Δhistory)
 end
 
 @static if VERSION >= v"1.3.0-DEV.573"
@@ -406,25 +484,27 @@ function assemble_events(metamodels,
                          resampling_machine,
                          verbosity,
                          tuning,
+                         stopping,
                          history,
                          state,
                          acceleration::CPUThreads)
 
     if Threads.nthreads() == 1
         return assemble_events(metamodels,
-                         resampling_machine,
-                         verbosity,
-                         tuning,
-                         history,
-                         state,
-                         CPU1())
-   end
+                               resampling_machine,
+                               verbosity,
+                               tuning,
+                               stopping,
+                               history,
+                               state,
+                               CPU1())
+    end
 
     n_metamodels = length(metamodels)
     ntasks = acceleration.settings
     partitions = chunks(1:n_metamodels, ntasks)
     #tasks = Vector{Task}(undef, length(partitions))
-    entries = Vector(undef, length(partitions))
+    history_batches = Vector(undef, length(partitions))
     p = Progress(n_metamodels,
          dt = 0,
          desc = "Evaluating over $(n_metamodels) metamodels: ",
@@ -458,9 +538,14 @@ function assemble_events(metamodels,
 
         @sync for (i, parts) in enumerate(partitions)
             Threads.@spawn begin
-                entries[i] =  map(metamodels[parts]) do m
-                    r = event(m, machs[i],
-                              verbosity, tuning, history, state)
+                history_batches[i] =  map(metamodels[parts]) do m
+                    r = event(m,
+                              machs[i],
+                              verbosity,
+                              tuning,
+                              stopping,
+                              history,
+                              state)
                     verbosity < 1 || put!(ch, true)
                     r
                 end
@@ -468,7 +553,8 @@ function assemble_events(metamodels,
         end
         verbosity < 1 || put!(ch, false)
     end
-    reduce(vcat, entries)
+    Δhistory = reduce(vcat, history_batches)
+    return _vcat(history, Δhistory)
 end
 
 end # of if VERSION ...
@@ -481,44 +567,49 @@ _length(::Nothing) = 0
 
 # builds on an existing `history` until the length is `n` or the model
 # supply is exhausted (method shared by `fit` and `update`). Returns
-# the bigger history:
+# the extended history and the updated state. The `history` is
+# `nothing` when this is called by `fit` and generally non-empty when
+# called by `update`:
 function build(history,
                n,
                tuning,
+               stopping,
                model,
                state,
                verbosity,
                acceleration,
                resampling_machine)
-    j = _length(history)
+    t = _length(history) + 1
     models_exhausted = false
-    while j < n && !models_exhausted
+
+    while t <= n && !models_exhausted
         metamodels, state  = models(tuning,
                                     model,
                                     history,
                                     state,
-                                    n - j,
+                                    n - t + 1,
                                     verbosity)
-        Δj = _length(metamodels)
-        Δj == 0 && (models_exhausted = true)
-        shortfall = n - Δj
+        Δt = _length(metamodels)
+        Δt == 0 && (models_exhausted = true)
+        shortfall = n - Δt
         if models_exhausted && shortfall > 0 && verbosity > -1
-            @info "Only $j (of $n) models evaluated.\n"*
+            @info "Only $(t - 1) (of $n) models evaluated.\n"*
             "Model supply exhausted. "
         end
-        Δj == 0 && break
-        shortfall < 0 && (metamodels = metamodels[1:n - j])
-        j += Δj
+        Δt == 0 && break
+        shortfall < 0 && (metamodels = metamodels[1:n - t])
+        t += Δt
 
-        Δhistory = assemble_events(metamodels,
-                                   resampling_machine,
-                                   verbosity,
-                                   tuning,
-                                   history,
-                                   state,
-                                   acceleration)
-        history = _vcat(history, Δhistory)
+        history = assemble_events(metamodels,
+                                  resampling_machine,
+                                  verbosity,
+                                  tuning,
+                                  stopping,
+                                  history,
+                                  state,
+                                  acceleration)
     end
+
     return history, state
 end
 
@@ -529,12 +620,12 @@ function finalize(tuned_model, history, state, verbosity, rm, data...)
     tuning = tuned_model.tuning
 
     user_history = map(history) do entry
-        delete(entry, :metadata)
+        delete(entry, :metadata, :stopping_data)
     end
 
     entry =  best(tuned_model.selection_heuristic, history)
     best_model = entry.model
-    best_history_entry = delete(entry, :metadata)
+    best_history_entry = delete(entry, :metadata, :stopping_data)
     fitresult = machine(best_model, data...)
 
     report0 = (best_model         = best_model,
@@ -557,6 +648,7 @@ end
 function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
                      verbosity::Integer, data...) where {T,M}
     tuning = tuned_model.tuning
+    stopping = tuned_model.stopping
     model = tuned_model.model
     range = tuned_model.range
     n = tuned_model.n === nothing ?
@@ -580,8 +672,15 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
                           acceleration  = tuned_model.acceleration_resampling,
                           cache         = tuned_model.cache)
     resampling_machine = machine(resampler, data...)
-    history, state = build(nothing, n, tuning, model, state,
-                           verbosity, acceleration, resampling_machine)
+    history, state = build(nothing,
+                           n,
+                           tuning,
+                           stopping,
+                           model,
+                           state,
+                           verbosity,
+                           acceleration,
+                           resampling_machine)
 
     rm = resampling_machine
     return finalize(tuned_model, history, state, verbosity, rm, data...)
@@ -596,6 +695,7 @@ function MLJBase.update(tuned_model::EitherTunedModel,
     acceleration = tuned_model.acceleration
 
     tuning = tuned_model.tuning
+    stopping = tuned_model.stopping
     range = tuned_model.range
     model = tuned_model.model
 
@@ -613,8 +713,15 @@ function MLJBase.update(tuned_model::EitherTunedModel,
         verbosity < 1 || @info "Attempting to add $(n! - old_n!) models "*
         "to search, bringing total to $n!. "
 
-        history, state = build(history, n!, tuning, model, state,
-                               verbosity, acceleration, resampling_machine)
+        history, state = build(history,
+                               n!,
+                               tuning,
+                               stopping,
+                               model,
+                               state,
+                               verbosity,
+                               acceleration,
+                               resampling_machine)
 
         rm = resampling_machine
         return finalize(tuned_model, history, state, verbosity, rm, data...)

@@ -189,7 +189,8 @@ begin, on the basis of the specific strategy and a user-specified
   (e.g., a random Pareto optimal solution).
 
 - The *history* is a vector of identically-keyed named tuples, one
-  tuple per iteration. The tuple keys include:
+  tuple per iteration, called *entries*.  The entry keys always
+  include:
 
   - `model`: for the MLJ model instance that has been evaluated
 
@@ -203,8 +204,8 @@ begin, on the basis of the specific strategy and a user-specified
 	 of `model`).
 
   There may be additional keys for tuning-specific information that
-  *is* to be reported to the user (such as temperature in
-  simulated annhealing).
+  *is* to be reported to the user, such as temperature in
+  simulated annhealing.
 
 - A *range* is any object whose specification completes the
   specification of the tuning task, after the prototype, tuning
@@ -244,6 +245,9 @@ In setting up a tuning task, the user constructs an instance of the
 - `resampling`: the resampling strategy used for performance
   evaluations, which must be an instance of a concrete
   `ResamplingStrategy` subtype, such as `Holdout` or `CV`
+  
+- `stopping`: the criteria to apply for early stopping (serial mode
+ only), such as `Patience(s=5)`.
 
 - `measure`: a measure (loss or score) or vector of measures available
   to the tuning algorithm, the first of which is optimized in the

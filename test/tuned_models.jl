@@ -36,6 +36,13 @@ r = [m(K) for K in 2:13]
                                            range=r, measure=rms)
     @test_logs((:info, r"No measure"),
                TunedModel(model=first(r), tuning=Explicit(), range=r))
+    tuned_model = @test_logs((:info, r"Early stopping"),
+                             TunedModel(model=first(r),
+                                        tuning=Explicit(),
+                                        range=r,
+                                        stopping=Patience(),
+                                        acceleration=CPUThreads()))
+    @test tuned_model.acceleration == CPU1()
 end
 
 results = [(evaluate(model, X, y,
@@ -60,13 +67,14 @@ end
                     range=r, resampling=CV(nfolds=2),
                     measures=[rms, l1], acceleration=accel)
     verbosity = accel isa CPU1 ? 2 : 1
-    fitresult, meta_state, report = fit(tm, verbosity, X, y);
+    fitresult, meta_state, rep = fit(tm, verbosity, X, y);
     history, _, state = meta_state;
     results2 = map(event -> event.measurement[1], history)
     @test results2 ≈ results
     @test fitresult.model == collect(r)[best_index]
-    @test report.best_model == collect(r)[best_index]
-    @test report.history[5] == MLJTuning.delete(history[5], :metadata)
+    @test rep.best_model == collect(r)[best_index]
+    @test rep.history[5] ==
+        MLJTuning.delete(history[5], :metadata, :stopping_data)
 end
 
 @static if VERSION >= v"1.3.0-DEV.573"
@@ -141,15 +149,16 @@ end)
 
 end
 
-@testset_accelerated("passing of model metadata", accel,
-                  begin
+@testset_accelerated("passing of model metadata",
+                     accel,
+                     begin
                      tm = TunedModel(model=first(r), tuning=MockExplicit(),
                                      range=r, resampling=CV(nfolds=2),
                                      measures=[rms, l1], acceleration=accel)
-                     fitresult, meta_state, report = fit(tm, 0, X, y);
+                     fitresult, meta_state, rep = fit(tm, 0, X, y);
                      history, _, state = meta_state;
                      @test all(history) do event
-                         event.metadata == event.model.K
+                     event.metadata == event.model.K
                      end
                      end)
 
