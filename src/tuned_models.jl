@@ -454,7 +454,8 @@ function assemble_events(metamodels,
                      repeats       = resampling_machine.model.repeats,
                      acceleration  = resampling_machine.model.acceleration,
                      cache         = resampling_machine.model.cache),
-                  resampling_machine.args...) for _ in 2:length(partitions)]...]
+                          resampling_machine.args...; cache=false) for
+                  _ in 2:length(partitions)]...]
 
         @sync for (i, parts) in enumerate(partitions)
             Threads.@spawn begin
@@ -579,7 +580,7 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
                           repeats       = tuned_model.repeats,
                           acceleration  = tuned_model.acceleration_resampling,
                           cache         = tuned_model.cache)
-    resampling_machine = machine(resampler, data...)
+    resampling_machine = machine(resampler, data...; cache=false)
     history, state = build(nothing, n, tuning, model, state,
                            verbosity, acceleration, resampling_machine)
 
