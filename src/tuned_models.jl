@@ -642,7 +642,8 @@ end
 
 MLJBase.supports_weights(::Type{<:EitherTunedModel{<:Any,M}}) where M =
     MLJBase.supports_weights(M)
-
+MLJBase.load_path(::Type{<:ProbabilisticTunedModel}) =
+    "MLJTuning.ProbabilisticTunedModel"
 MLJBase.load_path(::Type{<:DeterministicTunedModel}) =
     "MLJTuning.DeterministicTunedModel"
 MLJBase.package_name(::Type{<:EitherTunedModel}) = "MLJTuning"
