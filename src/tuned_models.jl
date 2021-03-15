@@ -40,8 +40,6 @@ end
 const EitherTunedModel{T,M} =
     Union{DeterministicTunedModel{T,M},ProbabilisticTunedModel{T,M}}
 
-MLJBase.is_wrapper(::Type{<:EitherTunedModel}) = true
-
 #todo update:
 """
     tuned_model = TunedModel(; model=nothing,
@@ -640,6 +638,7 @@ end
 
 ## METADATA
 
+MLJBase.is_wrapper(::Type{<:EitherTunedModel}) = true
 MLJBase.supports_weights(::Type{<:EitherTunedModel{<:Any,M}}) where M =
     MLJBase.supports_weights(M)
 MLJBase.load_path(::Type{<:ProbabilisticTunedModel}) =
@@ -647,7 +646,8 @@ MLJBase.load_path(::Type{<:ProbabilisticTunedModel}) =
 MLJBase.load_path(::Type{<:DeterministicTunedModel}) =
     "MLJTuning.DeterministicTunedModel"
 MLJBase.package_name(::Type{<:EitherTunedModel}) = "MLJTuning"
-MLJBase.package_uuid(::Type{<:EitherTunedModel}) = "MLJTuning"
+MLJBase.package_uuid(::Type{<:EitherTunedModel}) =
+    "03970b2e-30c4-11ea-3135-d1576263f10f"
 MLJBase.package_url(::Type{<:EitherTunedModel}) =
     "https://github.com/alan-turing-institute/MLJTuning.jl"
 MLJBase.is_pure_julia(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
