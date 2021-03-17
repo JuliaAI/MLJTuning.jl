@@ -650,9 +650,11 @@ MLJBase.package_uuid(::Type{<:EitherTunedModel}) =
     "03970b2e-30c4-11ea-3135-d1576263f10f"
 MLJBase.package_url(::Type{<:EitherTunedModel}) =
     "https://github.com/alan-turing-institute/MLJTuning.jl"
+MLJBase.package_license(::Type{<:EitherTunedModel}) = "MIT"
 MLJBase.is_pure_julia(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.is_pure_julia(M)
 MLJBase.input_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.input_scitype(M)
 MLJBase.target_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.target_scitype(M)
+
