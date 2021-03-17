@@ -636,6 +636,26 @@ function MLJBase.fitted_params(tuned_model::EitherTunedModel, fitresult)
 end
 
 
+## SUPPORT FOR MLJ ITERATION API
+
+MLJBase.iteration_parameter(::Type{<:EitherTunedModel}) = :n
+MLJBase.supports_training_losses(::Type{<:EitherTunedModel}) = true
+
+function MLJBase.training_losses(tuned_model::EitherTunedModel, _report)
+    _losses = MLJTuning.losses(tuned_model.selection_heuristic, _report.history)
+    MLJTuning._length(_losses) == 0 && return nothing
+
+    ret = similar(_losses)
+    lowest = first(_losses)
+    for i in eachindex(_losses)
+        current = _losses[i]
+        lowest = min(current, lowest)
+        ret[i] = lowest
+    end
+    return ret
+end
+
+
 ## METADATA
 
 MLJBase.is_wrapper(::Type{<:EitherTunedModel}) = true

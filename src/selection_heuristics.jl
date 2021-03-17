@@ -1,4 +1,11 @@
+const ERR_LOSSES =
+    ArgumentError("Tuning selection heuristic does not "*
+                  "support losses() function. ")
+
 abstract type SelectionHeuristic end
+
+losses(heuristic, history) = throw(ERR_LOSSES)
+
 
 ## HELPERS
 
@@ -47,11 +54,15 @@ function NaiveSelection(; weights=nothing)
     return NaiveSelection(weights)
 end
 
-function best(heuristic::NaiveSelection, history)
+function losses(heuristic::NaiveSelection, history)
     first_entry = history[1]
     measures = first_entry.measure
     weights = measure_adjusted_weights(heuristic.weights, measures)
-    measurements = [weights'*(h.measurement) for h in history]
+    return [weights'*(h.measurement) for h in history]
+end
+
+function best(heuristic::NaiveSelection, history)
+    measurements = losses(heuristic, history)
     best_index = argmin(measurements)
     return history[best_index]
 end

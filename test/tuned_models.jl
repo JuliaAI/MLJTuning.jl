@@ -21,7 +21,7 @@ X = (x1=x1, x2=x2, x3=x3);
 y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.4*rand(N);
 
 m(K) = KNNRegressor(K=K)
-r = [m(K) for K in 2:13]
+r = [m(K) for K in 13:-1:2]
 
 # TODO: replace the above with the line below and post an issue on
 # the failure (a bug in Distributed, I reckon):
@@ -60,13 +60,21 @@ end
                     range=r, resampling=CV(nfolds=2),
                     measures=[rms, l1], acceleration=accel)
     verbosity = accel isa CPU1 ? 2 : 1
-    fitresult, meta_state, report = fit(tm, verbosity, X, y);
+    fitresult, meta_state, _report = fit(tm, verbosity, X, y);
     history, _, state = meta_state;
     results2 = map(event -> event.measurement[1], history)
     @test results2 ≈ results
     @test fitresult.model == collect(r)[best_index]
-    @test report.best_model == collect(r)[best_index]
-    @test report.history[5] == MLJTuning.delete(history[5], :metadata)
+    @test _report.best_model == collect(r)[best_index]
+    @test _report.history[5] == MLJTuning.delete(history[5], :metadata)
+
+    # training_losses:
+    losses = training_losses(tm, _report)
+    @test all(eachindex(losses)) do i
+        minimum(results[1:i]) == losses[i]
+    end
+    @test MLJBase.iteration_parameter(tm) == :n
+
 end
 
 @static if VERSION >= v"1.3.0-DEV.573"
