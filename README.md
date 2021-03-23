@@ -502,9 +502,9 @@ constructed with this code:
 
 ```julia
 report1 = (best_model         = best_model,
-		   best_history_entry = best_user_history_entry,
-		   history            = user_history,
-		   best_report        = best_report)
+           best_history_entry = best_user_history_entry,
+           history            = user_history,
+           best_report        = best_report)
 
 report = merge(report1, tuning_report(tuning, history, state))
 ```
