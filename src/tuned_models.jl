@@ -40,8 +40,6 @@ end
 const EitherTunedModel{T,M} =
     Union{DeterministicTunedModel{T,M},ProbabilisticTunedModel{T,M}}
 
-MLJBase.is_wrapper(::Type{<:EitherTunedModel}) = true
-
 #todo update:
 """
     tuned_model = TunedModel(; model=nothing,
@@ -638,20 +636,45 @@ function MLJBase.fitted_params(tuned_model::EitherTunedModel, fitresult)
 end
 
 
+## SUPPORT FOR MLJ ITERATION API
+
+MLJBase.iteration_parameter(::Type{<:EitherTunedModel}) = :n
+MLJBase.supports_training_losses(::Type{<:EitherTunedModel}) = true
+
+function MLJBase.training_losses(tuned_model::EitherTunedModel, _report)
+    _losses = MLJTuning.losses(tuned_model.selection_heuristic, _report.history)
+    MLJTuning._length(_losses) == 0 && return nothing
+
+    ret = similar(_losses)
+    lowest = first(_losses)
+    for i in eachindex(_losses)
+        current = _losses[i]
+        lowest = min(current, lowest)
+        ret[i] = lowest
+    end
+    return ret
+end
+
+
 ## METADATA
 
+MLJBase.is_wrapper(::Type{<:EitherTunedModel}) = true
 MLJBase.supports_weights(::Type{<:EitherTunedModel{<:Any,M}}) where M =
     MLJBase.supports_weights(M)
-
+MLJBase.load_path(::Type{<:ProbabilisticTunedModel}) =
+    "MLJTuning.ProbabilisticTunedModel"
 MLJBase.load_path(::Type{<:DeterministicTunedModel}) =
     "MLJTuning.DeterministicTunedModel"
 MLJBase.package_name(::Type{<:EitherTunedModel}) = "MLJTuning"
-MLJBase.package_uuid(::Type{<:EitherTunedModel}) = "MLJTuning"
+MLJBase.package_uuid(::Type{<:EitherTunedModel}) =
+    "03970b2e-30c4-11ea-3135-d1576263f10f"
 MLJBase.package_url(::Type{<:EitherTunedModel}) =
     "https://github.com/alan-turing-institute/MLJTuning.jl"
+MLJBase.package_license(::Type{<:EitherTunedModel}) = "MIT"
 MLJBase.is_pure_julia(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.is_pure_julia(M)
 MLJBase.input_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.input_scitype(M)
 MLJBase.target_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.target_scitype(M)
+
