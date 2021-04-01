@@ -1,36 +1,58 @@
 @recipe function f(mach::MLJBase.Machine{<:EitherTunedModel})
-    r = report(mach).plotting
+    rep = report(mach)
+    measurement = string(typeof(rep.best_history_entry.measure[1]))
+    r = rep.plotting
     z = r.measurements
-    x = r.parameter_values[:,1]
-    y = r.parameter_values[:,2]
+    X = r.parameter_values
+    guides = r.parameter_names
+    scales = r.parameter_scales
+    n = size(X, 2)
+    indices = LinearIndices((n, n))'
 
-    r.parameter_scales[1] == :none &&
-        (x = string.(x))
+    layout := (n, n)
+    size --> (275*n, 250*n)
+    label := ""
 
-    r.parameter_scales[2] == :none &&
-        (y = string.(y))
+    framestyle := :none
+    for i in 1:n-1, j in i+1:n 
+        @series begin
+            subplot := indices[i, j]
+            ()
+        end
+    end
 
-    xsc, ysc = r.parameter_scales
+    framestyle := :box
+    seriestype := :scatter
+    for i in 1:n
+        x = X[:, i]
+        xsc = scales[i]
+        xsc == :none && (x = string.(x))
+        xscale := (xsc in (:custom, :linear, :none) ? :identity : xsc)
 
-    xguide --> r.parameter_names[1]
-    yguide --> r.parameter_names[2]
-    xscale --> (xsc in [:custom, :linear] ? :identity : xsc)
-    yscale --> (ysc in [:custom, :linear] ? :identity : ysc)
+        @series begin
+            subplot := indices[i, i]
+            xguide := (i == n) ? guides[i] : ""
+            yguide := measurement
+            x, z
+        end
 
-    st = get(plotattributes, :seriestype, :scatter)
+        for j in 1:i-1
+            y = X[:, j]
+            ysc = scales[j]
+            ysc == :none && (y = string.(y))
+            ms = get(plotattributes, :markersize, 4)
 
-    if st ∈ (:surface, :heatmap, :contour, :contourf, :wireframe)
-        ux = unique(x)
-        uy = unique(y)
-        m = reshape(z, (length(ux), length(uy)))'
-        ux, uy, m
-    else
-        label --> ""
-        seriestype := st
-        ms = get(plotattributes, :markersize, 4)
-        markersize := _getmarkersize(ms, z)
-        marker_z --> z
-        x, y
+            @series begin
+                subplot := indices[i, j]
+                yscale := (ysc in (:custom, :linear, :none) ? :identity : ysc)
+                xguide := (i == n) ? guides[j] : ""
+                yguide := (j == 1) ? guides[i] : ""
+                markersize := _getmarkersize(ms, z)
+                marker_z := z
+                colorbar := false
+                y, x
+            end
+        end
     end
 end
 
