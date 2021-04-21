@@ -14,7 +14,7 @@
     label := ""
 
     framestyle := :none
-    for i in 1:n-1, j in i+1:n 
+    for i in 1:n-1, j in i+1:n
         @series begin
             subplot := indices[i, j]
             ()
