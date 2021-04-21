@@ -296,7 +296,7 @@ _first(m::Tuple{Model,Any}) = first(m)
 _last(m::Tuple{Model,Any}) = last(m)
 
 # returns a (model, result) pair for the history:
-function event(metamodel,
+function event!(metamodel,
                resampling_machine,
                verbosity,
                tuning,
@@ -324,7 +324,7 @@ function event(metamodel,
     return entry
 end
 
-function assemble_events(metamodels,
+function assemble_events!(metamodels,
                          resampling_machine,
                          verbosity,
                          tuning,
@@ -344,7 +344,7 @@ function assemble_events(metamodels,
     verbosity !=1 || update!(p,0)
 
     entries = map(metamodels) do m
-        r = event(m, resampling_machine, verbosity, tuning, history, state)
+        r = event!(m, resampling_machine, verbosity, tuning, history, state)
         verbosity < 1 || begin
                   p.counter += 1
                   ProgressMeter.updateProgress!(p)
@@ -355,7 +355,7 @@ function assemble_events(metamodels,
     return entries
 end
 
-function assemble_events(metamodels,
+function assemble_events!(metamodels,
                          resampling_machine,
                          verbosity,
                          tuning,
@@ -385,7 +385,7 @@ function assemble_events(metamodels,
 
 
         ret = @distributed vcat for m in metamodels
-            r = event(m, resampling_machine, verbosity, tuning, history, state)
+            r = event!(m, resampling_machine, verbosity, tuning, history, state)
             verbosity < 1 || begin
                 put!(channel, true)
             end
@@ -400,7 +400,7 @@ end
 
 @static if VERSION >= v"1.3.0-DEV.573"
 # one machine for each thread; cycle through available threads:
-function assemble_events(metamodels,
+function assemble_events!(metamodels,
                          resampling_machine,
                          verbosity,
                          tuning,
@@ -409,7 +409,7 @@ function assemble_events(metamodels,
                          acceleration::CPUThreads)
 
     if Threads.nthreads() == 1
-        return assemble_events(metamodels,
+        return assemble_events!(metamodels,
                          resampling_machine,
                          verbosity,
                          tuning,
@@ -458,7 +458,7 @@ function assemble_events(metamodels,
         @sync for (i, parts) in enumerate(partitions)
             Threads.@spawn begin
                 entries[i] =  map(metamodels[parts]) do m
-                    r = event(m, machs[i],
+                    r = event!(m, machs[i],
                               verbosity, tuning, history, state)
                     verbosity < 1 || put!(ch, true)
                     r
@@ -492,12 +492,12 @@ function build(history,
     j = _length(history)
     models_exhausted = false
     while j < n && !models_exhausted
-        metamodels, state  = models(tuning,
-                                    model,
-                                    history,
-                                    state,
-                                    n - j,
-                                    verbosity)
+        metamodels, state  = MLJTuning.models(tuning,
+                                              model,
+                                              history,
+                                              state,
+                                              n - j,
+                                              verbosity)
         Δj = _length(metamodels)
         Δj == 0 && (models_exhausted = true)
         shortfall = n - Δj
@@ -509,7 +509,7 @@ function build(history,
         shortfall < 0 && (metamodels = metamodels[1:n - j])
         j += Δj
 
-        Δhistory = assemble_events(metamodels,
+        Δhistory = assemble_events!(metamodels,
                                    resampling_machine,
                                    verbosity,
                                    tuning,
@@ -557,15 +557,15 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
                      verbosity::Integer, data...) where {T,M}
     tuning = tuned_model.tuning
     model = tuned_model.model
-    range = tuned_model.range
+    _range = tuned_model.range
     n = tuned_model.n === nothing ?
-        default_n(tuning, range) : tuned_model.n
+        default_n(tuning, _range) : tuned_model.n
 
     verbosity < 1 || @info "Attempting to evaluate $n models."
 
     acceleration = tuned_model.acceleration
 
-    state = setup(tuning, model, range, tuned_model.n, verbosity)
+    state = setup(tuning, model, _range, tuned_model.n, verbosity)
 
     # instantiate resampler (`model` to be replaced with mutated
     # clones during iteration below):
