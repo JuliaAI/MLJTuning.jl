@@ -217,6 +217,24 @@ end
     );
 end
 
+@testset "issue #128" begin
+    X, y = make_regression(10, 2)
+    dtc = DecisionTreeRegressor()
+    r   = range(dtc, :max_depth, lower=1, upper=50);
 
+    tmodel = TunedModel(model=dtc, ranges=[r, ],
+                        tuning=Grid(resolution=50),
+                        measure=mae,
+                        n=48);
+    mach = machine(tmodel, X, y)
+    fit!(mach);
+
+    @test length(report(mach).history) == 48
+
+    tmodel.n = 49
+    fit!(mach, verbosity=2);
+
+    @test length(report(mach).history) == 49
+end
 
 true

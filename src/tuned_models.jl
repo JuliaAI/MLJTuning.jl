@@ -295,7 +295,8 @@ _last(m::MLJBase.Model) = nothing
 _first(m::Tuple{Model,Any}) = first(m)
 _last(m::Tuple{Model,Any}) = last(m)
 
-# returns a (model, result) pair for the history:
+# returns a (model, result) pair for the history (called by one of the
+# `assemble_events!` methods):
 function event!(metamodel,
                resampling_machine,
                verbosity,
@@ -480,7 +481,7 @@ _length(::Nothing) = 0
 
 # builds on an existing `history` until the length is `n` or the model
 # supply is exhausted (method shared by `fit` and `update`). Returns
-# the bigger history:
+# the bigger history. Called by `fit` and `update`.
 function build(history,
                n,
                tuning,
@@ -491,6 +492,7 @@ function build(history,
                resampling_machine)
     j = _length(history)
     models_exhausted = false
+
     while j < n && !models_exhausted
         metamodels, state  = MLJTuning.models(tuning,
                                               model,
@@ -500,7 +502,7 @@ function build(history,
                                               verbosity)
         Δj = _length(metamodels)
         Δj == 0 && (models_exhausted = true)
-        shortfall = n - Δj
+        shortfall = n - j - Δj
         if models_exhausted && shortfall > 0 && verbosity > -1
             @info "Only $j (of $n) models evaluated.\n"*
             "Model supply exhausted. "
