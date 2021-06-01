@@ -104,15 +104,22 @@ end
 end
 
 @testset_accelerated("under/over supply of models", accel, begin
-                     tm = TunedModel(model=first(r), tuning=Explicit(),
-                                     range=r, measures=[rms, l1],
-                                     acceleration=accel,
-                                     resampling=CV(nfolds=2),
-                                     n=4)
+    tm = TunedModel(model=first(r), tuning=Explicit(),
+                    range=r, measures=[rms, l1],
+                    acceleration=accel,
+                    resampling=CV(nfolds=2),
+                    n=4)
     mach = machine(tm, X, y)
-    fit!(mach, verbosity=1)
+    fit!(mach, verbosity=0)
     history = MLJBase.report(mach).history
     @test map(event -> event.measurement[1], history) ≈ results[1:4]
+
+    tm.n += 2
+    @test_logs((:info, r"^Updating"),
+               (:info, r"^Attempting to add 2.*to 6"),
+               fit!(mach, verbosity=1))
+    history = MLJBase.report(mach).history
+    @test map(event -> event.measurement[1], history) ≈ results[1:6]
 
     tm.n=100
     @test_logs (:info, r"Only 12") fit!(mach, verbosity=0)
@@ -227,12 +234,12 @@ end
                         measure=mae,
                         n=48);
     mach = machine(tmodel, X, y)
-    fit!(mach);
+    fit!(mach, verbosity=0);
 
     @test length(report(mach).history) == 48
 
     tmodel.n = 49
-    fit!(mach, verbosity=2);
+    fit!(mach, verbosity=0);
 
     @test length(report(mach).history) == 49
 end

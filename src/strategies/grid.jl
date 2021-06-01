@@ -146,19 +146,27 @@ function setup(tuning::Grid, model, user_range, n, verbosity)
 
     state = (models=models,
              fields=fields,
-             parameter_scales=parameter_scales)
+             parameter_scales=parameter_scales,
+             models_delivered=false)
 
     return state
 
 end
 
-MLJTuning.models(tuning::Grid,
-                 model,
-                 history,
-                 state,
-                 n_remaining,
-                 verbosity) =
-                     state.models[_length(history) + 1:end], state
+# models returns all models on first call:
+function MLJTuning.models(tuning::Grid,
+                          model,
+                          history,
+                          state,
+                          n_remaining,
+                          verbosity)
+    state.models_delivered && return nothing, state
+    state = (models=state.models,
+             fields=state.fields,
+             parameter_scales=state.parameter_scales,
+             models_delivered=true)
+    return state.models, state
+end
 
 tuning_report(tuning::Grid, history, state) =
     (plotting = plotting_report(state.fields, state.parameter_scales, history),)
