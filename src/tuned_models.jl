@@ -444,8 +444,8 @@ function assemble_events!(metamodels,
         # One resampling_machine per task
          machs = [resampling_machine,
                  [machine(Resampler(
-                     model= deepcopy(resampling_machine.model.model), # issue #126
-                     resampling    = resampling_machine.model.resampling,
+                     model= deepcopy(resampling_machine.model.model),
+                     resampling = deepcopy(resampling_machine.model.resampling),
                      measure       = resampling_machine.model.measure,
                      weights       = resampling_machine.model.weights,
                      operation     = resampling_machine.model.operation,
@@ -679,4 +679,3 @@ MLJBase.input_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.input_scitype(M)
 MLJBase.target_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.target_scitype(M)
-
