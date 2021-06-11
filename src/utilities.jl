@@ -38,5 +38,3 @@ signature(measure) =
     else
         0
     end
-
-

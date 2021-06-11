@@ -482,16 +482,36 @@ _length(::Nothing) = 0
 # builds on an existing `history` until the length is `n` or the model
 # supply is exhausted (method shared by `fit` and `update`). Returns
 # the bigger history. Called by `fit` and `update`.
-function build(history,
+function build!(history,
                n,
                tuning,
                model,
+               model_buffer,
                state,
                verbosity,
                acceleration,
                resampling_machine)
     j = _length(history)
     models_exhausted = false
+
+    # before generating new models be sure to exhaust the model
+    # buffer:
+    if isready(model_buffer)
+        metamodels = [take!(model_buffer),]
+        j += 1
+        while isready(model_buffer) && j < n
+            push!(metamodels, take!(model_buffer))
+            j += 1
+        end
+        Δhistory = assemble_events!(metamodels,
+                                    resampling_machine,
+                                    verbosity,
+                                    tuning,
+                                    history,
+                                    state,
+                                    acceleration)
+        history = _vcat(history, Δhistory)
+    end
 
     while j < n && !models_exhausted
         metamodels, state  = MLJTuning.models(tuning,
@@ -508,8 +528,14 @@ function build(history,
             "Model supply exhausted. "
         end
         Δj == 0 && break
-        shortfall < 0 && (metamodels = metamodels[1:n - j])
-        j += Δj
+        if shortfall < 0 # ie, we have a surplus of models
+            # add surplus to buffer:
+            for i in (n - j + 1):length(metamodels)
+                put!(model_buffer, metamodels[i])
+            end
+            # and truncate:
+            metamodels = metamodels[1:n - j]
+        end
 
         Δhistory = assemble_events!(metamodels,
                                    resampling_machine,
@@ -519,13 +545,21 @@ function build(history,
                                    state,
                                    acceleration)
         history = _vcat(history, Δhistory)
+        j += Δj
+
     end
     return history, state
 end
 
 # given complete history, pick out best model, fit it on all data and
 # generate report and cache (meta_state):
-function finalize(tuned_model, history, state, verbosity, rm, data...)
+function finalize(tuned_model,
+                  model_buffer,
+                  history,
+                  state,
+                  verbosity,
+                  rm,
+                  data...)
     model = tuned_model.model
     tuning = tuned_model.tuning
 
@@ -550,7 +584,7 @@ function finalize(tuned_model, history, state, verbosity, rm, data...)
     end
 
     report = merge(report1, tuning_report(tuning, history, state))
-    meta_state = (history, deepcopy(tuned_model), state, rm)
+    meta_state = (history, deepcopy(tuned_model), model_buffer, state, rm)
 
     return fitresult, meta_state, report
 end
@@ -568,6 +602,7 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
     acceleration = tuned_model.acceleration
 
     state = setup(tuning, model, _range, tuned_model.n, verbosity)
+    model_buffer = Channel(Inf)
 
     # instantiate resampler (`model` to be replaced with mutated
     # clones during iteration below):
@@ -581,11 +616,12 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
                           acceleration  = tuned_model.acceleration_resampling,
                           cache         = tuned_model.cache)
     resampling_machine = machine(resampler, data...; cache=false)
-    history, state = build(nothing, n, tuning, model, state,
+    history, state = build!(nothing, n, tuning, model, model_buffer, state,
                            verbosity, acceleration, resampling_machine)
 
     rm = resampling_machine
-    return finalize(tuned_model, history, state, verbosity, rm, data...)
+    return finalize(tuned_model, model_buffer,
+                    history, state, verbosity, rm, data...)
 
 end
 
@@ -593,7 +629,8 @@ function MLJBase.update(tuned_model::EitherTunedModel,
                         verbosity::Integer,
                         old_fitresult, old_meta_state, data...)
 
-    history, old_tuned_model, state, resampling_machine = old_meta_state
+    history, old_tuned_model, model_buffer, state, resampling_machine =
+        old_meta_state
     acceleration = tuned_model.acceleration
 
     tuning = tuned_model.tuning
@@ -614,11 +651,12 @@ function MLJBase.update(tuned_model::EitherTunedModel,
         verbosity < 1 || @info "Attempting to add $(n! - old_n!) models "*
         "to search, bringing total to $n!. "
 
-        history, state = build(history, n!, tuning, model, state,
+        history, state = build!(history, n!, tuning, model, model_buffer, state,
                                verbosity, acceleration, resampling_machine)
 
         rm = resampling_machine
-        return finalize(tuned_model, history, state, verbosity, rm, data...)
+        return finalize(tuned_model, model_buffer,
+                        history, state, verbosity, rm, data...)
     else
         return  fit(tuned_model, verbosity, data...)
     end
@@ -679,4 +717,3 @@ MLJBase.input_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.input_scitype(M)
 MLJBase.target_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
     MLJBase.target_scitype(M)
-

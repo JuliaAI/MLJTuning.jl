@@ -254,8 +254,11 @@ In setting up a tuning task, the user constructs an instance of the
 
 - `range`: as defined above - roughly, the space of models to be searched
 
-- `n`: the number of iterations (number of distinct models to be
-  evaluated)
+- `n`: the number of iterations, which is the number of distinct model
+  evaluations that will be added to the history, unless the tuning
+  strategy's supply of models is exhausted (e.g., `Grid`). This is not
+  to be confused with an iteration count specific to the tuning strategy
+  (e.g., Particle Swarm Optimization).
 
 - `acceleration`: the computational resources to be applied (e.g.,
   `CPUProcesses()` for distributed computing and `CPUThreads()` for
@@ -439,30 +442,48 @@ MLJTuning.models(tuning::MyTuningStrategy, model, history, state, n_remaining, v
 This is the core method of a new implementation. Given the existing
 `history` and `state`, it must return a vector ("batch") of *new*
 model instances `vector_of_models` to be evaluated, and the updated
-`state`. Any number of models can be returned (and this includes an
-empty vector or `nothing`, if models have been exhausted) and the
-evaluations will be performed in parallel (using the mode of
-parallelization defined by the `acceleration` field of the
-`TunedModel` instance). ***An update of the history, performed
-automatically under the hood, only occurs after these evaluations.***
+`state`. Any number of models may be returned (and this includes an
+empty vector or `nothing`) and the evaluations will be performed in
+parallel (using the mode of parallelization defined by the
+`acceleration` field of the `TunedModel` instance).
+
+If more models are returned than needed (because including them would
+create a history whose length exceeds the user-specified number of
+iterations `tuned_model.n`) then the surplus models are saved, for use
+in a ["warm
+restart"](https://alan-turing-institute.github.io/MLJ.jl/dev/machines/#Warm-restarts)
+of tuning, when the user increases `tuned_model.n`. The remaining
+models are then evaluated and these evaluations are added to the
+history. **In any warm restart, no new call to `models` will be made
+until all saved models have been evaluated, and these evaluations
+added to the history.**
+
+If the tuning algorithm exhausts it's supply of new models (because,
+for example, there is only a finite supply, as in a `Grid` search)
+then `vector_of_models` should be an empty vector or `nothing`. The
+interface has no fixed "batch-size" parameter, and the tuning
+algorithm is happy to receive any number of models; a surplus is
+handled as explained above, a shortfall will trigger an early stop
+(so that the final history has length less than `tuned_model.n`).
 
 If needed, extra metadata may be attached to each model returned; see
 [below](#including-model-metadata).
 
-Most sequential tuning strategies will want include the batch size as
-a hyperparameter, which we suggest they call `batch_size`, but this
-field is not part of the tuning interface. In tuning, whatever models
-are returned by `models` get evaluated in parallel.
+Sequential tuning strategies generating models non-deterministically
+(e.g., simulated annealing) might choose to include a batch size
+hyperparameter, and arrange that `models` returns batches of the
+specified size (to be evaluated in parallel when `acceleration` is set
+appropriately). However, the evaluations and history updates do not
+occur until after the `models` call, so it may be complicated or
+impossible to preserve the original (strictly) sequential algorithm in
+that case, which should be clearly documented. 
 
-In a `Grid` tuning strategy, for example, `vector_of_models` is a
-random selection of `n_remaining = n - length(history)` models from
-the grid, so that `models` is called only once (in each call to
-`MLJBase.fit(::TunedModel, ...)` or `MLJBase.update(::TunedModel,
-...)`). In a bona fide sequential method which is generating models
-non-deterministically (such as simulated annealing),
-`vector_of_models` might be a single model, or a small batch of models
-to make use of parallelization (the method becoming "semi-sequential"
-in that case).
+Some simple tuning strategies, such as `RandomSearch`, will want to
+return as many models as possible in one hit. To this end, the
+variable `n_remaining` is passed to the `models` call; this is the
+difference between the current length of the history and
+`tuned_model.n`.
+
 
 ##### Including model metadata
 
@@ -472,21 +493,6 @@ model instances, `vector_of_models` should be vector of *tuples* of the
 form `(m, metadata)`, where `m` is a model instance, and `metadata`
 the associated data. ***To access the metadata for the `j`th element of
 the existing history, use `history[j].metadata`.***
-
-If the tuning algorithm exhausts it's supply of new models (because,
-for example, there is only a finite supply) then `vector_of_models`
-should be an empty vector or `nothing`. Under the hood, there is no
-fixed "batch-size" parameter, and the tuning algorithm is happy to
-receive any number of models. If `vector_of_models` contains more
-models than required to complete all tuning iterations, then it is
-simply truncated.
-
-Some simple tuning strategies, such as `RandomSearch`, will want to
-return as many models as possible in one hit. The argument
-`n_remaining` is the difference between the current length of the
-history and the target number of iterations `tuned_model.n` set by the
-user when constructing his `TunedModel` instance, `tuned_model` (or
-`default_n(tuning, range)` if left unspecified).
 
 
 ####  The `tuning_report` method: To add to the user-inspectable report
@@ -572,72 +578,17 @@ MLJTuning.supports_heuristic(::TuningStrategy, ::SpecialHeuristic) = true
 The most rudimentary tuning strategy just evaluates every model
 generated by some iterator, such iterators constituting the only kind
 of supported range. The models generated must all have a common type
-and, in th implementation below, the type information is conveyed by
+and, in the implementation below, the type information is conveyed by
 the specified prototype `model` (which is otherwise ignored).  The
-fallback implementations for `extras` and `report_history`
-suffice.
+fallback implementations for `extras` and `report_history` suffice.
 
-```julia
+Unless the iterator `range` is exhausted, the `models`
+method returns returns `n_remaining` models.
 
-mutable struct Explicit <: TuningStrategy end
-
-mutable struct ExplicitState{R,N}
-	range::R
-	next::Union{Nothing,N} # to hold output of `iterate(range)`
-end
-
-ExplicitState(r::R, ::Nothing) where R = ExplicitState{R,Nothing}(r,nothing)
-ExplictState(r::R, n::N) where {R,N} = ExplicitState{R,Union{Nothing,N}}(r,n)
-
-function MLJTuning.setup(tuning::Explicit, model, range, verbosity)
-	next = iterate(range)
-	return ExplicitState(range, next)
-end
-
-# models returns all available models in the range at once:
-function MLJTuning.models(tuning::Explicit,
-                          model,
-                          history,
-                          state,
-                          n_remaining,
-						  verbosity)
-
-	range, next  = state.range, state.next
-
-	next === nothing && return nothing, state
-
-	m, s = next
-	vector_of_models = [m, ]
-
-	next = iterate(range, s)
-
-	i = 1 # current length of `vector_of_models`
-	while i < n_remaining
-		next === nothing && break
-		m, s = next
-		push!(vector_of_models, m)
-		i += 1
-		next = iterate(range, s)
-	end
-
-    new_state = ExplicitState(range, next)
-
-    return vector_of_models, new_state
-
-end
-
-function default_n(tuning::Explicit, range)
-	try
-		length(range)
-	catch MethodError
-		DEFAULT_N
-	end
-end
-
-```
+The `Explicit` implentation code is [here](/src/strategies/explicit.jl).
 
 For slightly less trivial example, see
-[/src/strategies/grid.jl](/src/strategies/grid.jl)
+[the `Grid` search code](/src/strategies/grid.jl)
 
 
 ## How do I implement a new selection heuristic?
