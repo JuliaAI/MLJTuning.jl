@@ -12,7 +12,7 @@ function MLJTuning.setup(tuning::Explicit, model, range, n, verbosity)
     return ExplicitState(range, next)
 end
 
-# models! returns all available models in the range at once:
+# models! returns as many models as possible but no more than `n_remaining`:
 function MLJTuning.models(tuning::Explicit,
                            model,
                            history,

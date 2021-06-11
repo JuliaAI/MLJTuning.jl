@@ -264,5 +264,34 @@ end
     @test Kvalues == vcat(once, once)
 end
 
+@testset "over/under supply of models" begin
+    model=KNNRegressor()
+    r = range(model, :K, lower=1, upper=20)
+    tuned_model = TunedModel(model=model,
+                             tuning=Grid(goal=20, shuffle=false),
+                             range=r,
+                             measure=mae,
+                             n=10)
+    mach = machine(tuned_model, X, y)
+    Ks(mach) = map(entry->entry.model.K, report(mach).history)
+
+    fit!(mach, verbosity=0)
+    @test Ks(mach) == 1:10
+
+    tuned_model.n += 3
+    @test_logs((:info, r"^Updating"),
+               (:info, r"^Attempting to add 3.*to 13"),
+               fit!(mach))
+    @test Ks(mach) == 1:13
+
+    tuned_model.n = 22
+    @test_logs((:info, r"^Updating"),
+               (:info, r"^Attempting to add 9.*to 22"),
+               (:info, r"^Only 20"),
+               fit!(mach))
+    @test Ks(mach) == 1:20
+end
+
+
 end # module
 true
