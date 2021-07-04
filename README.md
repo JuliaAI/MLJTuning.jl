@@ -277,6 +277,8 @@ As sample implementations, see [/src/strategies/](/src/strategies)
 
 Several functions are part of the tuning strategy API:
 
+- `clean!`: for validating and resetting invalid fields in tuning strategy (optional)
+
 - `setup`: for initialization of state (compulsory)
 
 - `extras`: for declaring and formatting additional user-inspectable information
@@ -368,6 +370,23 @@ one-dimensional grids or for random sampling, respectively. See the
 section](https://alan-turing-institute.github.io/MLJ.jl/dev/tuning_models/#API-1)
 of the MLJ manual or doc-strings for more on these methods and the
 `Grid` and `RandomSearch` implementations.
+
+
+#### The `clean!` method: For validating tuning strategy
+
+```julia
+MLJTuning.clean!(tuning::MyTuningStrategy)
+```
+
+Some tuning strategies have mutable fields that only support specific set of
+values: a particle swarm strategy, for instance, should have at least three
+agents for the algorithm to work. As such, it is recommended to implement the
+`clean!` method to warn the user and correct invalid tuning hyperparameters.
+The method should return a string message if some fields have been reset or an
+empty string otherwise, and will be called internally whenever a `TunedModel`
+machine is `fit!`.
+
+The default fallback for `clean!` returns an empty string.
 
 
 #### The `setup` method: To initialize state
@@ -476,7 +495,7 @@ specified size (to be evaluated in parallel when `acceleration` is set
 appropriately). However, the evaluations and history updates do not
 occur until after the `models` call, so it may be complicated or
 impossible to preserve the original (strictly) sequential algorithm in
-that case, which should be clearly documented. 
+that case, which should be clearly documented.
 
 Some simple tuning strategies, such as `RandomSearch`, will want to
 return as many models as possible in one hit. To this end, the
