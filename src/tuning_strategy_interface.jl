@@ -6,6 +6,9 @@ MLJBase.show_as_constructed(::Type{<:TuningStrategy}) = true
 
 ## METHODS TO BE IMPLEMENTED
 
+# for validating and resetting invalid fields in tuning strategy
+MLJBase.clean!(tuning::TuningStrategy) = ""
+
 # for initialization of state (compulsory)
 setup(tuning::TuningStrategy, model, range, n, verbosity) = range
 

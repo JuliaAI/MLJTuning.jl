@@ -246,6 +246,8 @@ function MLJBase.clean!(tuned_model::EitherTunedModel)
         end
     end
 
+    message *= MLJBase.clean!(tuned_model.tuning)
+
     if !supports_heuristic(tuned_model.tuning, tuned_model.selection_heuristic)
         message *= "`selection_heuristic=$(tuned_model.selection_heuristic)` "*
         "is not supported by $(tuned_model.tuning). Resetting to "*

@@ -2,7 +2,7 @@ export RidgeRegressor, PCA
 
 # using Distances
 using LinearAlgebra
-using Tables, MLJScientificTypes
+using Tables, ScientificTypes
 
 import MultivariateStats
 
