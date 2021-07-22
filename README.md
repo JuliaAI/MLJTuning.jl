@@ -73,6 +73,8 @@ This repository contains:
 
   - [x] random search (built-in `RandomSearch` strategy)
 
+  - [ ] particle swarm optimization (WIP)
+
   - [ ] bandit
 
   - [ ] simulated annealing
