@@ -14,14 +14,14 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 
 [compat]
-ComputationalResources = "^0.3"
-Distributions = "^0.22,^0.23,^0.24, 0.25"
-LatinHypercubeSampling = "^1.7.2"
-MLJBase = "^0.17.7, ^0.18"
-MLJModelInterface = "^0.4.1, 1.1.1"
-ProgressMeter = "^1.7.1"
-RecipesBase = "^0.8,^0.9,^1"
-julia = "^1"
+ComputationalResources = "0.3"
+Distributions = "0.22,0.23,0.24, 0.25"
+LatinHypercubeSampling = "1.7.2"
+MLJBase = "0.18.15"
+MLJModelInterface = "0.4.1, 1.1.1"
+ProgressMeter = "1.7.1"
+RecipesBase = "0.8,0.9,1"
+julia = "1"
 
 [extras]
 CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
