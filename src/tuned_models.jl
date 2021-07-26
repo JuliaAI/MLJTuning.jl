@@ -266,12 +266,12 @@ function TunedModel(; model=nothing,
             throw(ERR_SPECIFY_MODEL)
         end
     else
-        models === nothing || throw(ERR_BOTH_DISALLOWED)
+        models !== nothing && throw(ERR_BOTH_DISALLOWED)
         range === nothing && throw(ERR_SPECIFY_RANGE)
     end
 
     if tuning isa Explicit
-        model === nothing || @info INFO_MODEL_IGNORED
+        model !== nothing && @info INFO_MODEL_IGNORED
         model = first(range)
     end
 
@@ -298,7 +298,7 @@ function TunedModel(; model=nothing,
     end
 
     message = clean!(tuned_model)
-    isempty(message) || @info message
+    !isempty(message) && @info message
 
     return tuned_model
 
