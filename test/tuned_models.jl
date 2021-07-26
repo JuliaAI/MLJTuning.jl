@@ -37,6 +37,7 @@ r = [m(K) for K in 13:-1:2]
                             models=r, tuning=Explicit(), measure=rms))
     tm = TunedModel(models=r, tuning=Explicit(), measure=rms)
     @test tm.tuning isa Explicit && tm.range ==r && tm.model == first(r)
+    @test input_scitype(tm) == Unknown
     @test TunedModel(models=r, measure=rms) == tm
     @test_logs (:info, r"No measure") @test TunedModel(models=r) == tm
 
@@ -55,6 +56,7 @@ r = [m(K) for K in 13:-1:2]
                  TunedModel(models=r, tuning=Grid()))
     tm = TunedModel(model=first(r), range=r, measure=rms)
     @test tm.tuning isa Grid
+    @test input_scitype(tm) == Table(Continuous)
 end
 
 results = [(evaluate(model, X, y,

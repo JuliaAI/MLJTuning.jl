@@ -270,13 +270,24 @@ function TunedModel(; model=nothing,
         range === nothing && throw(ERR_SPECIFY_RANGE)
     end
 
+    # get the model type parameter:
     if tuning isa Explicit
         model !== nothing && @info INFO_MODEL_IGNORED
         model = first(range)
+        if model isa Deterministic
+            M = Deterministic
+        else
+            M = Probabilistic
+        end
+    else
+        M = typeof(model)
     end
 
-    if model isa Deterministic
-        tuned_model = DeterministicTunedModel(model, tuning, resampling,
+    # get the tuning type parameter:
+    T = typeof(tuning)
+
+    if M <: Deterministic
+        tuned_model = DeterministicTunedModel{T,M}(model, tuning, resampling,
                                               measure, weights, operation,
                                               range, selection_heuristic,
                                               train_best, repeats, n,
@@ -284,8 +295,8 @@ function TunedModel(; model=nothing,
                                               acceleration_resampling,
                                               check_measure,
                                               cache)
-    elseif model isa Probabilistic
-        tuned_model = ProbabilisticTunedModel(model, tuning, resampling,
+    elseif M <: Probabilistic
+        tuned_model = ProbabilisticTunedModel{T,M}(model, tuning, resampling,
                                               measure, weights, operation,
                                               range, selection_heuristic,
                                               train_best, repeats, n,
