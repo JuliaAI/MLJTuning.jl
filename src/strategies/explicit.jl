@@ -14,18 +14,18 @@ end
 
 # models! returns as many models as possible but no more than `n_remaining`:
 function MLJTuning.models(tuning::Explicit,
-                           model,
-                           history,
-                           state,
-                           n_remaining,
-                           verbosity)
+                          model,
+                          history,
+                          state,
+                          n_remaining,
+                          verbosity)
 
     range, next  = state.range, state.next
 
     next === nothing && return nothing, state
 
     m, s = next
-    models = [m, ]
+    models = Any[m, ] # types not known until run-time
 
     next = iterate(range, s)
 
