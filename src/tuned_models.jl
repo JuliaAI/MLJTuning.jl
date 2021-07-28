@@ -63,7 +63,7 @@ const EitherTunedModel{T,M} =
 
 #todo update:
 """
-    tuned_model = TunedModel(; model=<model to be wrapped>,
+    tuned_model = TunedModel(; model=<model to be mutated>,
                              tuning=Grid(),
                              resampling=Holdout(),
                              range=nothing,
@@ -72,9 +72,9 @@ const EitherTunedModel{T,M} =
                              operation=predict,
                              other_options...)
 
-Construct a model wrapper for hyperparameter optimization of a
-supervised learner, specifying the `tuning` strategy and `model` to be
-mutated.
+Construct a model wrapper for hyper-parameter optimization of a
+supervised learner, specifying the `tuning` strategy and `model` whose
+hyper-parameters are to be mutated.
 
     tuned_model = TunedModel(; models=<models to be compared>,
                              resampling=Holdout(),
@@ -83,9 +83,9 @@ mutated.
                              operation=predict,
                              other_options...)
 
-As above but applied to an explicit iterator `models` of MLJ models
-(equivalent to specifying `tuning=Explicit()` and `range=models`
-above). Elements of the iterator need not have a common model type,
+Construct a wrapper for multiple `models`, for selection of an optimal
+one (equivalent to specifying `tuning=Explicit()` and `range=models`
+above). Elements of the iterator `models` need not have a common type,
 but they must all be `Deterministic` or all be `Probabilistic` *and
 this is not checked* but inferred from the first element generated.
 
