@@ -4,6 +4,7 @@ addprocs(2)
 using Test
 using MLJTuning
 using MLJBase
+using StableRNGs
 
 # Display Number of processes and if necessary number
 # of Threads
@@ -48,6 +49,10 @@ end
 
 @testset "Latin hypercube" begin
     @test include("strategies/latin_hypercube.jl")
+end
+
+@testset "Explicit" begin
+    @test include("strategies/explicit.jl")
 end
 
 @testset "learning curves" begin
