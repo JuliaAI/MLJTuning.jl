@@ -5,7 +5,7 @@ Hyperparameter optimization for
 learning models.
 
 [![Build Status](https://github.com/JuliaAI/MLJTuning.jl/workflows/CI/badge.svg)](https://github.com/JuliaAI/MLJTuning.jl/actions)
-[![Coverage Status](https://coveralls.io/repos/github/JuliaAI/MLJTuning.jl/badge.svg?branch=master)](https://coveralls.io/github/JuliaAI/MLJTuning.jl?branch=master)
+[![codecov.io](http://codecov.io/github/JuliaAI/MLJTuning.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaAI/MLJTuning.jl?branch=master)
 
 ### Contents
 
