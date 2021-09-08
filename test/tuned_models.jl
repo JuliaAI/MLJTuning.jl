@@ -265,4 +265,21 @@ end
     @test length(report(mach).history) == 49
 end
 
+@testset_accelerated "Resampling reproducibility" accel begin
+    X, y = make_regression(100, 2)
+    dcr = DeterministicConstantRegressor()
+
+    tmodel = TunedModel(tuning=Explicit(),
+                        models=fill(dcr, 10),
+                        resampling=CV(nfolds=5, rng=StableRNG(1234)),
+                        acceleration_resampling=accel,
+                        measure=mae)
+    mach = machine(tmodel, X, y)
+    fit!(mach, verbosity=0);
+
+    rep = report(mach)
+    per_folds = getproperty.(rep.history, :per_fold)
+    @test all(==(per_folds[1]), per_folds)
+end
+
 true
