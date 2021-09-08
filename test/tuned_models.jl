@@ -269,16 +269,28 @@ end
     X, y = make_regression(100, 2)
     dcr = DeterministicConstantRegressor()
 
-    tmodel = TunedModel(tuning=Explicit(),
-                        models=fill(dcr, 10),
-                        resampling=CV(nfolds=5, rng=StableRNG(1234)),
-                        acceleration_resampling=accel,
-                        measure=mae)
-    mach = machine(tmodel, X, y)
-    fit!(mach, verbosity=0);
+    # Hold out reproducibility
+    homodel = TunedModel(tuning=Explicit(),
+                         models=fill(dcr, 10),
+                         resampling=Holdout(rng=StableRNG(1234)),
+                         acceleration_resampling=accel,
+                         measure=mae)
+    homach = machine(homodel, X, y)
+    fit!(homach, verbosity=0);
+    horep = report(homach)
+    measurements = getproperty.(horep.history, :measurement)
+    @test all(==(measurements[1]), measurements)
 
-    rep = report(mach)
-    per_folds = getproperty.(rep.history, :per_fold)
+    # Cross-validation reproducibility
+    cvmodel = TunedModel(tuning=Explicit(),
+                         models=fill(dcr, 10),
+                         resampling=CV(nfolds=5, rng=StableRNG(1234)),
+                         acceleration_resampling=accel,
+                         measure=mae)
+    cvmach = machine(cvmodel, X, y)
+    fit!(cvmach, verbosity=0);
+    cvrep = report(cvmach)
+    per_folds = getproperty.(cvrep.history, :per_fold)
     @test all(==(per_folds[1]), per_folds)
 end
 
