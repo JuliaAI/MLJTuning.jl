@@ -4,8 +4,8 @@ Hyperparameter optimization for
 [MLJ](https://github.com/alan-turing-institute/MLJ.jl) machine
 learning models.
 
-[![Build Status](https://github.com/alan-turing-institute/MLJTuning.jl/workflows/CI/badge.svg)](https://github.com/alan-turing-institute/MLJTuning.jl/actions)
-[![Coverage Status](https://coveralls.io/repos/github/alan-turing-institute/MLJTuning.jl/badge.svg?branch=master)](https://coveralls.io/github/alan-turing-institute/MLJTuning.jl?branch=master)
+[![Build Status](https://github.com/JuliaAI/MLJTuning.jl/workflows/CI/badge.svg)](https://github.com/JuliaAI/MLJTuning.jl/actions)
+[![codecov.io](http://codecov.io/github/JuliaAI/MLJTuning.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaAI/MLJTuning.jl?branch=master)
 
 ### Contents
 
@@ -41,7 +41,7 @@ MLJTuning is a component of the [MLJ
   [MLJModels](https://github.com/alan-turing-institute/MLJModels.jl)
   as a dependency (no ability to search and load registered MLJ
   models). It does however depend on
-  [MLJBase](https://github.com/alan-turing-institute/MLJBase.jl) and,
+  [MLJBase](https://github.com/JuliaAI/MLJBase.jl) and,
   in particular, on the resampling functionality currently residing
   there.
 

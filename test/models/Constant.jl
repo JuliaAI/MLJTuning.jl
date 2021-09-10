@@ -2,6 +2,7 @@
 
 const MMI = MLJModelInterface
 export ConstantClassifier, ConstantRegressor,
+       DeterministicConstantRegressor,
        DeterministicConstantClassifier,
        ProbabilisticConstantClassifer
 
