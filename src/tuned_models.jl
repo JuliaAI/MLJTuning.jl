@@ -691,7 +691,7 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
     # instantiate resampler (`model` to be replaced with mutated
     # clones during iteration below):
     resampler = Resampler(model=model,
-                          resampling    = tuned_model.resampling,
+                          resampling    = deepcopy(tuned_model.resampling),
                           measure       = tuned_model.measure,
                           weights       = tuned_model.weights,
                           operation     = tuned_model.operation,

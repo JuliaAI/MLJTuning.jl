@@ -265,4 +265,33 @@ end
     @test length(report(mach).history) == 49
 end
 
+@testset_accelerated "Resampling reproducibility" accel begin
+    X, y = make_regression(100, 2)
+    dcr = DeterministicConstantRegressor()
+
+    # Hold out reproducibility
+    homodel = TunedModel(tuning=Explicit(),
+                         models=fill(dcr, 10),
+                         resampling=Holdout(rng=StableRNG(1234)),
+                         acceleration_resampling=accel,
+                         measure=mae)
+    homach = machine(homodel, X, y)
+    fit!(homach, verbosity=0);
+    horep = report(homach)
+    measurements = getproperty.(horep.history, :measurement)
+    @test all(==(measurements[1]), measurements)
+
+    # Cross-validation reproducibility
+    cvmodel = TunedModel(tuning=Explicit(),
+                         models=fill(dcr, 10),
+                         resampling=CV(nfolds=5, rng=StableRNG(1234)),
+                         acceleration_resampling=accel,
+                         measure=mae)
+    cvmach = machine(cvmodel, X, y)
+    fit!(cvmach, verbosity=0);
+    cvrep = report(cvmach)
+    per_folds = getproperty.(cvrep.history, :per_fold)
+    @test all(==(per_folds[1]), per_folds)
+end
+
 true
