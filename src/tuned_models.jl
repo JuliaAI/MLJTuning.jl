@@ -69,7 +69,7 @@ const EitherTunedModel{T,M} =
                              range=nothing,
                              measure=nothing,
                              n=default_n(tuning, range),
-                             operation=predict,
+                             operation=nothing,
                              other_options...)
 
 Construct a model wrapper for hyper-parameter optimization of a
@@ -80,7 +80,7 @@ hyper-parameters are to be mutated.
                              resampling=Holdout(),
                              measure=nothing,
                              n=default_n(tuning, range),
-                             operation=predict,
+                             operation=nothing,
                              other_options...)
 
 Construct a wrapper for multiple `models`, for selection of an optimal
@@ -185,10 +185,10 @@ plus other key/value pairs specific to the `tuning` strategy.
 - `repeats=1`: for generating train/test sets multiple times in
   resampling; see [`evaluate!`](@ref) for details
 
-- `operation=predict`: operation to be applied to each fitted model;
-  usually `predict` but `predict_mean`, `predict_median` or
-  `predict_mode` can be used for `Probabilistic` models, if
-  the specified measures are `Deterministic`
+- `operation`/`operations` - One of
+  $(MLJBase.PREDICT_OPERATIONS_STRING), or a vector of these of the
+  same length as `measure`/`measures`. Automatically inferred if left
+  unspecified.
 
 - `range`: range object; tuning strategy documentation describes
   supported types
@@ -227,7 +227,8 @@ function TunedModel(; model=nothing,
                     measures=nothing,
                     measure=measures,
                     weights=nothing,
-                    operation=predict,
+                    operations=nothing,
+                    operation=operations,
                     ranges=nothing,
                     range=ranges,
                     selection_heuristic=NaiveSelection(),
