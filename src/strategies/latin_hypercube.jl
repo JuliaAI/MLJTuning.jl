@@ -1,12 +1,12 @@
 """
-LatinHypercube(gens = 1,
-               popsize = 100,
-               ntour = 2,
-               ptour = 0.8.,
-               interSampleWeight = 1.0,
-               ae_power = 2,
-               periodic_ae = false,
-               rng=Random.GLOBAL_RNG)
+    LatinHypercube(gens = 1,
+                   popsize = 100,
+                   ntour = 2,
+                   ptour = 0.8.,
+                   interSampleWeight = 1.0,
+                   ae_power = 2,
+                   periodic_ae = false,
+                   rng=Random.GLOBAL_RNG)
 
 Instantiate grid-based hyperparameter tuning strategy using the
 library [LatinHypercubeSampling.jl](https://github.com/MrUrq/LatinHypercubeSampling.jl).
