@@ -294,4 +294,20 @@ end
     @test all(==(per_folds[1]), per_folds)
 end
 
+@testset "deterministic metrics for probabilistic models" begin
+
+    # https://github.com/JuliaAI/MLJBase.jl/pull/599 allows mix of
+    # deterministic and probabilistic metrics:
+    X, y = MLJBase.make_blobs()
+    model = DecisionTreeClassifier()
+    range = MLJBase.range(model, :max_depth, values=[1,2])
+    tmodel = TunedModel(model=model,
+                        range=range,
+                        measures=[MisclassificationRate(),
+                                  LogLoss()])
+    mach = machine(tmodel, X, y)
+    @test_logs fit!(mach, verbosity=0)
+
+end
+
 true
