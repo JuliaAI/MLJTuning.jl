@@ -79,7 +79,7 @@ hyper-parameters are to be mutated.
     tuned_model = TunedModel(; models=<models to be compared>,
                              resampling=Holdout(),
                              measure=nothing,
-                             n=length(models), 
+                             n=length(models),
                              operation=nothing,
                              other_options...)
 
