@@ -7,7 +7,7 @@
                                  measure=default_measure(machine.model),
                                  rows=nothing,
                                  weights=nothing,
-                                 operation=predict,
+                                 operation=nothing,
                                  range=nothing,
                                  acceleration=default_resource(),
                                  acceleration_grid=CPU1(),
@@ -26,8 +26,8 @@ the (possibly nested) RNG field, and a vector `rngs` of RNG's, one for
 each curve. Alternatively, set `rngs` to the number of curves desired,
 in which case RNG's are automatically generated. The individual curve
 computations can be distributed across multiple processes using
-`acceleration=CPUProcesses()` or `acceleration=CPUThreads()`. See the second example below for a
-demonstration.
+`acceleration=CPUProcesses()` or `acceleration=CPUThreads()`. See the
+second example below for a demonstration.
 
 ```julia
 X, y = @load_boston;
@@ -73,27 +73,6 @@ a machine.
 - `resolution` - number of points generated from `range` (number model
   evaluations); default is `30`
 
-- `resampling` - resampling strategy; default is `Holdout(fraction_train=0.7)`
-
-- `repeats` - set to more than `1` for repeated (Monte Carlo) resampling
-
-- `measure` - performance measure (metric); automatically inferred
-  from model by default when possible
-
-- `rows` - row indices to which resampling should be restricted;
-  default is all rows
-
-- `weights` - sample weights used by `measure` where supported
-
-- `operation` - operation, such as `predict`, to be used in
-  evaluations. If `prediction_type(mach.model) == :probabilistic` but
-  `prediction_type(measure) == :deterministic` consider `,`predict_mode`,
-  `predict_mode` or `predict_median`; default is `predict`.
-
-- `range` - object constructed using `range(model, ...)` or
-  `range(type, ...)` representing one-dimensional hyper-parameter
-  range.
-
 - `acceleration` - parallelization option for passing to `evaluate!`;
   an instance of `CPU1`, `CPUProcesses` or `CPUThreads` from the
   `ComputationalResources.jl`; default is `default_resource()`
@@ -106,6 +85,8 @@ a machine.
 
 - `rng_name` - name of the model hyper-parameter representing a random
   number generator (see above); possibly nested
+
+Other key-word options are documented at [`TunedModel`](@ref).
 
 """
 learning_curve(mach::Machine{<:Supervised}; kwargs...) =
@@ -125,7 +106,7 @@ function learning_curve(model::Supervised, args...;
                         measures=nothing,
                         measure=measures,
                         rows=nothing,
-                        operation=predict,
+                        operation=nothing,
                         ranges::Union{Nothing,ParamRange}=nothing,
                         range::Union{Nothing,ParamRange},
                         repeats=1,

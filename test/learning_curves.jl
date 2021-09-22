@@ -215,5 +215,7 @@ end
                                      measure=LPLoss(),
                                      verbosity=0)
 
+end
+
 end # module
 true
