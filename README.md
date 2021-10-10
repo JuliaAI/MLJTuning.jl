@@ -73,7 +73,7 @@ This repository contains:
 
   - [x] random search (built-in `RandomSearch` strategy)
 
-  - [ ] particle swarm optimization (WIP)
+  - [x] particle swarm optimization ([MLJParticleOptimization.jl](https://github.com/JuliaAI/MLJParticleSwarmOptimization.jl))
 
   - [ ] bandit
 
