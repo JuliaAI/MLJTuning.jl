@@ -38,6 +38,10 @@ X, y = make_blobs(rng=rng)
     # check scores are the same:
     @test last.(ms) ≈ scores
 
+    # fail with ArgumentError when model types are wrong (e.g., are not instantiated).
+    # this used to throw a very confusing MethodError.
+    dcc = DeterministicConstantClassifier
+    @test_throws ArgumentError TunedModel(; models=[dcc, dcc])
 end
 
 true
