@@ -277,8 +277,10 @@ function TunedModel(; model=nothing,
         model = first(range)
         if model isa Deterministic
             M = Deterministic
-        else
+        elseif model isa Probabilistic
             M = Probabilistic
+        else
+            throw(ERR_MODEL_TYPE)
         end
     else
         M = typeof(model)
@@ -287,24 +289,14 @@ function TunedModel(; model=nothing,
     # get the tuning type parameter:
     T = typeof(tuning)
 
+    args = (model, tuning, resampling, measure, weights, operation, range,
+        selection_heuristic, train_best, repeats, n, acceleration, acceleration_resampling,
+        check_measure, cache)
+
     if M <: Deterministic
-        tuned_model = DeterministicTunedModel{T,M}(model, tuning, resampling,
-                                              measure, weights, operation,
-                                              range, selection_heuristic,
-                                              train_best, repeats, n,
-                                              acceleration,
-                                              acceleration_resampling,
-                                              check_measure,
-                                              cache)
+        tuned_model = DeterministicTunedModel{T,M}(args...)
     elseif M <: Probabilistic
-        tuned_model = ProbabilisticTunedModel{T,M}(model, tuning, resampling,
-                                              measure, weights, operation,
-                                              range, selection_heuristic,
-                                              train_best, repeats, n,
-                                              acceleration,
-                                              acceleration_resampling,
-                                              check_measure,
-                                              cache)
+        tuned_model = ProbabilisticTunedModel{T,M}(args...)
     else
         throw(ERR_MODEL_TYPE)
     end
