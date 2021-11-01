@@ -22,7 +22,10 @@ const ERR_MODEL_TYPE = ArgumentError(
 const INFO_MODEL_IGNORED =
     "`model` being ignored. Using `model=first(range)`. "
 
-mutable struct DeterministicTunedModel{T,M<:Deterministic} <: MLJBase.Deterministic
+const ProbabilisticTypes = Union{Probabilistic, MLJBase.MLJModelInterface.ProbabilisticDetector}
+const DeterministicTypes = Union{Deterministic, MLJBase.MLJModelInterface.DeterministicDetector}
+
+mutable struct DeterministicTunedModel{T,M<:DeterministicTypes} <: MLJBase.Deterministic
     model::M
     tuning::T  # tuning strategy
     resampling # resampling strategy
@@ -40,7 +43,7 @@ mutable struct DeterministicTunedModel{T,M<:Deterministic} <: MLJBase.Determinis
     cache::Bool
 end
 
-mutable struct ProbabilisticTunedModel{T,M<:Probabilistic} <: MLJBase.Probabilistic
+mutable struct ProbabilisticTunedModel{T,M<:ProbabilisticTypes} <: MLJBase.Probabilistic
     model::M
     tuning::T  # tuning strategy
     resampling # resampling strategy
@@ -277,8 +280,10 @@ function TunedModel(; model=nothing,
         model = first(range)
         if model isa Deterministic
             M = Deterministic
-        else
+        elseif model isa Probabilistic
             M = Probabilistic
+        else
+            throw(ERR_MODEL_TYPE)
         end
     else
         M = typeof(model)
@@ -287,24 +292,14 @@ function TunedModel(; model=nothing,
     # get the tuning type parameter:
     T = typeof(tuning)
 
-    if M <: Deterministic
-        tuned_model = DeterministicTunedModel{T,M}(model, tuning, resampling,
-                                              measure, weights, operation,
-                                              range, selection_heuristic,
-                                              train_best, repeats, n,
-                                              acceleration,
-                                              acceleration_resampling,
-                                              check_measure,
-                                              cache)
-    elseif M <: Probabilistic
-        tuned_model = ProbabilisticTunedModel{T,M}(model, tuning, resampling,
-                                              measure, weights, operation,
-                                              range, selection_heuristic,
-                                              train_best, repeats, n,
-                                              acceleration,
-                                              acceleration_resampling,
-                                              check_measure,
-                                              cache)
+    args = (model, tuning, resampling, measure, weights, operation, range,
+        selection_heuristic, train_best, repeats, n, acceleration, acceleration_resampling,
+        check_measure, cache)
+
+    if M <: DeterministicTypes
+        tuned_model = DeterministicTunedModel{T,M}(args...)
+    elseif M <: ProbabilisticTypes
+        tuned_model = ProbabilisticTunedModel{T,M}(args...)
     else
         throw(ERR_MODEL_TYPE)
     end

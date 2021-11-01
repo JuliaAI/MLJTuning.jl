@@ -141,7 +141,7 @@ end
     r = [features_, lambda_]
 
     holdout = Holdout(fraction_train=0.8)
-    grid = Grid(resolution=10)
+    grid = Grid(resolution=10, rng=123)
 
     tuned_model = TunedModel(model=composite, tuning=grid,
                              resampling=holdout, measure=rms,
@@ -152,7 +152,6 @@ end
     fit!(tuned, verbosity=0)
     r = MLJBase.report(tuned)
     @test :model in collect(keys(r.best_report))
-    fit!(tuned, verbosity=0)
     rep = MLJBase.report(tuned)
     fp = fitted_params(tuned)
     @test :model in collect(keys(fp.best_fitted_params))
