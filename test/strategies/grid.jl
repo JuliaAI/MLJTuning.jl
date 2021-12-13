@@ -207,13 +207,13 @@ end
     tuned = machine(tuned_model, X, y)
     fit!(tuned, verbosity=0)
     best1 = fitted_params(tuned).best_model
-    posterior1 = average([predict(tuned, X)...])
+    posterior1 = mean([predict(tuned, X)...])
 
     # uniform weights:
     tuned = machine(tuned_model, X, y, fill(1, 3N))
     fit!(tuned, verbosity=0)
     best2 = fitted_params(tuned).best_model
-    posterior2 = average([predict(tuned, X)...])
+    posterior2 = mean([predict(tuned, X)...])
 
     @test best1 == best2
     @test all([pdf(posterior1, c) ≈ pdf(posterior2, c) for c in levels(y)])
@@ -231,7 +231,7 @@ end
     tuned = machine(tuned_model, X, y, w)
     fit!(tuned, verbosity=0)
     best3 = fitted_params(tuned).best_model
-    posterior3 = average([predict(tuned, X)...])
+    posterior3 = mean([predict(tuned, X)...])
 
     # different tuning outcome:
     # TODO: Investigate: on julia 1.0 this passes but if fails on others:
