@@ -207,7 +207,7 @@ begin, on the basis of the specific strategy and a user-specified
   There may be additional keys for tuning-specific information that
   *is* to be reported to the user (such as temperature in
   simulated annhealing).
-
+  
 - A *range* is any object whose specification completes the
   specification of the tuning task, after the prototype, tuning
   strategy, resampling strategy, performance measure(s), selection
@@ -467,6 +467,13 @@ model instances `vector_of_models` to be evaluated, and the updated
 empty vector or `nothing`) and the evaluations will be performed in
 parallel (using the mode of parallelization defined by the
 `acceleration` field of the `TunedModel` instance).
+
+**Important note.** Parallelization means the order in which the
+`history` gets extended after `models(...)` returns its list of new
+candidates is generally *not* the same order in which the candidates
+are returned. Some implementations may therefore need to attach extra
+"labeling" metadata to each model, as explained below, so that the
+existing history can be suitably interpreted.
 
 If more models are returned than needed (because including them would
 create a history whose length exceeds the user-specified number of
