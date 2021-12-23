@@ -31,7 +31,7 @@ end
 
 MLJBase.fit(::DummyModel, verbosity::Int, X, y) = mean(y), nothing, nothing
 MLJBase.predict(::DummyModel, fitresult, Xnew) =
-    fill(fitresult, schema(Xnew).nrows)
+    fill(fitresult, nrows(Xnew))
 
 dummy_model = DummyModel(1, 9, 'k')
 super_model = SuperModel(4, dummy_model, deepcopy(dummy_model))

@@ -12,7 +12,7 @@ intended for internal testing .
 
 """
 mutable struct SimpleDeterministicCompositeModel{L<:Deterministic,
-                             T<:Unsupervised} <: DeterministicNetwork
+                             T<:Unsupervised} <: DeterministicComposite
     model::L
     transformer::T
 
