@@ -57,7 +57,7 @@
 end
 
 function _getmarkersize(ms, z)
-    ret = sqrt.(z)
+    ret = sqrt.(abs.(z))
     minz, maxz = extrema(x for x in ret if isfinite(x))
     ret .-= minz
     ret ./= maxz - minz
