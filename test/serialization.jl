@@ -47,7 +47,6 @@ end
     smach = MLJBase.serializable(mach)
     @test smach.fitresult isa Machine
     @test smach.report == mach.report
-    # There is a machine in the cache, should I call `serializable` on it?
     generic_tests(mach, smach)
 
     Serialization.serialize(filename, smach)
