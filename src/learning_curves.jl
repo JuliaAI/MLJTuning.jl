@@ -299,8 +299,12 @@ end
 
     n_threads = Threads.nthreads()
     if n_threads == 1
-        return _tuning_results(rngs, CPU1(),
-                         tuned, rng_name, verbosity)
+        return _tuning_results(rngs,
+                               CPU1(),
+                               tuned,
+                               rows,
+                               rng_name,
+                               verbosity)
     end
 
     old_rng = recursive_getproperty(tuned.model.model, rng_name)
