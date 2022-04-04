@@ -302,6 +302,7 @@ end
     model = DecisionTreeClassifier()
     range = MLJBase.range(model, :max_depth, values=[1,2])
     tmodel = TunedModel(model=model,
+                        tuning=Grid(),
                         range=range,
                         measures=[MisclassificationRate(),
                                   LogLoss()])
