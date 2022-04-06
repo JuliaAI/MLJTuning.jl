@@ -59,6 +59,10 @@ end
         @test include("learning_curves.jl")
 end
 
+@testset "Serialization" begin
+    @test include("serialization.jl")
+end
+
 # @testset "julia bug" begin
 #     @test include("julia_bug.jl")
 # end
