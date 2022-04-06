@@ -92,13 +92,6 @@ Other key-word options are documented at [`TunedModel`](@ref).
 learning_curve(mach::Machine{<:Supervised}; kwargs...) =
     learning_curve(mach.model, mach.args...; kwargs...)
 
-# for backwards compatibility
-function learning_curve!(mach::Machine{<:Supervised}; kwargs...)
-    Base.depwarn("`learning_curve!` is deprecated, use `learning_curve` instead. ",
-            Core.Typeof(learning_curve!).name.mt.name)
-    learning_curve(mach; kwargs...)
-end
-
 function learning_curve(model::Supervised, args...;
                         resolution=30,
                         resampling=Holdout(),
@@ -299,8 +292,12 @@ end
 
     n_threads = Threads.nthreads()
     if n_threads == 1
-        return _tuning_results(rngs, CPU1(),
-                         tuned, rng_name, verbosity)
+        return _tuning_results(rngs,
+                               CPU1(),
+                               tuned,
+                               rows,
+                               rng_name,
+                               verbosity)
     end
 
     old_rng = recursive_getproperty(tuned.model.model, rng_name)

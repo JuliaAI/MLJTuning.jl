@@ -55,7 +55,7 @@ r = [m(K) for K in 13:-1:2]
     @test_throws(MLJTuning.ERR_NEED_EXPLICIT,
                  TunedModel(models=r, tuning=Grid()))
     tm = TunedModel(model=first(r), range=r, measure=rms)
-    @test tm.tuning isa Grid
+    @test tm.tuning isa RandomSearch
     @test input_scitype(tm) == Table(Continuous)
 end
 
@@ -65,9 +65,11 @@ results = [(evaluate(model, X, y,
                      verbosity=0,)).measurement[1] for model in r]
 
 @testset "measure compatibility check" begin
-    tm = TunedModel(model=first(r), tuning=Explicit(),
-                    range=r, resampling=CV(nfolds=2),
-                    measures=cross_entropy)
+    tm = TunedModel(
+        models=r,
+        resampling=CV(nfolds=2),
+        measures=cross_entropy
+    )
     @test_logs((:error, r"Problem"),
                (:info, r""),
                (:info, r""),
@@ -77,9 +79,12 @@ end
 @testset_accelerated "basic fit (CPU1)" accel begin
     printstyled("\n Testing progressmeter basic fit with $(accel) and CPU1 resampling \n", color=:bold)
     best_index = argmin(results)
-    tm = TunedModel(model=first(r), tuning=Explicit(),
-                    range=r, resampling=CV(nfolds=2),
-                    measures=[rms, l1], acceleration=accel)
+    tm = TunedModel(
+        models=r,
+        resampling=CV(nfolds=2),
+        measures=[rms, l1],
+        acceleration=accel
+    )
     verbosity = accel isa CPU1 ? 2 : 1
     fitresult, meta_state, _report = fit(tm, verbosity, X, y);
     history, _, state = meta_state;
@@ -101,10 +106,13 @@ end
 @static if VERSION >= v"1.3.0-DEV.573"
 @testset_accelerated "Basic fit (CPUThreads)" accel begin
     printstyled("\n Testing progressmeter basic fit with $(accel) and CPUThreads resampling \n", color=:bold)
-    tm = TunedModel(model=first(r), tuning=Explicit(),
-                    range=r, resampling=CV(nfolds=2),
-                    measures=[rms, l1], acceleration= CPUThreads(),
-                    acceleration_resampling=accel)
+    tm = TunedModel(
+        models=r,
+        resampling=CV(nfolds=2),
+        measures=[rms, l1],
+        acceleration= CPUThreads(),
+        acceleration_resampling=accel
+    )
     fitresult, meta_state, report = fit(tm, 1, X, y);
     history, _, state = meta_state;
     results3 = map(event -> event.measurement[1], history)
@@ -114,22 +122,30 @@ end
 @testset_accelerated "Basic fit (CPUProcesses)" accel begin
     printstyled("\n Testing progressmeter basic fit with $(accel) and CPUProcesses resampling \n", color=:bold)
     best_index = argmin(results)
-    tm = TunedModel(model=first(r), tuning=Explicit(),
-                    range=r, resampling=CV(nfolds=2),
-                    measures=[rms, l1], acceleration=CPUProcesses(),
-                    acceleration_resampling=accel)
+    tm = TunedModel(
+        models=r,
+        resampling=CV(nfolds=2),
+        measures=[rms, l1],
+        acceleration=CPUProcesses(),
+        acceleration_resampling=accel
+    )
     fitresult, meta_state, report = fit(tm, 1, X, y);
     history, _, state = meta_state;
     results4 = map(event -> event.measurement[1], history)
     @test results4 ≈ results
 end
 
-@testset_accelerated("under/over supply of models", accel, begin
-    tm = TunedModel(model=first(r), tuning=Explicit(),
-                    range=r, measures=[rms, l1],
-                    acceleration=accel,
-                    resampling=CV(nfolds=2),
-                    n=4)
+@testset_accelerated(
+    "under/over supply of models",
+    accel,
+    begin
+    tm = TunedModel(
+        models=r,
+        measures=[rms, l1],
+        acceleration=accel,
+        resampling=CV(nfolds=2),
+        n=4
+    )
     mach = machine(tm, X, y)
     fit!(mach, verbosity=0)
     history = MLJBase.report(mach).history
@@ -146,7 +162,8 @@ end
     @test_logs (:info, r"Only 12") fit!(mach, verbosity=0)
     history = MLJBase.report(mach).history
     @test map(event -> event.measurement[1], history) ≈ results
-end)
+    end
+)
 
 @everywhere begin
 
@@ -158,13 +175,14 @@ end)
 
     _length(x) = length(x)
     _length(::Nothing) = 0
-    MLJTuning.models(tuning::MockExplicit,
-                     model,
-                     history,
-                     state,
-                     n_remaining,
-                     verbosity) =
-                         annotate.(state)[_length(history) + 1:end], state
+    MLJTuning.models(
+        tuning::MockExplicit,
+        model,
+        history,
+        state,
+        n_remaining,
+        verbosity
+    ) = annotate.(state)[_length(history) + 1:end], state
 
     function default_n(tuning::Explicit, range)
         try
@@ -174,20 +192,27 @@ end)
         end
 
     end
-
 end
 
-@testset_accelerated("passing of model metadata", accel,
-                  begin
-                     tm = TunedModel(model=first(r), tuning=MockExplicit(),
-                                     range=r, resampling=CV(nfolds=2),
-                                     measures=[rms, l1], acceleration=accel)
-                     fitresult, meta_state, report = fit(tm, 0, X, y);
-                     history, _, state = meta_state;
-                     @test all(history) do event
-                         event.metadata == event.model.K
-                     end
-                     end)
+@testset_accelerated(
+    "passing of model metadata",
+    accel,
+    begin
+    tm = TunedModel(
+        model=first(r),
+        tuning=MockExplicit(),
+        range=r,
+        resampling=CV(nfolds=2),
+        measures=[rms, l1],
+        acceleration=accel
+    )
+    fitresult, meta_state, report = fit(tm, 0, X, y);
+    history, _, state = meta_state;
+    @test all(history) do event
+    event.metadata == event.model.K
+    end
+    end
+)
 
 
 
@@ -198,9 +223,12 @@ end
     m(b) = ConstantClassifier(testing=true, bogus=b)
     r = [m(b) for b in 1:5]
 
-    tuned_model = TunedModel(model=first(r), tuning=Explicit(),
-                             range=r, resampling=Holdout(fraction_train=0.8),
-                             measure=log_loss, cache=true)
+    tuned_model = TunedModel(
+        models=r,
+        resampling=Holdout(fraction_train=0.8),
+        measure=log_loss,
+        cache=true
+    )
 
     # There is reformatting and resampling of X and y for training of
     # first model, and then resampling on the prediction side only
@@ -270,11 +298,12 @@ end
     dcr = DeterministicConstantRegressor()
 
     # Hold out reproducibility
-    homodel = TunedModel(tuning=Explicit(),
-                         models=fill(dcr, 10),
-                         resampling=Holdout(rng=StableRNG(1234)),
-                         acceleration_resampling=accel,
-                         measure=mae)
+    homodel = TunedModel(
+        models=fill(dcr, 10),
+        resampling=Holdout(rng=StableRNG(1234)),
+        acceleration_resampling=accel,
+        measure=mae
+    )
     homach = machine(homodel, X, y)
     fit!(homach, verbosity=0);
     horep = report(homach)
@@ -282,11 +311,12 @@ end
     @test all(==(measurements[1]), measurements)
 
     # Cross-validation reproducibility
-    cvmodel = TunedModel(tuning=Explicit(),
-                         models=fill(dcr, 10),
-                         resampling=CV(nfolds=5, rng=StableRNG(1234)),
-                         acceleration_resampling=accel,
-                         measure=mae)
+    cvmodel = TunedModel(
+        models=fill(dcr, 10),
+        resampling=CV(nfolds=5, rng=StableRNG(1234)),
+        acceleration_resampling=accel,
+        measure=mae
+    )
     cvmach = machine(cvmodel, X, y)
     fit!(cvmach, verbosity=0);
     cvrep = report(cvmach)
@@ -302,6 +332,7 @@ end
     model = DecisionTreeClassifier()
     range = MLJBase.range(model, :max_depth, values=[1,2])
     tmodel = TunedModel(model=model,
+                        tuning=Grid(),
                         range=range,
                         measures=[MisclassificationRate(),
                                   LogLoss()])
