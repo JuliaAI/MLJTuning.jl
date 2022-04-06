@@ -206,16 +206,5 @@ end
 
 end
 
-@testset "deprecation of learning_curve!" begin
-    atom = KNNRegressor()
-    mach = machine(atom, X, y)
-    r = range(atom, :K, lower=1, upper=2)
-    @test_deprecated learning_curve!(mach;
-                                     range=r,
-                                     measure=LPLoss(),
-                                     verbosity=0)
-
-end
-
 end # module
 true
