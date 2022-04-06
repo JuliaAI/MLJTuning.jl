@@ -55,7 +55,7 @@ r = [m(K) for K in 13:-1:2]
     @test_throws(MLJTuning.ERR_NEED_EXPLICIT,
                  TunedModel(models=r, tuning=Grid()))
     tm = TunedModel(model=first(r), range=r, measure=rms)
-    @test tm.tuning isa Grid
+    @test tm.tuning isa RandomSearch
     @test input_scitype(tm) == Table(Continuous)
 end
 

@@ -67,7 +67,7 @@ const EitherTunedModel{T,M} =
 #todo update:
 """
     tuned_model = TunedModel(; model=<model to be mutated>,
-                             tuning=Random(),
+                             tuning=RandomSearch(),
                              resampling=Holdout(),
                              range=nothing,
                              measure=nothing,
@@ -173,7 +173,7 @@ plus other key/value pairs specific to the `tuning` strategy.
 - `models`: Alternatively, an iterator of MLJ models to be explicitly
   evaluated. These may have varying types.
 
-- `tuning=Random()`: tuning strategy to be applied (eg, `Grid()`). See
+- `tuning=RandomSearch()`: tuning strategy to be applied (eg, `Grid()`). See
   the [Tuning
   Models](https://alan-turing-institute.github.io/MLJ.jl/dev/tuning_models/#Tuning-Models)
   section of the MLJ manual for a complete list of options.
@@ -256,7 +256,7 @@ function TunedModel(; model=nothing,
             throw(ERR_NEED_EXPLICIT)
         end
     else
-        tuning === nothing && (tuning = Random())
+        tuning === nothing && (tuning = RandomSearch())
     end
 
     # either a `model` is specified or we are in the case
