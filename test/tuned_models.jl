@@ -341,4 +341,15 @@ end
 
 end
 
+@testset "data caching at outer level suppressed" begin
+    X, y = make_blobs()
+    model = DecisionTreeClassifier()
+    tmodel = TunedModel(models=[model,])
+    mach = machine(tmodel, X, y)
+    @test mach isa Machine{<:Any,false}
+    fit!(mach, verbosity=-1)
+    @test !isdefined(mach, :data)
+    MLJBase.Tables.istable(mach.cache[end].fitresult.machine.data[1])
+end
+
 true

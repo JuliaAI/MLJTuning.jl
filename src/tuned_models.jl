@@ -64,7 +64,8 @@ end
 const EitherTunedModel{T,M} =
     Union{DeterministicTunedModel{T,M},ProbabilisticTunedModel{T,M}}
 
-#todo update:
+MLJBase.caches_data_by_default(::Type{<:EitherTunedModel}) = false
+
 """
     tuned_model = TunedModel(; model=<model to be mutated>,
                              tuning=RandomSearch(),
