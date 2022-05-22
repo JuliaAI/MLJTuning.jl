@@ -30,8 +30,8 @@ mutable struct DeterministicTunedModel{T,M<:DeterministicTypes} <: MLJBase.Deter
     tuning::T  # tuning strategy
     resampling # resampling strategy
     measure
-    weights::Union{Nothing,Vector{<:Real}}
-    class_weights::Union{Nothing,Dict}
+    weights::Union{Nothing,AbstractVector{<:Real}}
+    class_weights::Union{Nothing,AbstractDict}
     operation
     range
     selection_heuristic
