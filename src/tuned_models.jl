@@ -50,7 +50,7 @@ mutable struct ProbabilisticTunedModel{T,M<:ProbabilisticTypes} <: MLJBase.Proba
     resampling # resampling strategy
     measure
     weights::Union{Nothing,AbstractVector{<:Real}}
-    class_weights::Union{Nothing,Dict}
+    class_weights::Union{Nothing,AbstractDict}
     operation
     range
     selection_heuristic
