@@ -35,7 +35,7 @@ r = [m(K) for K in 13:-1:2]
     @test_throws(MLJTuning.ERR_BOTH_DISALLOWED,
                  TunedModel(model=first(r),
                             models=r, tuning=Explicit(), measure=rms))
-    tm = TunedModel(models=r, tuning=Explicit(), measure=rms)
+    tm = @test_logs TunedModel(models=r, tuning=Explicit(), measure=rms)
     @test tm.tuning isa Explicit && tm.range ==r && tm.model == first(r)
     @test input_scitype(tm) == Unknown
     @test TunedModel(models=r, measure=rms) == tm
@@ -54,7 +54,16 @@ r = [m(K) for K in 13:-1:2]
                 TunedModel(tuning=Explicit(), measure=rms))
     @test_throws(MLJTuning.ERR_NEED_EXPLICIT,
                  TunedModel(models=r, tuning=Grid()))
-    tm = TunedModel(model=first(r), range=r, measure=rms)
+    @test_logs TunedModel(first(r), range=r, measure=rms)
+    @test_logs(
+        (:warn, MLJTuning.warn_double_spec(first(r), last(r))),
+        TunedModel(first(r), model=last(r), range=r, measure=rms),
+    )
+    @test_throws(
+        MLJTuning.ERR_TOO_MANY_ARGUMENTS,
+        TunedModel(first(r), last(r), range=r, measure=rms),
+    )
+    tm = @test_logs TunedModel(model=first(r), range=r, measure=rms)
     @test tm.tuning isa RandomSearch
     @test input_scitype(tm) == Table(Continuous)
 end
@@ -339,6 +348,61 @@ end
     mach = machine(tmodel, X, y)
     @test_logs fit!(mach, verbosity=0)
 
+end
+
+@testset_accelerated "weights and class_weights are being passed" accel begin
+    # we'll be tuning using 50/50 holdout
+    X = (x=fill(1.0, 6),)
+    y = coerce(["a", "a", "b", "a", "a", "b"], OrderedFactor)
+    w = [1.0, 1.0, 100.0, 1.0, 1.0, 100.0]
+    class_w = Dict("a" => 2.0, "b" => 100.0)
+
+    model = DecisionTreeClassifier()
+
+    # the first supports weights, the second class weights:
+    ms=[MisclassificationRate(), MulticlassFScore()]
+
+    resampling=Holdout(fraction_train=0.5)
+
+    # without weights:
+    tmodel = TunedModel(
+        resampling=resampling,
+        models=fill(model, 5),
+        measures=ms,
+        acceleration=accel
+    )
+    mach = machine(tmodel, X, y)
+    fit!(mach, verbosity=0)
+    measurement = report(mach).best_history_entry.measurement
+    e = evaluate(model, X, y, measures=ms, resampling=resampling)
+    @test measurement == e.measurement
+
+    # with weights:
+    tmodel.weights = w
+    tmodel.class_weights = class_w
+    fit!(mach, verbosity=0)
+    measurement_weighted = report(mach).best_history_entry.measurement
+    e_weighted = evaluate(model, X, y;
+                          measures=ms,
+                          resampling=resampling,
+                          weights=w,
+                          class_weights=class_w,
+                          verbosity=-1)
+    @test measurement_weighted == e_weighted.measurement
+
+    # check both measures are different when they are weighted:
+    @test !any(measurement .== measurement_weighted)
+end
+
+@testset "data caching at outer level suppressed" begin
+    X, y = make_blobs()
+    model = DecisionTreeClassifier()
+    tmodel = TunedModel(models=[model,])
+    mach = machine(tmodel, X, y)
+    @test mach isa Machine{<:Any,false}
+    fit!(mach, verbosity=-1)
+    @test !isdefined(mach, :data)
+    MLJBase.Tables.istable(mach.cache[end].fitresult.machine.data[1])
 end
 
 true

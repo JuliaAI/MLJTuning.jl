@@ -21,6 +21,10 @@ const ERR_MODEL_TYPE = ArgumentError(
     "Only `Deterministic` and `Probabilistic` model types supported.")
 const INFO_MODEL_IGNORED =
     "`model` being ignored. Using `model=first(range)`. "
+const ERR_TOO_MANY_ARGUMENTS =
+    ArgumentError("At most one non-keyword argument allowed. ")
+warn_double_spec(arg, model) =
+    "Using `model=$arg`. Ignoring keyword specification `model=$model`. "
 
 const ProbabilisticTypes = Union{Probabilistic, MLJBase.MLJModelInterface.ProbabilisticDetector}
 const DeterministicTypes = Union{Deterministic, MLJBase.MLJModelInterface.DeterministicDetector}
@@ -30,7 +34,8 @@ mutable struct DeterministicTunedModel{T,M<:DeterministicTypes} <: MLJBase.Deter
     tuning::T  # tuning strategy
     resampling # resampling strategy
     measure
-    weights::Union{Nothing,Vector{<:Real}}
+    weights::Union{Nothing,AbstractVector{<:Real}}
+    class_weights::Union{Nothing,AbstractDict}
     operation
     range
     selection_heuristic
@@ -49,6 +54,7 @@ mutable struct ProbabilisticTunedModel{T,M<:ProbabilisticTypes} <: MLJBase.Proba
     resampling # resampling strategy
     measure
     weights::Union{Nothing,AbstractVector{<:Real}}
+    class_weights::Union{Nothing,AbstractDict}
     operation
     range
     selection_heuristic
@@ -64,7 +70,8 @@ end
 const EitherTunedModel{T,M} =
     Union{DeterministicTunedModel{T,M},ProbabilisticTunedModel{T,M}}
 
-#todo update:
+MLJBase.caches_data_by_default(::Type{<:EitherTunedModel}) = false
+
 """
     tuned_model = TunedModel(; model=<model to be mutated>,
                              tuning=RandomSearch(),
@@ -114,6 +121,8 @@ Calling `fit!(mach)` on a machine `mach=machine(tuned_model, X, y)` or
   internal machine. The final train can be supressed by setting
   `train_best=false`.
 
+### Search space
+
 The `range` objects supported depend on the `tuning` strategy
 specified. Query the `strategy` docstring for details. To optimize
 over an explicit list `v` of models of the same type, use
@@ -124,27 +133,25 @@ then `MLJTuning.default_n(tuning, range)` is used. When `n` is
 increased and `fit!(mach)` called again, the old search history is
 re-instated and the search continues where it left off.
 
-If `measure` supports weights (`supports_weights(measure) == true`)
-then any `weights` specified will be passed to the measure. If more
-than one `measure` is specified, then only the first is optimized
-(unless `strategy` is multi-objective) but the performance against
-every measure specified will be computed and reported in
+### Measures (metrics)
+
+If more than one `measure` is specified, then only the first is
+optimized (unless `strategy` is multi-objective) but the performance
+against every measure specified will be computed and reported in
 `report(mach).best_performance` and other relevant attributes of the
-generated report.
+generated report. Options exist to pass per-observation weights or
+class weights to measures; see below.
 
-Specify `repeats > 1` for repeated resampling per model
-evaluation. See [`evaluate!`](@ref) options for details.
-
-*Important.* If a custom `measure` is used, and the measure is
-a score, rather than a loss, be sure to check that
-`MLJ.orientation(measure) == :score` to ensure maximization of the
+*Important.* If a custom measure, `my_measure` is used, and the
+measure is a score, rather than a loss, be sure to check that
+`MLJ.orientation(my_measure) == :score` to ensure maximization of the
 measure, rather than minimization. Override an incorrect value with
-`MLJ.orientation(::typeof(measure)) = :score`.
+`MLJ.orientation(::typeof(my_measure)) = :score`.
+
+### Accessing the fitted parameters and other training (tuning) outcomes
 
 A Plots.jl plot of performance estimates is returned by `plot(mach)`
 or `heatmap(mach)`.
-
-### Accessing the fitted parameters and other training (tuning) outcomes
 
 Once a tuning machine `mach` has bee trained as above, then
 `fitted_params(mach)` has these keys/values:
@@ -165,7 +172,7 @@ key                 | value
 
 plus other key/value pairs specific to the `tuning` strategy.
 
-### Summary of key-word arguments
+### Complete list of key-word options
 
 - `model`: `Supervised` model prototype that is cloned and mutated to
   generate models for evaluation
@@ -185,11 +192,15 @@ plus other key/value pairs specific to the `tuning` strategy.
   evaluations; only the first used in optimization (unless the
   strategy is multi-objective) but all reported to the history
 
-- `weights`: sample weights to be passed the measure(s) in performance
-  evaluations, if supported.
+- `weights`: per-observation weights to be passed the measure(s) in performance
+  evaluations, where supported. Check support with `supports_weights(measure)`.
+
+- `class_weights`: class weights to be passed the measure(s) in
+  performance evaluations, where supported. Check support with
+  `supports_class_weights(measure)`.
 
 - `repeats=1`: for generating train/test sets multiple times in
-  resampling; see [`evaluate!`](@ref) for details
+  resampling ("Monte Carlo" resampling); see [`evaluate!`](@ref) for details
 
 - `operation`/`operations` - One of
   $(MLJBase.PREDICT_OPERATIONS_STRING), or a vector of these of the
@@ -226,13 +237,14 @@ plus other key/value pairs specific to the `tuning` strategy.
   likely limited to the case `resampling isa Holdout`.
 
 """
-function TunedModel(; model=nothing,
+function TunedModel(args...; model=nothing,
                     models=nothing,
                     tuning=nothing,
                     resampling=MLJBase.Holdout(),
                     measures=nothing,
                     measure=measures,
                     weights=nothing,
+                    class_weights=nothing,
                     operations=nothing,
                     operation=operations,
                     ranges=nothing,
@@ -246,8 +258,17 @@ function TunedModel(; model=nothing,
                     check_measure=true,
                     cache=true)
 
+    # user can specify model as argument instead of kwarg:
+    length(args) < 2 || throw(ERR_TOO_MANY_ARGUMENTS)
+    if length(args) === 1
+        arg = first(args)
+        model === nothing ||
+            @warn warn_double_spec(arg, model)
+        model =arg
+    end
+
     # either `models` is specified and `tuning` is set to `Explicit`,
-    # or `models` is unspecified and tuning will fallback to `Grid()`
+    # or `models` is unspecified and tuning will fallback to `RandomSearch()`
     # unless it is itself specified:
     if models !== nothing
         if tuning === nothing
@@ -295,9 +316,24 @@ function TunedModel(; model=nothing,
     # get the tuning type parameter:
     T = typeof(tuning)
 
-    args = (model, tuning, resampling, measure, weights, operation, range,
-        selection_heuristic, train_best, repeats, n, acceleration, acceleration_resampling,
-        check_measure, cache)
+    args = (
+        model,
+        tuning,
+        resampling,
+        measure,
+        weights,
+        class_weights,
+        operation,
+        range,
+        selection_heuristic,
+        train_best,
+        repeats,
+        n,
+        acceleration,
+        acceleration_resampling,
+        check_measure,
+        cache
+    )
 
     if M <: DeterministicTypes
         tuned_model = DeterministicTunedModel{T,M}(args...)
@@ -531,6 +567,7 @@ function assemble_events!(metamodels,
                      resampling    = resampling_machine.model.resampling,
                      measure       = resampling_machine.model.measure,
                      weights       = resampling_machine.model.weights,
+                     class_weights = resampling_machine.model.class_weights,
                      operation     = resampling_machine.model.operation,
                      check_measure = resampling_machine.model.check_measure,
                      repeats       = resampling_machine.model.repeats,
@@ -693,6 +730,7 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
                           resampling    = deepcopy(tuned_model.resampling),
                           measure       = tuned_model.measure,
                           weights       = tuned_model.weights,
+                          class_weights  = tuned_model.class_weights,
                           operation     = tuned_model.operation,
                           check_measure = tuned_model.check_measure,
                           repeats       = tuned_model.repeats,
@@ -784,6 +822,8 @@ end
 MLJBase.is_wrapper(::Type{<:EitherTunedModel}) = true
 MLJBase.supports_weights(::Type{<:EitherTunedModel{<:Any,M}}) where M =
     MLJBase.supports_weights(M)
+MLJBase.supports_class_weights(::Type{<:EitherTunedModel{<:Any,M}}) where M =
+    MLJBase.supports_class_weights(M)
 MLJBase.load_path(::Type{<:ProbabilisticTunedModel}) =
     "MLJTuning.ProbabilisticTunedModel"
 MLJBase.load_path(::Type{<:DeterministicTunedModel}) =
