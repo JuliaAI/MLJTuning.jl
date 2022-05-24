@@ -21,6 +21,10 @@ const ERR_MODEL_TYPE = ArgumentError(
     "Only `Deterministic` and `Probabilistic` model types supported.")
 const INFO_MODEL_IGNORED =
     "`model` being ignored. Using `model=first(range)`. "
+const ERR_TOO_MANY_ARGUMENTS =
+    ArgumentError("At most one non-keyword argument allowed. ")
+warn_double_spec(arg, model) =
+    "Using `model=$arg`. Ignoring keyword specification `model=$model`. "
 
 const ProbabilisticTypes = Union{Probabilistic, MLJBase.MLJModelInterface.ProbabilisticDetector}
 const DeterministicTypes = Union{Deterministic, MLJBase.MLJModelInterface.DeterministicDetector}
@@ -233,7 +237,7 @@ plus other key/value pairs specific to the `tuning` strategy.
   likely limited to the case `resampling isa Holdout`.
 
 """
-function TunedModel(; model=nothing,
+function TunedModel(args...; model=nothing,
                     models=nothing,
                     tuning=nothing,
                     resampling=MLJBase.Holdout(),
@@ -254,8 +258,17 @@ function TunedModel(; model=nothing,
                     check_measure=true,
                     cache=true)
 
+    # user can specify model as argument instead of kwarg:
+    length(args) < 2 || throw(ERR_TOO_MANY_ARGUMENTS)
+    if length(args) === 1
+        arg = first(args)
+        model === nothing ||
+            @warn warn_double_spec(arg, model)
+        model =arg
+    end
+
     # either `models` is specified and `tuning` is set to `Explicit`,
-    # or `models` is unspecified and tuning will fallback to `Grid()`
+    # or `models` is unspecified and tuning will fallback to `RandomSearch()`
     # unless it is itself specified:
     if models !== nothing
         if tuning === nothing

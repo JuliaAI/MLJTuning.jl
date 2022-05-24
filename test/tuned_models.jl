@@ -35,7 +35,7 @@ r = [m(K) for K in 13:-1:2]
     @test_throws(MLJTuning.ERR_BOTH_DISALLOWED,
                  TunedModel(model=first(r),
                             models=r, tuning=Explicit(), measure=rms))
-    tm = TunedModel(models=r, tuning=Explicit(), measure=rms)
+    tm = @test_logs TunedModel(models=r, tuning=Explicit(), measure=rms)
     @test tm.tuning isa Explicit && tm.range ==r && tm.model == first(r)
     @test input_scitype(tm) == Unknown
     @test TunedModel(models=r, measure=rms) == tm
@@ -54,7 +54,16 @@ r = [m(K) for K in 13:-1:2]
                 TunedModel(tuning=Explicit(), measure=rms))
     @test_throws(MLJTuning.ERR_NEED_EXPLICIT,
                  TunedModel(models=r, tuning=Grid()))
-    tm = TunedModel(model=first(r), range=r, measure=rms)
+    @test_logs TunedModel(first(r), range=r, measure=rms)
+    @test_logs(
+        (:warn, MLJTuning.warn_double_spec(first(r), last(r))),
+        TunedModel(first(r), model=last(r), range=r, measure=rms),
+    )
+    @test_throws(
+        MLJTuning.ERR_TOO_MANY_ARGUMENTS,
+        TunedModel(first(r), last(r), range=r, measure=rms),
+    )
+    tm = @test_logs TunedModel(model=first(r), range=r, measure=rms)
     @test tm.tuning isa RandomSearch
     @test input_scitype(tm) == Table(Continuous)
 end
