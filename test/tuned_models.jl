@@ -341,6 +341,50 @@ end
 
 end
 
+@testset_accelerated "weights and class_weights are being passed" accel begin
+    # we'll be tuning using 50/50 holdout
+    X = (x=fill(1.0, 6),)
+    y = coerce(["a", "a", "b", "a", "a", "b"], OrderedFactor)
+    w = [1.0, 1.0, 100.0, 1.0, 1.0, 100.0]
+    class_w = Dict("a" => 2.0, "b" => 100.0)
+
+    model = DecisionTreeClassifier()
+
+    # the first supports weights, the second class weights:
+    ms=[MisclassificationRate(), MulticlassFScore()]
+
+    resampling=Holdout(fraction_train=0.5)
+
+    # without weights:
+    tmodel = TunedModel(
+        resampling=resampling,
+        models=fill(model, 5),
+        measures=ms,
+        acceleration=accel
+    )
+    mach = machine(tmodel, X, y)
+    fit!(mach, verbosity=0)
+    measurement = report(mach).best_history_entry.measurement
+    e = evaluate(model, X, y, measures=ms, resampling=resampling)
+    @test measurement == e.measurement
+
+    # with weights:
+    tmodel.weights = w
+    tmodel.class_weights = class_w
+    fit!(mach, verbosity=0)
+    measurement_weighted = report(mach).best_history_entry.measurement
+    e_weighted = evaluate(model, X, y;
+                          measures=ms,
+                          resampling=resampling,
+                          weights=w,
+                          class_weights=class_w,
+                          verbosity=-1)
+    @test measurement_weighted == e_weighted.measurement
+
+    # check both measures are different when they are weighted:
+    @test !any(measurement .== measurement_weighted)
+end
+
 @testset "data caching at outer level suppressed" begin
     X, y = make_blobs()
     model = DecisionTreeClassifier()
