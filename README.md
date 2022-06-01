@@ -4,6 +4,8 @@ Hyperparameter optimization for
 [MLJ](https://github.com/alan-turing-institute/MLJ.jl) machine
 learning models.
 
+See [**Tuning Models · MLJ**](https://alan-turing-institute.github.io/MLJ.jl/dev/tuning_models) for usage examples.
+
 [![Build Status](https://github.com/JuliaAI/MLJTuning.jl/workflows/CI/badge.svg)](https://github.com/JuliaAI/MLJTuning.jl/actions)
 [![codecov.io](http://codecov.io/github/JuliaAI/MLJTuning.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaAI/MLJTuning.jl?branch=master)
 
