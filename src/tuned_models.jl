@@ -260,11 +260,11 @@ function TunedModel(args...; model=nothing,
 
     # user can specify model as argument instead of kwarg:
     length(args) < 2 || throw(ERR_TOO_MANY_ARGUMENTS)
-    if length(args) === 1
+    if length(args) == 1
         arg = first(args)
         model === nothing ||
             @warn warn_double_spec(arg, model)
-        model =arg
+        model = arg
     end
 
     # either `models` is specified and `tuning` is set to `Explicit`,
@@ -309,7 +309,17 @@ function TunedModel(args...; model=nothing,
         else
             throw(ERR_MODEL_TYPE)
         end
+    elseif model isa Type && model <: Model
+        # Model is an uninstantiated model.
+        M = model
+        try
+            model = model()
+        catch
+            msg = "Unable to instantiate model $model; pass an instantiated model."
+            error(MethodError(msg))
+        end
     else
+        # Model is probably an instantiated model.
         M = typeof(model)
     end
 
