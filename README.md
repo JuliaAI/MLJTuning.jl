@@ -34,7 +34,7 @@ hyperparameter optimization tasks from there.
 MLJTuning is the place for developers to integrate hyperparameter
 optimization algorithms (here called *tuning strategies*) into MLJ,
 either by adding code to [/src/strategies](/src/strategies), or by
-importing MLJTuning into a third-pary package and implementing
+importing MLJTuning into a third-party package and implementing
 MLJTuning's [tuning strategy interface](#how-do-i-implement-a-new-tuning-strategy).
 
 MLJTuning is a component of the [MLJ
