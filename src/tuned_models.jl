@@ -310,10 +310,8 @@ function TunedModel(args...; model=nothing,
             throw(ERR_MODEL_TYPE)
         end
     elseif model isa Type && model <: Model
-        msg = """
-            Uninstantiated $model passed; pass an instantiated model so that this package \
-            can mutate the hyperparameters specified by the range.
-            """
+        msg = "Uninstantiated $model passed; pass an instantiated model so that this" *
+            "package can mutate the hyperparameters specified by the range."
         throw(AssertionError(msg))
     else
         # Model is probably an instantiated model.
