@@ -67,8 +67,7 @@ r = [m(K) for K in 13:-1:2]
     @test tm.tuning isa RandomSearch
     @test input_scitype(tm) == Table(Continuous)
 
-    # Allow uninstantiated model.
-    @test TunedModel(; model=KNNRegressor, range=r).model isa KNNRegressor
+    @test_throws AssertionError TunedModel(; model=KNNRegressor, range=r)
 end
 
 results = [(evaluate(model, X, y,
