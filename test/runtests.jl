@@ -9,11 +9,7 @@ using StableRNGs
 # Display Number of processes and if necessary number
 # of Threads
 @info "nworkers: $(nworkers())"
-@static if VERSION >= v"1.3.0-DEV.573"
-    @info "nthreads: $(Threads.nthreads())"
-else
-    @info "Running julia $(VERSION). Multithreading tests excluded. "
-end
+@info "nthreads: $(Threads.nthreads())"
 
 include("test_utilities.jl")
 
