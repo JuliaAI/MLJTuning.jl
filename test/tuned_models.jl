@@ -17,10 +17,10 @@ N = 30
 x1 = rand(N);
 x2 = rand(N);
 x3 = rand(N);
-X = (x1=x1, x2=x2, x3=x3);
+X = (; x1, x2, x3);
 y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.4*rand(N);
 
-m(K) = KNNRegressor(K=K)
+m(K) = KNNRegressor(; K)
 r = [m(K) for K in 13:-1:2]
 
 # TODO: replace the above with the line below and post an issue on
@@ -66,6 +66,8 @@ r = [m(K) for K in 13:-1:2]
     tm = @test_logs TunedModel(model=first(r), range=r, measure=rms)
     @test tm.tuning isa RandomSearch
     @test input_scitype(tm) == Table(Continuous)
+
+    @test_throws MLJTuning.ERR_UNINSTANTIATED_MODEL TunedModel(; model=KNNRegressor, range=r)
 end
 
 results = [(evaluate(model, X, y,

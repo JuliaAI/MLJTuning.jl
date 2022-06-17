@@ -19,6 +19,10 @@ const ERR_BOTH_DISALLOWED = ArgumentError(
     "You cannot specify both `model` and `models`. ")
 const ERR_MODEL_TYPE = ArgumentError(
     "Only `Deterministic` and `Probabilistic` model types supported.")
+const ERR_UNINSTANTIATED_MODEL = AssertionError(
+    "Type encountered where model instance expected. (Tuning evaluates "*
+    "models by mutating clones of the provided instance, as specified "*
+    "by `range`.) ")
 const INFO_MODEL_IGNORED =
     "`model` being ignored. Using `model=first(range)`. "
 const ERR_TOO_MANY_ARGUMENTS =
@@ -260,11 +264,11 @@ function TunedModel(args...; model=nothing,
 
     # user can specify model as argument instead of kwarg:
     length(args) < 2 || throw(ERR_TOO_MANY_ARGUMENTS)
-    if length(args) === 1
+    if length(args) == 1
         arg = first(args)
         model === nothing ||
             @warn warn_double_spec(arg, model)
-        model =arg
+        model = arg
     end
 
     # either `models` is specified and `tuning` is set to `Explicit`,
@@ -309,7 +313,10 @@ function TunedModel(args...; model=nothing,
         else
             throw(ERR_MODEL_TYPE)
         end
+    elseif model isa Type
+        throw(ERR_UNINSTANTIATED_MODEL)
     else
+        # Model is probably an instantiated model.
         M = typeof(model)
     end
 

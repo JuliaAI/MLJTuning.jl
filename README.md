@@ -4,6 +4,8 @@ Hyperparameter optimization for
 [MLJ](https://github.com/alan-turing-institute/MLJ.jl) machine
 learning models.
 
+See [**Tuning Models · MLJ**](https://alan-turing-institute.github.io/MLJ.jl/dev/tuning_models) for usage examples.
+
 [![Build Status](https://github.com/JuliaAI/MLJTuning.jl/workflows/CI/badge.svg)](https://github.com/JuliaAI/MLJTuning.jl/actions)
 [![codecov.io](http://codecov.io/github/JuliaAI/MLJTuning.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaAI/MLJTuning.jl?branch=master)
 
@@ -32,7 +34,7 @@ hyperparameter optimization tasks from there.
 MLJTuning is the place for developers to integrate hyperparameter
 optimization algorithms (here called *tuning strategies*) into MLJ,
 either by adding code to [/src/strategies](/src/strategies), or by
-importing MLJTuning into a third-pary package and implementing
+importing MLJTuning into a third-party package and implementing
 MLJTuning's [tuning strategy interface](#how-do-i-implement-a-new-tuning-strategy).
 
 MLJTuning is a component of the [MLJ
