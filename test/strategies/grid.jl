@@ -178,7 +178,7 @@ end
     # test weights:
     tuned_model.weights = rand(length(y))
     fit!(tuned, verbosity=0)
-    @test e_training != tuned.report.best_history_entry.measurement[1]
+    @test e_training != report(tuned).best_history_entry.measurement[1]
 
     # test plotting part of report:
     @test r.plotting.parameter_names ==
