@@ -131,7 +131,7 @@ end
 function MMI.fit(::ConstantClassifier, verbosity::Int, A, y, w=nothing)
     fitresult = Distributions.fit(MLJBase.UnivariateFinite, y, w)
     cache     = nothing
-    report    = NamedTuple
+    report    = NamedTuple()
     return fitresult, cache, report
 end
 
@@ -181,26 +181,22 @@ metadata_model(ConstantRegressor,
                input=MMI.Table,
                target=AbstractVector{MMI.Continuous},
                weights=false,
-               descr="Constant regressor (Probabilistic).",
                path="MLJModels.ConstantRegressor")
 
 metadata_model(DeterministicConstantRegressor,
                input=MMI.Table,
                target=AbstractVector{MMI.Continuous},
                weights=false,
-               descr="Constant regressor (Deterministic).",
                path="MLJModels.DeterministicConstantRegressor")
 
 metadata_model(ConstantClassifier,
                input=MMI.Table,
                target=AbstractVector{<:MMI.Finite},
                weights=true,
-               descr="Constant classifier (Probabilistic).",
                path="MLJModels.ConstantClassifier")
 
 metadata_model(DeterministicConstantClassifier,
                input=MMI.Table,
                target=AbstractVector{<:MMI.Finite},
                weights=false,
-               descr="Constant classifier (Deterministic).",
                path="MLJModels.DeterministicConstantClassifier")

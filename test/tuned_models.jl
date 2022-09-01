@@ -233,7 +233,6 @@ end
 
     m(b) = ConstantClassifier(testing=true, bogus=b)
     r = [m(b) for b in 1:5]
-
     tuned_model = TunedModel(
         models=r,
         resampling=Holdout(fraction_train=0.8),

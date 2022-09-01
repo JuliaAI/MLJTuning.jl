@@ -196,7 +196,7 @@ _tuning_results(rngs::Nothing,
 
 function _single_curve(tuned, rows, verbosity)
     fit!(tuned, rows=rows, verbosity=verbosity, force=true)
-    tuned.report.plotting
+    report(tuned).plotting
 end
 
 # CPU1:
@@ -222,7 +222,7 @@ function _tuning_results(rngs::AbstractVector,
     ret = mapreduce(_collate, rngs) do rng
               recursive_setproperty!(tuned.model.model, rng_name, rng)
               fit!(tuned, rows=rows, verbosity=verbosity-1, force=true)
-              r =tuned.report.plotting
+              r =report(tuned).plotting
               verbosity < 1 || begin
                       p.counter += 1
                       ProgressMeter.updateProgress!(p)
@@ -269,7 +269,7 @@ function _tuning_results(rngs::AbstractVector,
     ret_ = @distributed (_collate) for rng in rngs
             recursive_setproperty!(tuned.model.model, rng_name, rng)
             fit!(tuned, rows=rows, verbosity=verbosity-1, force=true)
-            r=tuned.report.plotting
+            r=report(tuned).plotting
             verbosity < 1 || put!(channel, true)
             r
         end
@@ -348,7 +348,7 @@ end
                     fit!(tmachs[i], rows=rows,
                          verbosity=verbosity-1, force=true)
                     verbosity < 1 || put!(ch, true)
-                    tmachs[i].report.plotting
+                    report(tmachs[i]).plotting
                 end
             end
         end
