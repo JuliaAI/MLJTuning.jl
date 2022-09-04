@@ -13,6 +13,7 @@ import MLJModelInterface
 include("models/Constant.jl")
 include("models/DecisionTree.jl")
 include("models/NearestNeighbors.jl")
+include("models/Flux.jl")
 include("models/MultivariateStats.jl")
 include("models/Transformers.jl")
 include("models/foobarmodel.jl")
