@@ -1,5 +1,6 @@
 /Manifest.toml
 /docs/Manifest.toml
+/test/Manifest.toml
 .ipynb_checkpoints
 *~
 #*
@@ -7,3 +8,4 @@
 .DS_Store
 sandbox/
 docs/build
+.vscode/
