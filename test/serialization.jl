@@ -23,7 +23,7 @@ function generic_tests(mach₁, mach₂)
     test_args(mach₂)
     test_data(mach₂)
     @test mach₂.state == -1
-    for field in (:frozen, :model, :old_model, :old_upstream_state, :fit_okay)
+    for field in (:frozen, :model, :old_model, :old_upstream_state)
         @test getfield(mach₁, field) == getfield(mach₂, field)
     end
 end
