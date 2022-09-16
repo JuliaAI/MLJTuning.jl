@@ -16,7 +16,7 @@ function test_args(mach)
 end
 
 test_data(mach) = all([:old_rows, :data, :resampled_data, :cache]) do field
-    !isdefined(mach, field) || isnothing(getfield(mach, field))
+    @test !isdefined(mach, field) || isnothing(getfield(mach, field))
 end
 
 function generic_tests(mach₁, mach₂)
