@@ -33,7 +33,7 @@ warn_double_spec(arg, model) =
 const ProbabilisticTypes = Union{Probabilistic, MLJBase.MLJModelInterface.ProbabilisticDetector}
 const DeterministicTypes = Union{Deterministic, MLJBase.MLJModelInterface.DeterministicDetector}
 
-mutable struct DeterministicTunedModel{T,M<:DeterministicTypes} <: MLJBase.Deterministic
+mutable struct DeterministicTunedModel{T,M<:DeterministicTypes,L} <: MLJBase.Deterministic
     model::M
     tuning::T  # tuning strategy
     resampling # resampling strategy
@@ -50,9 +50,10 @@ mutable struct DeterministicTunedModel{T,M<:DeterministicTypes} <: MLJBase.Deter
     acceleration_resampling::AbstractResource
     check_measure::Bool
     cache::Bool
+    logger::L
 end
 
-mutable struct ProbabilisticTunedModel{T,M<:ProbabilisticTypes} <: MLJBase.Probabilistic
+mutable struct ProbabilisticTunedModel{T,M<:ProbabilisticTypes,L} <: MLJBase.Probabilistic
     model::M
     tuning::T  # tuning strategy
     resampling # resampling strategy
@@ -69,10 +70,11 @@ mutable struct ProbabilisticTunedModel{T,M<:ProbabilisticTypes} <: MLJBase.Proba
     acceleration_resampling::AbstractResource
     check_measure::Bool
     cache::Bool
+    logger::L
 end
 
-const EitherTunedModel{T,M} =
-    Union{DeterministicTunedModel{T,M},ProbabilisticTunedModel{T,M}}
+const EitherTunedModel{T,M,L} =
+    Union{DeterministicTunedModel{T,M,L},ProbabilisticTunedModel{T,M,L}}
 
 MLJBase.caches_data_by_default(::Type{<:EitherTunedModel}) = false
 
@@ -260,7 +262,8 @@ function TunedModel(args...; model=nothing,
                     acceleration=default_resource(),
                     acceleration_resampling=CPU1(),
                     check_measure=true,
-                    cache=true)
+                    cache=true,
+                    logger=nothing)
 
     # user can specify model as argument instead of kwarg:
     length(args) < 2 || throw(ERR_TOO_MANY_ARGUMENTS)
@@ -323,6 +326,9 @@ function TunedModel(args...; model=nothing,
     # get the tuning type parameter:
     T = typeof(tuning)
 
+    # get the logger type parameter:
+    L = typeof(logger)
+
     args = (
         model,
         tuning,
@@ -339,13 +345,14 @@ function TunedModel(args...; model=nothing,
         acceleration,
         acceleration_resampling,
         check_measure,
-        cache
+        cache,
+        logger
     )
 
     if M <: DeterministicTypes
-        tuned_model = DeterministicTunedModel{T,M}(args...)
+        tuned_model = DeterministicTunedModel{T,M,L}(args...)
     elseif M <: ProbabilisticTypes
-        tuned_model = ProbabilisticTunedModel{T,M}(args...)
+        tuned_model = ProbabilisticTunedModel{T,M,L}(args...)
     else
         throw(ERR_MODEL_TYPE)
     end
@@ -716,8 +723,8 @@ function finalize(tuned_model,
     return fitresult, meta_state, report
 end
 
-function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
-                     verbosity::Integer, data...) where {T,M}
+function MLJBase.fit(tuned_model::EitherTunedModel{T,M,L},
+                     verbosity::Integer, data...) where {T,M,L}
     tuning = tuned_model.tuning
     model = tuned_model.model
     _range = tuned_model.range
@@ -737,12 +744,13 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
                           resampling    = deepcopy(tuned_model.resampling),
                           measure       = tuned_model.measure,
                           weights       = tuned_model.weights,
-                          class_weights  = tuned_model.class_weights,
+                          class_weights = tuned_model.class_weights,
                           operation     = tuned_model.operation,
                           check_measure = tuned_model.check_measure,
                           repeats       = tuned_model.repeats,
                           acceleration  = tuned_model.acceleration_resampling,
-                          cache         = tuned_model.cache)
+                          cache         = tuned_model.cache,
+                          logger        = tuned_model.logger)
     resampling_machine = machine(resampler, data...; cache=false)
     history, state = build!(nothing, n, tuning, model, model_buffer, state,
                            verbosity, acceleration, resampling_machine)
@@ -827,9 +835,9 @@ end
 ## METADATA
 
 MLJBase.is_wrapper(::Type{<:EitherTunedModel}) = true
-MLJBase.supports_weights(::Type{<:EitherTunedModel{<:Any,M}}) where M =
+MLJBase.supports_weights(::Type{<:EitherTunedModel{<:Any,M,L}}) where {M,L} =
     MLJBase.supports_weights(M)
-MLJBase.supports_class_weights(::Type{<:EitherTunedModel{<:Any,M}}) where M =
+MLJBase.supports_class_weights(::Type{<:EitherTunedModel{<:Any,M,L}}) where {M,L} =
     MLJBase.supports_class_weights(M)
 MLJBase.load_path(::Type{<:ProbabilisticTunedModel}) =
     "MLJTuning.ProbabilisticTunedModel"
@@ -841,9 +849,9 @@ MLJBase.package_uuid(::Type{<:EitherTunedModel}) =
 MLJBase.package_url(::Type{<:EitherTunedModel}) =
     "https://github.com/alan-turing-institute/MLJTuning.jl"
 MLJBase.package_license(::Type{<:EitherTunedModel}) = "MIT"
-MLJBase.is_pure_julia(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
+MLJBase.is_pure_julia(::Type{<:EitherTunedModel{T,M,L}}) where {T,M,L} =
     MLJBase.is_pure_julia(M)
-MLJBase.input_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
+MLJBase.input_scitype(::Type{<:EitherTunedModel{T,M,L}}) where {T,M,L} =
     MLJBase.input_scitype(M)
-MLJBase.target_scitype(::Type{<:EitherTunedModel{T,M}}) where {T,M} =
+MLJBase.target_scitype(::Type{<:EitherTunedModel{T,M,L}}) where {T,M,L} =
     MLJBase.target_scitype(M)
