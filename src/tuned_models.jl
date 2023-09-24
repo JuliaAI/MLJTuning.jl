@@ -598,7 +598,7 @@ function assemble_events!(metamodels,
             end
         end
         # One resampling_machine per task
-         machs = [resampling_machine,
+        machs = [resampling_machine,
                  [machine(Resampler(
                      model= resampling_machine.model.model,
                      resampling    = resampling_machine.model.resampling,
@@ -610,9 +610,9 @@ function assemble_events!(metamodels,
                      repeats       = resampling_machine.model.repeats,
                      acceleration  = resampling_machine.model.acceleration,
                      cache         = resampling_machine.model.cache,
-                     compact       = resampling_machine.model.compact
-                 ), resampling_machine.args...; cache=false) for
-                     _ in 2:length(partitions)]...]
+                     compact       = resampling_machine.model.compact,
+                     logger        = resampling_machine.model.logger),
+                resampling_machine.args...; cache=false) for _ in 2:length(partitions)]...]
 
         @sync for (i, parts) in enumerate(partitions)
             Threads.@spawn begin
