@@ -586,7 +586,8 @@ function assemble_events!(metamodels,
                      check_measure = resampling_machine.model.check_measure,
                      repeats       = resampling_machine.model.repeats,
                      acceleration  = resampling_machine.model.acceleration,
-                     cache         = resampling_machine.model.cache),
+                     cache         = resampling_machine.model.cache,
+                     logger        = resampling_machine.model.logger),
                           resampling_machine.args...; cache=false) for
                   _ in 2:length(partitions)]...]
 
