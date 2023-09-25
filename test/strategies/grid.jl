@@ -2,6 +2,7 @@ module TestGrid
 
 using Test
 using MLJBase
+using StatisticalMeasures
 using MLJTuning
 # include("../test/models.jl")
 # using .Models
@@ -150,9 +151,8 @@ end
     tuned = machine(tuned_model, X, y)
 
     fit!(tuned, verbosity=0)
-    r = MLJBase.report(tuned)
-    @test :model in collect(keys(r.best_report))
     rep = MLJBase.report(tuned)
+    @test :best_report in keys(rep)
     fp = fitted_params(tuned)
     @test :model in collect(keys(fp.best_fitted_params))
     b = fp.best_model
@@ -181,11 +181,11 @@ end
     @test e_training != report(tuned).best_history_entry.measurement[1]
 
     # test plotting part of report:
-    @test r.plotting.parameter_names ==
+    @test rep.plotting.parameter_names ==
         ["transformer.features", "model.lambda"]
-    @test r.plotting.parameter_scales == [:none, :log10]
-    @test r.plotting.measurements == measurements
-    @test size(r.plotting.parameter_values) == (40, 2)
+    @test rep.plotting.parameter_scales == [:none, :log10]
+    @test rep.plotting.measurements == measurements
+    @test size(rep.plotting.parameter_values) == (40, 2)
 
 end
 

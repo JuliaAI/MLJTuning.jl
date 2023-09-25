@@ -30,10 +30,11 @@ function delete(nt::NamedTuple, target_keys...)
     return (; filtered...)
 end
 
+# `SMB` is alias for `StatisticalMeasuresBase`
 signature(measure) =
-    if orientation(measure) == :loss
+    if SMB.orientation(measure) == SMB.Loss()
         1
-    elseif orientation(measure) == :score
+    elseif SMB.orientation(measure) == SMB.Score()
         -1
     else
         0

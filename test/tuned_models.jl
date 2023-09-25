@@ -29,41 +29,41 @@ r = [m(K) for K in 13:-1:2]
 
 @testset "constructor" begin
     @test_throws(MLJTuning.ERR_SPECIFY_RANGE,
-                 TunedModel(model=first(r), tuning=Grid(), measure=rms))
+                 TunedModel(model=first(r), tuning=Grid(), measure=l2))
     @test_throws(MLJTuning.ERR_SPECIFY_RANGE,
-                 TunedModel(model=first(r), measure=rms))
+                 TunedModel(model=first(r), measure=l2))
     @test_throws(MLJTuning.ERR_BOTH_DISALLOWED,
                  TunedModel(model=first(r),
-                            models=r, tuning=Explicit(), measure=rms))
-    tm = @test_logs TunedModel(models=r, tuning=Explicit(), measure=rms)
+                            models=r, tuning=Explicit(), measure=l2))
+    tm = @test_logs TunedModel(models=r, tuning=Explicit(), measure=l2)
     @test tm.tuning isa Explicit && tm.range ==r && tm.model == first(r)
     @test input_scitype(tm) == Unknown
-    @test TunedModel(models=r, measure=rms) == tm
+    @test TunedModel(models=r, measure=l2) == tm
     @test_logs (:info, r"No measure") @test TunedModel(models=r) == tm
 
     @test_throws(MLJTuning.ERR_SPECIFY_MODEL,
-                 TunedModel(range=r, measure=rms))
+                 TunedModel(range=r, measure=l2))
     @test_throws(MLJTuning.ERR_MODEL_TYPE,
                  TunedModel(model=42, tuning=Grid(),
-                            range=r, measure=rms))
+                            range=r, measure=l2))
     @test_logs (:info, MLJTuning.INFO_MODEL_IGNORED) tm =
-        TunedModel(model=42, tuning=Explicit(), range=r, measure=rms)
+        TunedModel(model=42, tuning=Explicit(), range=r, measure=l2)
     @test_logs (:info, r"No measure") tm =
         TunedModel(model=first(r), range=r)
     @test_throws(MLJTuning.ERR_SPECIFY_RANGE_OR_MODELS,
-                TunedModel(tuning=Explicit(), measure=rms))
+                TunedModel(tuning=Explicit(), measure=l2))
     @test_throws(MLJTuning.ERR_NEED_EXPLICIT,
                  TunedModel(models=r, tuning=Grid()))
-    @test_logs TunedModel(first(r), range=r, measure=rms)
+    @test_logs TunedModel(first(r), range=r, measure=l2)
     @test_logs(
         (:warn, MLJTuning.warn_double_spec(first(r), last(r))),
-        TunedModel(first(r), model=last(r), range=r, measure=rms),
+        TunedModel(first(r), model=last(r), range=r, measure=l2),
     )
     @test_throws(
         MLJTuning.ERR_TOO_MANY_ARGUMENTS,
-        TunedModel(first(r), last(r), range=r, measure=rms),
+        TunedModel(first(r), last(r), range=r, measure=l2),
     )
-    tm = @test_logs TunedModel(model=first(r), range=r, measure=rms)
+    tm = @test_logs TunedModel(model=first(r), range=r, measure=l2)
     @test tm.tuning isa RandomSearch
     @test input_scitype(tm) == Table(Continuous)
 
