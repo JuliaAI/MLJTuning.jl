@@ -79,7 +79,7 @@ results = [(evaluate(model, X, y,
     tm = TunedModel(
         models=r,
         resampling=CV(nfolds=2),
-        measures=cross_entropy
+        measures=cross_entropy,
     )
     @test_logs((:error, r"Problem"),
                (:info, r""),

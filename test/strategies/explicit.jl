@@ -1,6 +1,7 @@
 good = KNNClassifier(K=2)
 bad = KNNClassifier(K=10)
 ugly = ConstantClassifier()
+evil = DeterministicConstantClassifier()
 
 r = [good, bad, ugly]
 
@@ -42,6 +43,20 @@ X, y = make_blobs(rng=rng)
     # this used to throw a very confusing MethodError.
     dcc = DeterministicConstantClassifier
     @test_throws ArgumentError TunedModel(; models=[dcc, dcc])
+end
+
+r = [good, bad, evil, ugly]
+
+@testset "inconsistent prediction types" begin
+    tmodel = TunedModel(
+       models=r,
+        resampling = Holdout(fraction_train=0.6),
+        measure=LogLoss(),
+    )
+    @test_throws(
+    MLJTuning.ERR_INCONSISTENT_PREDICTION_TYPE,
+    MLJBase.fit(tmodel, 0, X, y),
+    )
 end
 
 true
