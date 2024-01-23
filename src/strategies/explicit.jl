@@ -1,15 +1,22 @@
+const WARN_INCONSISTENT_PREDICTION_TYPE =
+    "Not all models to be evaluated have the same prediction type, and this may "*
+    "cause problems for some measures. For example, a probabilistic metric "*
+    "like `log_loss` cannot be applied to a model making point (deterministic) "*
+    "predictions. Inspect the prediction type with "*
+        "`prediction_type(model)`. "
+
 mutable struct Explicit <: TuningStrategy end
 
 struct ExplicitState{R, N}
     range::R # a model-generating iterator
-    next::N # to hold output of `iterate(range)`
+    next::N  # to hold output of `iterate(range)`
+    prediction_type::Symbol
+    user_warned::Bool
 end
-
-ExplictState(r::R, n::N) where {R,N} = ExplicitState{R, Union{Nothing, N}}(r, n)
 
 function MLJTuning.setup(tuning::Explicit, model, range, n, verbosity)
     next = iterate(range)
-    return ExplicitState(range, next)
+    return ExplicitState(range, next, MLJBase.prediction_type(model), false)
 end
 
 # models! returns as many models as possible but no more than `n_remaining`:
@@ -20,11 +27,21 @@ function MLJTuning.models(tuning::Explicit,
                           n_remaining,
                           verbosity)
 
-    range, next  = state.range, state.next
+    range, next, prediction_type, user_warned =
+        state.range, state.next, state.prediction_type, state.user_warned
+
+    function check(m)
+        if !user_warned && verbosity > -1 && MLJBase.prediction_type(m) != prediction_type
+            @warn WARN_INCONSISTENT_PREDICTION_TYPE
+            user_warned = true
+        end
+    end
 
     next === nothing && return nothing, state
 
     m, s = next
+    check(m)
+
     models = Any[m, ] # types not known until run-time
 
     next = iterate(range, s)
@@ -33,12 +50,13 @@ function MLJTuning.models(tuning::Explicit,
     while i < n_remaining
         next === nothing && break
         m, s = next
+        check(m)
         push!(models, m)
         i += 1
         next = iterate(range, s)
     end
 
-    new_state = ExplicitState(range, next)
+    new_state = ExplicitState(range, next, prediction_type, user_warned)
 
     return models, new_state
 
