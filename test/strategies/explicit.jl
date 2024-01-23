@@ -46,16 +46,42 @@ X, y = make_blobs(rng=rng)
 end
 
 r = [good, bad, evil, ugly]
+r = [good, bad, ugly]
+r= [evil,]
 
 @testset "inconsistent prediction types" begin
+    # case where different predictions types is actually okay (but still
+    # a warning is issued):
     tmodel = TunedModel(
        models=r,
-        resampling = Holdout(fraction_train=0.6),
-        measure=LogLoss(),
+        resampling = Holdout(),
+        measure=accuracy,
     )
-    @test_throws(
-    MLJTuning.ERR_INCONSISTENT_PREDICTION_TYPE,
+    @test_logs(
+    (:warn, MLJTuning.WARN_INCONSISTENT_PREDICTION_TYPE),
     MLJBase.fit(tmodel, 0, X, y),
+    );
+
+    # verbosity = -1 suppresses the warning:
+    @test_logs(
+    MLJBase.fit(tmodel, -1, X, y),
+    );
+
+    # case where there really is a problem with different prediction types:
+    tmodel = TunedModel(
+       models=r,
+        resampling = Holdout(),
+        measure=log_loss,
+    )
+    @test_logs(
+        (:warn, MLJTuning.WARN_INCONSISTENT_PREDICTION_TYPE),
+        (:error,),
+        (:info,),
+        (:info,),
+        @test_throws(
+            ArgumentError, # indicates the problem is with incompatible measure
+            MLJBase.fit(tmodel, 0, X, y),
+        )
     )
 end
 

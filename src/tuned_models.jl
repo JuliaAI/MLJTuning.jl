@@ -431,9 +431,11 @@ function event!(metamodel,
                state)
     model = _first(metamodel)
     metadata = _last(metamodel)
+    force = typeof(resampling_machine.model.model) !=
+        typeof(model)
     resampling_machine.model.model = model
     verb = (verbosity >= 2 ? verbosity - 3 : verbosity - 1)
-    fit!(resampling_machine, verbosity=verb)
+    fit!(resampling_machine; verbosity=verb, force)
     E = evaluate(resampling_machine)
     entry0 = (model       = model,
               measure     = E.measure,
