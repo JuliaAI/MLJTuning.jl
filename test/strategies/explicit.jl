@@ -46,8 +46,6 @@ X, y = make_blobs(rng=rng)
 end
 
 r = [good, bad, evil, ugly]
-r = [good, bad, ugly]
-r= [evil,]
 
 @testset "inconsistent prediction types" begin
     # case where different predictions types is actually okay (but still
