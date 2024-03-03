@@ -406,4 +406,44 @@ end
     MLJBase.Tables.istable(mach.cache[end].fitresult.machine.data[1])
 end
 
+# define a supervised model with ephemeral `fitresult`, but which overcomes this by
+# overloading `save`/`restore`:
+thing = []
+struct EphemeralRegressor <: Deterministic end
+function MLJBase.fit(::EphemeralRegressor, verbosity, X, y)
+    # if I serialize/deserialized `thing` then `view` below changes:
+    view = objectid(thing)
+    fitresult = (thing, view, mean(y))
+    return fitresult, nothing, NamedTuple()
+end
+function MLJBase.predict(::EphemeralRegressor, fitresult, X)
+    thing, view, μ = fitresult
+    return view == objectid(thing) ? fill(μ, nrows(X)) :
+        throw(ErrorException("dead fitresult"))
+end
+function MLJBase.save(::EphemeralRegressor, fitresult)
+    thing, _, μ = fitresult
+    return (thing, μ)
+end
+function MLJBase.restore(::EphemeralRegressor, serialized_fitresult)
+    thing, μ = serialized_fitresult
+    view = objectid(thing)
+    return (thing, view, μ)
+end
+
+@testset "save and restore" begin
+    X, y = (; x = rand(10)), fill(42.0, 3)
+    tmodel = TunedModel(
+        models=fill(EphemeralRegressor(), 2),
+        measure=l2,
+        resampling=Holdout(),
+    )
+    mach = machine(tmodel, X, y) |> fit!
+    io = IOBuffer()
+    MLJBase.save(io, mach)
+    seekstart(io)
+    mach2 = machine(io)
+    @test_broken MLJBase.predict(mach2, (; x = rand(2))) ≈ fill(42.0, 2)
+end
+
 true
