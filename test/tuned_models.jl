@@ -432,6 +432,7 @@ function MLJBase.restore(::EphemeralRegressor, serialized_fitresult)
 end
 
 @testset "save and restore" begin
+    # https://github.com/JuliaAI/MLJTuning.jl/issues/207
     X, y = (; x = rand(10)), fill(42.0, 3)
     tmodel = TunedModel(
         models=fill(EphemeralRegressor(), 2),
@@ -443,7 +444,7 @@ end
     MLJBase.save(io, mach)
     seekstart(io)
     mach2 = machine(io)
-    @test_broken MLJBase.predict(mach2, (; x = rand(2))) ≈ fill(42.0, 2)
+    @test MLJBase.predict(mach2, (; x = rand(2))) ≈ fill(42.0, 2)
 end
 
 true

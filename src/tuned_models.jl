@@ -819,6 +819,24 @@ function MLJBase.fitted_params(tuned_model::EitherTunedModel, fitresult)
 end
 
 
+## FORWARD SERIALIZATION METHODS FROM ATOMIC MODEL
+
+const WARN_SERIALIZATION =
+    "Attempting to serialize a `TunedModel` instance whose best model has not "*
+    "been trained. It appears as if it was trained with `train_best=false`. "*
+    "Unless you re-train using "*
+    "`train_best=true`, your deserialized `TunedModel` will be unable to `predict`. "
+
+# `fitresult` is `machine(best_model, data...)`, trained iff `train_best` hyperparameter
+# is `true`.
+function MLJBase.save(tmodel::EitherTunedModel, fitresult)
+   MLJBase.age(fitresult) > 0 || @warn WARN_SERIALIZATION
+    return MLJBase.serializable(fitresult)
+end
+MLJBase.restore(tmodel::EitherTunedModel, serializable_fitresult) =
+    MLJBase.restore!(serializable_fitresult)
+
+
 ## SUPPORT FOR MLJ ITERATION API
 
 MLJBase.iteration_parameter(::Type{<:EitherTunedModel}) = :n
