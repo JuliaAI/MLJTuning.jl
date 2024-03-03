@@ -1,4 +1,4 @@
-## TYPES AND CONSTRUCTOR
+# TYPES AND CONSTRUCTOR
 
 const ERR_SPECIFY_MODEL = ArgumentError(
 "You need to specify `model=...`, unless `tuning=Explicit()`. ")
@@ -687,7 +687,7 @@ function finalize(tuned_model,
                   history,
                   state,
                   verbosity,
-                  rm,
+                  resampling_machine,
                   data...)
     model = tuned_model.model
     tuning = tuned_model.tuning
@@ -713,7 +713,7 @@ function finalize(tuned_model,
     end
 
     report = merge(report1, tuning_report(tuning, history, state))
-    meta_state = (history, deepcopy(tuned_model), model_buffer, state, rm)
+    meta_state = (history, deepcopy(tuned_model), model_buffer, state, resampling_machine)
 
     return fitresult, meta_state, report
 end
@@ -749,9 +749,16 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
     history, state = build!(nothing, n, tuning, model, model_buffer, state,
                            verbosity, acceleration, resampling_machine)
 
-    rm = resampling_machine
-    return finalize(tuned_model, model_buffer,
-                    history, state, verbosity, rm, data...)
+
+    return finalize(
+        tuned_model,
+        model_buffer,
+        history,
+        state,
+        verbosity,
+        resampling_machine,
+        data...,
+    )
 
 end
 
@@ -784,9 +791,15 @@ function MLJBase.update(tuned_model::EitherTunedModel,
         history, state = build!(history, n!, tuning, model, model_buffer, state,
                                verbosity, acceleration, resampling_machine)
 
-        rm = resampling_machine
-        return finalize(tuned_model, model_buffer,
-                        history, state, verbosity, rm, data...)
+        return finalize(
+            tuned_model,
+            model_buffer,
+            history,
+            state,
+            verbosity,
+            resampling_machine,
+            data...,
+        )
     else
         return  fit(tuned_model, verbosity, data...)
     end
