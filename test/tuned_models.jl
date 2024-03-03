@@ -444,7 +444,7 @@ end
     fit!(mach, verbosity=0)
     io = IOBuffer()
     @test_logs(
-        (:warn, MLJBase.WARN_SERIALIZATION),
+        (:warn, MLJTuning.WARN_SERIALIZATION),
         MLJBase.save(io, mach),
     )
     close(io)
