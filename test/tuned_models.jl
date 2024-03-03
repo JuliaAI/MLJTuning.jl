@@ -438,12 +438,23 @@ end
         models=fill(EphemeralRegressor(), 2),
         measure=l2,
         resampling=Holdout(),
+        train_best=false,
     )
-    mach = machine(tmodel, X, y) |> fit!
+    mach = machine(tmodel, X, y)
+    fit!(mach, verbosity=0)
     io = IOBuffer()
-    MLJBase.save(io, mach)
+    @test_logs(
+        (:warn, MLJBase.WARN_SERIALIZATION),
+        MLJBase.save(io, mach),
+    )
+    close(io)
+    tmodel.train_best = true
+    fit!(mach, verbosity=0)
+    io = IOBuffer()
+    @test_logs MLJBase.save(io, mach)
     seekstart(io)
     mach2 = machine(io)
+    close(io)
     @test MLJBase.predict(mach2, (; x = rand(2))) ≈ fill(42.0, 2)
 end
 
