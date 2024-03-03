@@ -821,16 +821,16 @@ end
 
 ## FORWARD SERIALIZATION METHODS FROM ATOMIC MODEL
 
-const WARN_SERIALIZATION =
+const ERR_SERIALIZATION = ErrorException(
     "Attempting to serialize a `TunedModel` instance whose best model has not "*
     "been trained. It appears as if it was trained with `train_best=false`. "*
-    "Unless you re-train using "*
-    "`train_best=true`, your deserialized `TunedModel` will be unable to `predict`. "
+    "Try re-training using `train_best=true`. "
+)
 
 # `fitresult` is `machine(best_model, data...)`, trained iff `train_best` hyperparameter
 # is `true`.
 function MLJBase.save(tmodel::EitherTunedModel, fitresult)
-   MLJBase.age(fitresult) > 0 || @warn WARN_SERIALIZATION
+    MLJBase.age(fitresult) > 0 || throw(ERR_SERIALIZATION)
     return MLJBase.serializable(fitresult)
 end
 MLJBase.restore(tmodel::EitherTunedModel, serializable_fitresult) =

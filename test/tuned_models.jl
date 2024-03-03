@@ -443,10 +443,7 @@ end
     mach = machine(tmodel, X, y)
     fit!(mach, verbosity=0)
     io = IOBuffer()
-    @test_logs(
-        (:warn, MLJTuning.WARN_SERIALIZATION),
-        MLJBase.save(io, mach),
-    )
+    @test_throws MLJTuning.ERR_SERIALIZATION MLJBase.save(io, mach)
     close(io)
     tmodel.train_best = true
     fit!(mach, verbosity=0)
