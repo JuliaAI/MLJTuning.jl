@@ -1,6 +1,6 @@
 @recipe function f(mach::MLJBase.Machine{<:EitherTunedModel})
     rep = report(mach)
-    measurement = string(typeof(rep.best_history_entry.measure[1]))
+    measurement = repr(rep.best_history_entry.measure[1])
     r = rep.plotting
     z = r.measurements
     X = r.parameter_values

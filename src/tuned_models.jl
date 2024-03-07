@@ -3,7 +3,7 @@
 const ERR_SPECIFY_MODEL = ArgumentError(
 "You need to specify `model=...`, unless `tuning=Explicit()`. ")
 const ERR_SPECIFY_RANGE = ArgumentError(
-    "You need to specify `range=...`, unless `tuning=Explicit` and "*
+    "You need to specify `range=...`, unless `tuning=Explicit()` and "*
     "and `models=...` is specified instead. ")
 const ERR_SPECIFY_RANGE_OR_MODELS = ArgumentError(
     "No `model` specified. Either specify an explicit iterator "*
@@ -12,7 +12,7 @@ const ERR_SPECIFY_RANGE_OR_MODELS = ArgumentError(
 const ERR_NEED_EXPLICIT = ArgumentError(
     "You have specified an explicit "*
     "iterator `models` of MLJModels and so cannot "*
-    "specify any `tuning` strategy except `Explicit`. Either omit the "*
+    "specify any `tuning` strategy except `Explicit()`. Either omit the "*
     "`tuning=...` specification, or specify a *single* model using "*
     "`model=...` instead. ")
 const ERR_BOTH_DISALLOWED = ArgumentError(
@@ -438,9 +438,11 @@ function event!(metamodel,
                state)
     model = _first(metamodel)
     metadata = _last(metamodel)
+    force = typeof(resampling_machine.model.model) !=
+        typeof(model)
     resampling_machine.model.model = model
     verb = (verbosity >= 2 ? verbosity - 3 : verbosity - 1)
-    fit!(resampling_machine, verbosity=verb)
+    fit!(resampling_machine; verbosity=verb, force)
     E = evaluate(resampling_machine)
     entry0 = (model       = model,
               measure     = E.measure,

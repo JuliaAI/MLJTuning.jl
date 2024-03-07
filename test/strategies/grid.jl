@@ -2,6 +2,7 @@ module TestGrid
 
 using Test
 using MLJBase
+using StatisticalMeasures
 using MLJTuning
 # include("../test/models.jl")
 # using .Models

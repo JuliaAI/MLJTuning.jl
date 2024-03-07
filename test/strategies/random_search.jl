@@ -2,6 +2,7 @@ module TestRandomSearch
 
 using Test
 using MLJBase
+using StatisticalMeasures
 using MLJTuning
 import Distributions
 import Random

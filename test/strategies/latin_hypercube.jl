@@ -3,6 +3,7 @@ module TestLatinHypercube
 using Test
 using MLJBase
 using MLJTuning
+using StatisticalMeasures
 using LatinHypercubeSampling
 import Distributions
 import Random

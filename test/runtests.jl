@@ -4,6 +4,7 @@ addprocs(2)
 using Test
 using MLJTuning
 using MLJBase
+using StatisticalMeasures
 using StableRNGs
 
 # Display Number of processes and if necessary number

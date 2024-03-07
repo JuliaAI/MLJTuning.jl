@@ -23,6 +23,7 @@ using MLJBase
 import MLJBase: Bounded, Unbounded, DoublyUnbounded,
     LeftUnbounded, RightUnbounded, _process_accel_settings, chunks,
     restore, save
+import StatisticalMeasuresBase as SMB
 using RecipesBase
 using Distributed
 import Distributions
