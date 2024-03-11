@@ -439,7 +439,9 @@ function event!(metamodel,
               measure     = E.measure,
               measurement = E.measurement,
               per_fold    = E.per_fold,
-              metadata    = metadata)
+              metadata    = metadata,
+              evaluation  = E,
+    )
     entry = merge(entry0, extras(tuning, history, state, E))
     if verbosity > 2
         println("hyperparameters: $(params(model))")
