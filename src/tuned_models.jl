@@ -441,6 +441,7 @@ function event!(metamodel,
               measure     = E.measure,
               measurement = E.measurement,
               per_fold    = E.per_fold,
+              evaluation = E,
               metadata    = metadata)
     entry = merge(entry0, extras(tuning, history, state, E))
     if verbosity > 2

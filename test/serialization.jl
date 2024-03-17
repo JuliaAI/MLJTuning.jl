@@ -51,7 +51,7 @@ end
 
     @test MLJBase.predict(smach, X) == MLJBase.predict(mach, X)
     @test fitted_params(smach) isa NamedTuple
-    @test report(smach) == report(mach)
+    @test report(smach).best_model == report(mach).best_model
 
     rm(filename)
 
