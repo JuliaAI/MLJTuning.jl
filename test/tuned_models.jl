@@ -455,4 +455,24 @@ end
     @test MLJBase.predict(mach2, (; x = rand(2))) ≈ fill(42.0, 2)
 end
 
+@testset_accelerated "full evaluation object" accel begin
+    X, y = make_regression(100, 2)
+    dcr = DeterministicConstantRegressor()
+
+    homodel = TunedModel(
+        models=fill(dcr, 10),
+        resampling=Holdout(rng=StableRNG(1234)),
+        acceleration_resampling=accel,
+        measure=mae
+    )
+    homach = machine(homodel, X, y)
+    fit!(homach, verbosity=0);
+    horep = report(homach)
+    evaluations = getproperty.(horep.history, :evaluation)
+    measurements = getproperty.(evaluations, :measurement)
+    models = getproperty.(evaluations, :model)
+    @test all(==(measurements[1]), measurements)
+    @test all(==(dcr), models)
+end
+
 true
