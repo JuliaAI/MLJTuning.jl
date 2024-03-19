@@ -13,19 +13,24 @@ using Random
 Random.seed!(1234*myid())
 using .TestUtilities
 
-N = 30
-x1 = rand(N);
-x2 = rand(N);
-x3 = rand(N);
-X = (; x1, x2, x3);
-y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.4*rand(N);
+begin 
+    N = 30
+    x1 = rand(N);
+    x2 = rand(N);
+    x3 = rand(N);
+    X = (; x1, x2, x3);
+    y = 2*x1 .+ 5*x2 .- 3*x3 .+ 0.4*rand(N);
 
-m(K) = KNNRegressor(; K)
-r = [m(K) for K in 13:-1:2]
+    m(K) = KNNRegressor(; K)
+    r = [m(K) for K in 13:-1:2]
 
-# TODO: replace the above with the line below and post an issue on
-# the failure (a bug in Distributed, I reckon):
-# r = (m(K) for K in 13:-1:2)
+    Xtree, yhat = @load_iris
+    trees = [DecisionTreeClassifier(pruning_purity = rand()) for _ in 13:-1:2]
+
+    # TODO: replace the above with the line below and post an issue on
+    # the failure (a bug in Distributed, I reckon):
+    # r = (m(K) for K in 13:-1:2)
+end
 
 @testset "constructor" begin
     @test_throws(MLJTuning.ERR_SPECIFY_RANGE,
@@ -105,6 +110,10 @@ end
     @test _report.best_model == collect(r)[best_index]
     @test _report.history[5] == MLJTuning.delete(history[5], :metadata)
 
+    # feature_importances:
+    # This should return nothing as `KNNRegressor` doesn't support feature_importances
+    @test feature_importances(tm, fitresult, _report) === nothing
+
     # training_losses:
     losses = training_losses(tm, _report)
     @test all(eachindex(losses)) do i
@@ -144,6 +153,22 @@ end
     history, _, state = meta_state;
     results4 = map(event -> event.measurement[1], history)
     @test results4 ≈ results
+end
+
+@testset_accelerated "Feature Importances" accel begin
+    # the DecisionTreeClassifier in /test/_models/ supports feature importances.
+    tm = TunedModel(
+        models = trees,
+        resampling = CV(nfolds=2),
+        measures = cross_entropy,
+        acceleration = CPU1(),
+        acceleration_resampling = accel
+    )
+    @test reports_feature_importances(tm)
+    fitresult, _, report = MLJBase.fit(tm, 0, Xtree, yhat)
+    features = first.(feature_importances(tm, fitresult, report))
+    @test Set(features) == Set(keys(Xtree))
+
 end
 
 @testset_accelerated(

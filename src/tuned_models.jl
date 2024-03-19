@@ -856,6 +856,22 @@ function MLJBase.training_losses(tuned_model::EitherTunedModel, _report)
     return ret
 end
 
+## Support for Feature Importances
+function MLJBase.reports_feature_importances(::Type{<:EitherTunedModel{<:Any,M}}) where {M}
+    return MLJBase.reports_feature_importances(M)
+end
+
+function MLJBase.reports_feature_importances(model::EitherTunedModel)
+    return MLJBase.reports_feature_importances(model.model)
+end # This is needed in some cases (e.g tuning a `Pipeline`)
+
+function MLJBase.feature_importances(::EitherTunedModel, fitresult, report)
+    # fitresult here is a machine created using the best_model obtained 
+    # from the tuning process.
+    # The line below will return `nothing` when the model being tuned doesn't 
+    # support feature_importances.
+    return MLJBase.feature_importances(fitresult)
+end
 
 ## METADATA
 
