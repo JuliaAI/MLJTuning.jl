@@ -157,6 +157,16 @@ end
 
 @testset_accelerated "Feature Importances" accel begin
     # the DecisionTreeClassifier in /test/_models/ supports feature importances.
+    tm0  = TunedModel(                                                                                         
+        model = trees[1],                                                                                                   
+        measure = rms,                                                                                                      
+        tuning = Grid(),                                                                                             
+        resampling = CV(nfolds = 5),                                                                              
+        range = range(                                                                                                      
+            trees[1], :max_depth, values = 1:10                                                                             
+        )                                                                                                           
+    )
+    @test reports_feature_importances(typeof(tm0))
     tm = TunedModel(
         models = trees,
         resampling = CV(nfolds=2),
