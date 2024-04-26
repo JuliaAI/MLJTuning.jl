@@ -13,7 +13,7 @@ using Random
 Random.seed!(1234*myid())
 using .TestUtilities
 
-begin 
+begin
     N = 30
     x1 = rand(N);
     x2 = rand(N);
@@ -157,14 +157,14 @@ end
 
 @testset_accelerated "Feature Importances" accel begin
     # the DecisionTreeClassifier in /test/_models/ supports feature importances.
-    tm0  = TunedModel(                                                                                         
-        model = trees[1],                                                                                                   
-        measure = rms,                                                                                                      
-        tuning = Grid(),                                                                                             
-        resampling = CV(nfolds = 5),                                                                              
-        range = range(                                                                                                      
-            trees[1], :max_depth, values = 1:10                                                                             
-        )                                                                                                           
+    tm0  = TunedModel(
+        model = trees[1],
+        measure = rms,
+        tuning = Grid(),
+        resampling = CV(nfolds = 5),
+        range = range(
+            trees[1], :max_depth, values = 1:10
+        )
     )
     @test reports_feature_importances(typeof(tm0))
     tm = TunedModel(
@@ -490,7 +490,7 @@ end
     @test MLJBase.predict(mach2, (; x = rand(2))) ≈ fill(42.0, 2)
 end
 
-@testset_accelerated "full evaluation object" accel begin
+@testset_accelerated "evaluation object" accel begin
     X, y = make_regression(100, 2)
     dcr = DeterministicConstantRegressor()
 
@@ -504,10 +504,24 @@ end
     fit!(homach, verbosity=0);
     horep = report(homach)
     evaluations = getproperty.(horep.history, :evaluation)
+    @test first(evaluations) isa MLJBase.CompactPerformanceEvaluation
     measurements = getproperty.(evaluations, :measurement)
     models = getproperty.(evaluations, :model)
     @test all(==(measurements[1]), measurements)
     @test all(==(dcr), models)
+
+    homodel = TunedModel(
+        models=fill(dcr, 10),
+        resampling=Holdout(rng=StableRNG(1234)),
+        acceleration_resampling=accel,
+        measure=mae,
+        compact_history=false,
+    )
+    homach = machine(homodel, X, y)
+    fit!(homach, verbosity=0);
+    horep = report(homach)
+    evaluations = getproperty.(horep.history, :evaluation)
+    @test first(evaluations) isa MLJBase.PerformanceEvaluation
 end
 
 true
