@@ -435,7 +435,7 @@ end
     model = DecisionTreeClassifier()
     tmodel = TunedModel(models=[model,])
     mach = machine(tmodel, X, y)
-    @test mach isa Machine{<:Any,false}
+    @test !MLJBase.caches_data(mach)
     fit!(mach, verbosity=-1)
     @test !isdefined(mach, :data)
     MLJBase.Tables.istable(mach.cache[end].fitresult.machine.data[1])
