@@ -50,6 +50,7 @@ mutable struct DeterministicTunedModel{T,M<:DeterministicTypes} <: MLJBase.Deter
     acceleration_resampling::AbstractResource
     check_measure::Bool
     cache::Bool
+    compact_history::Bool
 end
 
 mutable struct ProbabilisticTunedModel{T,M<:ProbabilisticTypes} <: MLJBase.Probabilistic
@@ -69,6 +70,7 @@ mutable struct ProbabilisticTunedModel{T,M<:ProbabilisticTypes} <: MLJBase.Proba
     acceleration_resampling::AbstractResource
     check_measure::Bool
     cache::Bool
+    compact_history::Bool
 end
 
 const EitherTunedModel{T,M} =
@@ -176,6 +178,15 @@ key                 | value
 
 plus other key/value pairs specific to the `tuning` strategy.
 
+Each element of `history` is a property-accessible object with these properties:
+
+key                 | value
+--------------------|--------------------------------------------------
+`measure`           | vector of measures (metrics)
+`measurement`       | vector of measurements, one per measure
+`per_fold`          | vector of vectors of unaggregated per-fold measurements
+`evaluation`        | full `PerformanceEvaluation`/`CompactPerformaceEvaluation` object
+
 ### Complete list of key-word options
 
 - `model`: `Supervised` model prototype that is cloned and mutated to
@@ -240,27 +251,35 @@ plus other key/value pairs specific to the `tuning` strategy.
   user-suplied data; set to `false` to conserve memory. Speed gains
   likely limited to the case `resampling isa Holdout`.
 
+- `compact_history=true`: whether to write `CompactPerformanceEvaluation`](@ref) or
+  regular [`PerformanceEvaluation`](@ref) objects to the history (accessed via the
+  `:evaluation` key); the compact form excludes some fields to conserve memory.
+
 """
-function TunedModel(args...; model=nothing,
-                    models=nothing,
-                    tuning=nothing,
-                    resampling=MLJBase.Holdout(),
-                    measures=nothing,
-                    measure=measures,
-                    weights=nothing,
-                    class_weights=nothing,
-                    operations=nothing,
-                    operation=operations,
-                    ranges=nothing,
-                    range=ranges,
-                    selection_heuristic=NaiveSelection(),
-                    train_best=true,
-                    repeats=1,
-                    n=nothing,
-                    acceleration=default_resource(),
-                    acceleration_resampling=CPU1(),
-                    check_measure=true,
-                    cache=true)
+function TunedModel(
+    args...;
+    model=nothing,
+    models=nothing,
+    tuning=nothing,
+    resampling=MLJBase.Holdout(),
+    measures=nothing,
+    measure=measures,
+    weights=nothing,
+    class_weights=nothing,
+    operations=nothing,
+    operation=operations,
+    ranges=nothing,
+    range=ranges,
+    selection_heuristic=NaiveSelection(),
+    train_best=true,
+    repeats=1,
+    n=nothing,
+    acceleration=default_resource(),
+    acceleration_resampling=CPU1(),
+    check_measure=true,
+    cache=true,
+    compact_history=true,
+    )
 
     # user can specify model as argument instead of kwarg:
     length(args) < 2 || throw(ERR_TOO_MANY_ARGUMENTS)
@@ -339,7 +358,8 @@ function TunedModel(args...; model=nothing,
         acceleration,
         acceleration_resampling,
         check_measure,
-        cache
+        cache,
+        compact_history,
     )
 
     if M <: DeterministicTypes
@@ -582,9 +602,10 @@ function assemble_events!(metamodels,
                      check_measure = resampling_machine.model.check_measure,
                      repeats       = resampling_machine.model.repeats,
                      acceleration  = resampling_machine.model.acceleration,
-                     cache         = resampling_machine.model.cache),
-                          resampling_machine.args...; cache=false) for
-                  _ in 2:length(partitions)]...]
+                     cache         = resampling_machine.model.cache,
+                     compact       = resampling_machine.model.compact
+                 ), resampling_machine.args...; cache=false) for
+                     _ in 2:length(partitions)]...]
 
         @sync for (i, parts) in enumerate(partitions)
             Threads.@spawn begin
@@ -736,20 +757,22 @@ function MLJBase.fit(tuned_model::EitherTunedModel{T,M},
 
     # instantiate resampler (`model` to be replaced with mutated
     # clones during iteration below):
-    resampler = Resampler(model=model,
-                          resampling    = deepcopy(tuned_model.resampling),
-                          measure       = tuned_model.measure,
-                          weights       = tuned_model.weights,
-                          class_weights  = tuned_model.class_weights,
-                          operation     = tuned_model.operation,
-                          check_measure = tuned_model.check_measure,
-                          repeats       = tuned_model.repeats,
-                          acceleration  = tuned_model.acceleration_resampling,
-                          cache         = tuned_model.cache)
+    resampler = Resampler(
+        model=model,
+        resampling    = deepcopy(tuned_model.resampling),
+        measure       = tuned_model.measure,
+        weights       = tuned_model.weights,
+        class_weights  = tuned_model.class_weights,
+        operation     = tuned_model.operation,
+        check_measure = tuned_model.check_measure,
+        repeats       = tuned_model.repeats,
+        acceleration  = tuned_model.acceleration_resampling,
+        cache         = tuned_model.cache,
+        compact       = tuned_model.compact_history,
+    )
     resampling_machine = machine(resampler, data...; cache=false)
     history, state = build!(nothing, n, tuning, model, model_buffer, state,
                            verbosity, acceleration, resampling_machine)
-
 
     return finalize(
         tuned_model,
@@ -867,9 +890,9 @@ function MLJBase.reports_feature_importances(model::EitherTunedModel)
 end # This is needed in some cases (e.g tuning a `Pipeline`)
 
 function MLJBase.feature_importances(::EitherTunedModel, fitresult, report)
-    # fitresult here is a machine created using the best_model obtained 
+    # fitresult here is a machine created using the best_model obtained
     # from the tuning process.
-    # The line below will return `nothing` when the model being tuned doesn't 
+    # The line below will return `nothing` when the model being tuned doesn't
     # support feature_importances.
     return MLJBase.feature_importances(fitresult)
 end
