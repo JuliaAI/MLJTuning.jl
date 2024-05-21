@@ -1,10 +1,10 @@
 # MLJTuning
 
 Hyperparameter optimization for
-[MLJ](https://github.com/alan-turing-institute/MLJ.jl) machine
+[MLJ](https://github.com/JuliaAI/MLJ.jl) machine
 learning models.
 
-See [**Tuning Models · MLJ**](https://alan-turing-institute.github.io/MLJ.jl/dev/tuning_models) for usage examples.
+See [**Tuning Models · MLJ**](https://JuliaAI.github.io/MLJ.jl/dev/tuning_models) for usage examples.
 
 [![Build Status](https://github.com/JuliaAI/MLJTuning.jl/workflows/CI/badge.svg)](https://github.com/JuliaAI/MLJTuning.jl/actions)
 [![codecov.io](http://codecov.io/github/JuliaAI/MLJTuning.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaAI/MLJTuning.jl?branch=master)
@@ -17,17 +17,17 @@ See [**Tuning Models · MLJ**](https://alan-turing-institute.github.io/MLJ.jl/de
  - [How do I implement a new selection heuristic?](#how-do-i-implement-a-new-selection-heuristic)
 
 *Note:* This component of the [MLJ
-  stack](https://github.com/alan-turing-institute/MLJ.jl#the-mlj-universe)
+  stack](https://github.com/JuliaAI/MLJ.jl#the-mlj-universe)
   applies to MLJ versions 0.8.0 and higher. Prior to 0.8.0, tuning
   algorithms resided in
-  [MLJ](https://github.com/alan-turing-institute/MLJ.jl).
+  [MLJ](https://github.com/JuliaAI/MLJ.jl).
 
 
 ## Who is this repo for?
 
 This repository is not intended to be directly imported by the general
 MLJ user. Rather, MLJTuning is a dependency of the
-[MLJ](https://github.com/alan-turing-institute/MLJ.jl) machine
+[MLJ](https://github.com/JuliaAI/MLJ.jl) machine
 learning platform, which allows MLJ users to perform a variety of
 hyperparameter optimization tasks from there.
 
@@ -38,9 +38,9 @@ importing MLJTuning into a third-party package and implementing
 MLJTuning's [tuning strategy interface](#how-do-i-implement-a-new-tuning-strategy).
 
 MLJTuning is a component of the [MLJ
-  stack](https://github.com/alan-turing-institute/MLJ.jl#the-mlj-universe)
+  stack](https://github.com/JuliaAI/MLJ.jl#the-mlj-universe)
   which does not have
-  [MLJModels](https://github.com/alan-turing-institute/MLJModels.jl)
+  [MLJModels](https://github.com/JuliaAI/MLJModels.jl)
   as a dependency (no ability to search and load registered MLJ
   models). It does however depend on
   [MLJBase](https://github.com/JuliaAI/MLJBase.jl) and,
@@ -94,7 +94,7 @@ This repository contains:
 
 - a selection of **implementations** of the tuning strategy interface,
   currently all those accessible from
-  [MLJ](https://github.com/alan-turing-institute/MLJ.jl) itself.
+  [MLJ](https://github.com/JuliaAI/MLJ.jl) itself.
 
 - the code defining the MLJ functions `learning_curves!` and `learning_curve` as
   these are essentially one-dimensional grid searches
@@ -103,12 +103,12 @@ This repository contains:
 ## How do I implement a new tuning strategy?
 
 This document assumes familiarity with the [Evaluating Model
-Performance](https://alan-turing-institute.github.io/MLJ.jl/dev/evaluating_model_performance/)
+Performance](https://JuliaAI.github.io/MLJ.jl/dev/evaluating_model_performance/)
 and [Performance
-Measures](https://alan-turing-institute.github.io/MLJ.jl/dev/performance_measures/)
+Measures](https://JuliaAI.github.io/MLJ.jl/dev/performance_measures/)
 sections of the MLJ manual. Tuning itself, from the user's
 perspective, is described in [Tuning
-Models](https://alan-turing-institute.github.io/MLJ.jl/dev/tuning_models/).
+Models](https://JuliaAI.github.io/MLJ.jl/dev/tuning_models/).
 
 
 ### Overview
@@ -158,11 +158,11 @@ begin, on the basis of the specific strategy and a user-specified
   measures that do not report per-observation values
   (`reports_per_observation(measure) = false`) such as `auc`. See
   [Evaluating Model
-  Performance](https://alan-turing-institute.github.io/MLJ.jl/dev/evaluating_model_performance/)
+  Performance](https://JuliaAI.github.io/MLJ.jl/dev/evaluating_model_performance/)
   for details. There is a trait for measures called `orientation`
   which is `:loss` for measures you ordinarily want to minimize, and
   `:score` for those you want to maximize. See [Performance
-  measures](https://alan-turing-institute.github.io/MLJ.jl/dev/performance_measures/)
+  measures](https://JuliaAI.github.io/MLJ.jl/dev/performance_measures/)
   for further details.
 
 - A *tuning strategy* is an instance of some subtype `S <:
@@ -233,7 +233,7 @@ wrapper. A model is tuned by *fitting* the wrapped model to data
 process determines the optimal model, as defined by the selection
 heuristic (see above). To use the optimal model one *predicts* using
 the wrapped model. For more detail, see the [Tuning
-Models](https://alan-turing-institute.github.io/MLJ.jl/dev/tuning_models/)
+Models](https://JuliaAI.github.io/MLJ.jl/dev/tuning_models/)
 section of the MLJ manual.
 
 In setting up a tuning task, the user constructs an instance of the
@@ -371,7 +371,7 @@ composite models this might be a be an `Expr`, such as
 Use the `iterator` and `sampler` methods to convert ranges into
 one-dimensional grids or for random sampling, respectively. See the
 [tuning
-section](https://alan-turing-institute.github.io/MLJ.jl/dev/tuning_models/#API-1)
+section](https://JuliaAI.github.io/MLJ.jl/dev/tuning_models/#API-1)
 of the MLJ manual or doc-strings for more on these methods and the
 `Grid` and `RandomSearch` implementations.
 
@@ -481,7 +481,7 @@ If more models are returned than needed (because including them would
 create a history whose length exceeds the user-specified number of
 iterations `tuned_model.n`) then the surplus models are saved, for use
 in a ["warm
-restart"](https://alan-turing-institute.github.io/MLJ.jl/dev/machines/#Warm-restarts)
+restart"](https://JuliaAI.github.io/MLJ.jl/dev/machines/#Warm-restarts)
 of tuning, when the user increases `tuned_model.n`. The remaining
 models are then evaluated and these evaluations are added to the
 history. **In any warm restart, no new call to `models` will be made
