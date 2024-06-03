@@ -905,6 +905,10 @@ function MLJBase.feature_importances(::EitherTunedModel, fitresult, report)
     return MLJBase.feature_importances(fitresult)
 end
 
+
+
+
+
 ## METADATA
 
 MLJBase.is_wrapper(::Type{<:EitherTunedModel}) = true
@@ -912,10 +916,8 @@ MLJBase.supports_weights(::Type{<:EitherTunedModel{<:Any,M,L}}) where {M,L} =
     MLJBase.supports_weights(M)
 MLJBase.supports_class_weights(::Type{<:EitherTunedModel{<:Any,M,L}}) where {M,L} =
     MLJBase.supports_class_weights(M)
-MLJBase.load_path(::Type{<:ProbabilisticTunedModel}) =
-    "MLJTuning.ProbabilisticTunedModel"
-MLJBase.load_path(::Type{<:DeterministicTunedModel}) =
-    "MLJTuning.DeterministicTunedModel"
+MLJBase.load_path(::Type{<:EitherTunedModel}) =
+    "MLJTuning.TunedModel"
 MLJBase.package_name(::Type{<:EitherTunedModel}) = "MLJTuning"
 MLJBase.package_uuid(::Type{<:EitherTunedModel}) =
     "03970b2e-30c4-11ea-3135-d1576263f10f"
@@ -928,3 +930,4 @@ MLJBase.input_scitype(::Type{<:EitherTunedModel{T,M,L}}) where {T,M,L} =
     MLJBase.input_scitype(M)
 MLJBase.target_scitype(::Type{<:EitherTunedModel{T,M,L}}) where {T,M,L} =
     MLJBase.target_scitype(M)
+MLJBase.constructor(::Type{<:EitherTunedModel}) = TunedModel
