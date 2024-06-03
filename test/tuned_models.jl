@@ -69,6 +69,8 @@ end
         TunedModel(first(r), last(r), range=r, measure=l2),
     )
     tm = @test_logs TunedModel(model=first(r), range=r, measure=l2)
+    @test MLJBase.constructor(tm) == TunedModel
+    @test MLJBase.load_path(tm) == "MLJTuning.TunedModel"
     @test tm.tuning isa RandomSearch
     @test input_scitype(tm) == Table(Continuous)
 
