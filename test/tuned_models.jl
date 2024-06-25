@@ -526,4 +526,29 @@ end
     @test first(evaluations) isa MLJBase.PerformanceEvaluation
 end
 
+struct  DummyLogger
+    buffer
+end
+
+MLJBase.log_evaluation(logger::DummyLogger, performance_evaluation) =
+    write(logger.buffer, performance_evaluation.measurement[1])
+
+@testset "default logger" begin
+    buffer = IOBuffer()
+    logger = DummyLogger(buffer)
+    default_logger(logger)
+    model1 = KNNRegressor(K=5)
+    model2 = KNNRegressor(K=3)
+    tmodel = TunedModel(models=[model1, model2], measure=l2)
+    mach = machine(tmodel, make_regression(10)...)
+    fit!(mach, verbosity=0)
+    seekstart(buffer)
+    @test all(report(mach).history) do entry
+        logger_measurement = read(buffer, Float64)
+        logger_measurement == entry.evaluation.measurement[1]
+    end
+    default_logger(nothing)
+    close(buffer)
+end
+
 true

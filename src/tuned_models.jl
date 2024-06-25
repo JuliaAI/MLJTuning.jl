@@ -257,6 +257,10 @@ key                 | value
   regular [`PerformanceEvaluation`](@ref) objects to the history (accessed via the
   `:evaluation` key); the compact form excludes some fields to conserve memory.
 
+- `logger=default_logger()`: a logger for externally reporting model performance
+  evaluations, such as an `MLJFlow.Logger` instance. On startup,
+  `default_logger()=nothing`; use `default_logger(logger)` to set a global logger. 
+
 """
 function TunedModel(
     args...;
@@ -281,7 +285,7 @@ function TunedModel(
     check_measure=true,
     cache=true,
     compact_history=true,
-    logger=nothing
+    logger=MLJBase.default_logger()
     )
 
     # user can specify model as argument instead of kwarg:
