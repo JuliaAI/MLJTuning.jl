@@ -46,9 +46,8 @@ jobs:
         env:
           JULIA_NUM_THREADS: '2'
       - uses: julia-actions/julia-processcoverage@v1
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         with:
-          token: 080b3e97-0ae1-4282-b626-bcc1a93d158c
-          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
           verbose: true 
