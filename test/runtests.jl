@@ -60,7 +60,6 @@ end
     @test include("serialization.jl")
 end
 
-# @testset "julia bug" begin
-#     @test include("julia_bug.jl")
-# end
-
+@testset "density estimatation" begin
+    @test include("density_estimation.jl")
+end
