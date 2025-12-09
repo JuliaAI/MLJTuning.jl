@@ -1,10 +1,14 @@
+const MAX_AXIS_LABEL_WIDTH = 20
+
 @recipe function f(mach::MLJBase.Machine{<:EitherTunedModel})
     rep = report(mach)
     measurement = repr(rep.best_history_entry.measure[1])
     r = rep.plotting
     z = r.measurements
     X = r.parameter_values
-    guides = r.parameter_names
+    guides = map(r.parameter_names) do name
+        trim(name, MAX_AXIS_LABEL_WIDTH)
+    end 
     scales = r.parameter_scales
     n = size(X, 2)
     indices = LinearIndices((n, n))'
