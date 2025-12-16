@@ -3,7 +3,7 @@
 const ERR_SPECIFY_MODEL = ArgumentError(
 "You need to specify `model=...`, unless `tuning=Explicit()`. ")
 const ERR_SPECIFY_RANGE = ArgumentError(
-    "You need to specify `range=...`, unless `tuning=Explicit()` and "*
+    "You need to specify `range=...`, unless `tuning=Explicit()` "*
     "and `models=...` is specified instead. ")
 const ERR_SPECIFY_RANGE_OR_MODELS = ArgumentError(
     "No `model` specified. Either specify an explicit iterator "*
