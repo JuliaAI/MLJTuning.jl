@@ -39,3 +39,22 @@ signature(measure) =
     else
         0
     end
+
+# function to trim a string like "transformed_target_model_deterministic.model.K" to `N`
+# characters. For example, if `N=20`, return `…model.K`. Used in plotrecipes.jl.
+function trim(str, N)
+    n = length(str)
+    n <= N && return str
+    fits = false
+    parts = split(str, ".") |> reverse
+    # removes parts until what remains fits, with room for ellipsis (1 character), or if
+    # there is only one part left:
+    while !fits && length(parts) > 1
+        removed = pop!(parts)
+        n -= length(removed) + 1 # the `1` is for the dot, `.`
+        if n < N
+            fits = true
+        end
+    end
+    "…"*join(reverse(parts), ".")
+end

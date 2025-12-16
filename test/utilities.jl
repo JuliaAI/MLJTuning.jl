@@ -22,5 +22,16 @@ end
     @test MLJTuning.signature.(measures) == [-1, 0, 1]
 end
 
+@testset "trim" begin
+    str = "some.long.name" # 14 characters
+    @test MLJTuning.trim(str, 14) == str
+    @test MLJTuning.trim(str, 13) == "…long.name" # 10 characters
+    @test MLJTuning.trim(str, 12) == "…long.name"
+    @test MLJTuning.trim(str, 11) == "…long.name"
+    @test MLJTuning.trim(str, 10) == "…long.name"
+    @test MLJTuning.trim(str, 9) == "…name"
+    @test MLJTuning.trim(str, 1) == "…name" # cannot go any smaller
+end
+
 true
 
