@@ -31,11 +31,12 @@ Construct a common selection heuristic for use with `TunedModel` instances
 which only considers measurements aggregated over all samples (folds)
 in resampling.
 
-For each entry in the tuning history, one defines a penalty equal to
-the evaluations of the `measure` specified in the `TunedModel`
-instance, aggregated over all samples, and multiplied by `-1` if `measure`
-is a `:score`, and `+`` if it is a loss. The heuristic declares as
-"best" (optimal) the model whose corresponding entry has the lowest
+For each entry in the tuning history, one defines a penalty equal to the evaluations of
+the `measure` specified in the `TunedModel` instance, aggregated over all samples, and
+multiplied by `-1` if `measure` is a score (`StatisticalMeasuresBase.orientation(measure)
+== StatisticalMeasuresBase.Score()`), and `+`` if it is a loss
+(`StatisticalMeasuresBase.orientation(measure) == StatisticalMeasuresBase.Loss()`). The
+heuristic declares as "best" (optimal) the model whose corresponding entry has the lowest
 penalty.
 
 If `measure` is a vector, then the first element is used, unless
